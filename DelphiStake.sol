@@ -3,15 +3,13 @@ pragma solidity ^0.4.19;
 contract DelphiStake {
 
     //TODO
-    // require claimants to deposit a fee
-    // move arbiters' funds when a claim is opened for a given amount, pay arbiters their fee when they rule
     // Add events
     // add support for any erc20 token
-    // finish lockup mechanics
 
     struct Claim {
       address claimant;
       uint amount;
+      uint fee;
       string data;
       bool ruled;
       bool accepted;
@@ -32,6 +30,7 @@ contract DelphiStake {
 
 
     Claim[] claims;
+    uint openClaims;
 
     modifier onlyStaker(){
         require(msg.sender == staker);
@@ -70,6 +69,11 @@ contract DelphiStake {
     }
     modifier lockupElapsed(){
         require(now >= lockupEnding && lockupEnding != 0);
+        // if lockupEnding is 0, it means either the lockup is paused due to outstanding claims, or that a withdrawal has not yet been initiated
+        _;
+    }
+    modifier stakerCanPay(uint _amount, uint _fee){
+        require(stake >= (_amount + _fee));
         _;
     }
 
@@ -90,11 +94,17 @@ contract DelphiStake {
 
     }
 
-    function openClaim(uint _amount, string _data)
+    function openClaim(uint _amount, uint _fee, string _data)
     public
     notStakerOrArbiter
+    transferredAmountEqualsValue(_fee)
+    stakerCanPay(_amount, _fee)
     {
-        claims.push(Claim(msg.sender, _amount, _data, false, false, false));
+        claims.push(Claim(msg.sender, _amount, _fee, _data, false, false, false));
+        openClaims ++;
+        stake -= (_amount + _fee);
+        // the claim amount and claim fee are locked up in this contract until the arbiter rules
+
         pauseLockup();
     }
 
@@ -104,10 +114,15 @@ contract DelphiStake {
     claimNotRuled(_claimId)
     {
         claims[_claimId].accepted = _accepted;
-        if (_accepted){
-            stake -= claims[_claimId].amount;
+        if (!_accepted){
+            stake += (claims[_claimId].amount + claims[_claimId].fee);
         }
-        // TO DO: resume lockup countdown
+        arbiter.transfer(claims[_claimId].fee);
+
+        openClaims--;
+        if (openClaims == 0){
+            lockupEnding = now + lockupRemaining;
+        }
     }
 
     function withdrawClaimAmount(uint _claimId)
@@ -117,8 +132,7 @@ contract DelphiStake {
     claimUnpaid(_claimId)
     {
         claims[_claimId].paid = true;
-        stake -= claims[_claimId].amount;
-        claims[_claimId].claimant.transfer(claims[_claimId].amount);
+        claims[_claimId].claimant.transfer(claims[_claimId].amount + claims[_claimId].fee);
     }
 
     function increaseStake(uint _value)
@@ -137,6 +151,7 @@ contract DelphiStake {
        lockupEnding = now + lockupPeriod;
        lockupRemaining = lockupPeriod;
     }
+
     function finalizeWithdrawStake()
     public
     onlyStaker
@@ -154,6 +169,5 @@ contract DelphiStake {
         lockupRemaining = lockupEnding - now;
         lockupEnding = 0;
     }
-
 
 }
