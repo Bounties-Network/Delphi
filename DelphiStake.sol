@@ -3,6 +3,8 @@ pragma solidity ^0.4.19;
 contract DelphiStake {
 
     //TODO
+    // require claimants to deposit a fee
+    // move arbiters' funds when a claim is opened for a given amount, pay arbiters their fee when they rule
     // Add events
     // add support for any erc20 token
     // finish lockup mechanics
