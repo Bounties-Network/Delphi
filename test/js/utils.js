@@ -1,5 +1,6 @@
 const HttpProvider = require('ethjs-provider-http');
 const EthRPC = require('ethjs-rpc');
+const fs = require('fs');
 
 const ethRPC = new EthRPC(new HttpProvider('http://localhost:7545'));
 
@@ -46,6 +47,12 @@ const utils = {
   isEVMException: err => (
     err.toString().includes('invalid opcode')
   ),
+
+  isEVMRevert: err => (
+    err.toString().includes('revert')
+  ),
+
+  getConfig: () => JSON.parse(fs.readFileSync('conf/config.json')),
 };
 
 module.exports = utils;
