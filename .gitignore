@@ -1,0 +1,6 @@
+node_modules/*
+build/*
+secrets.json
+*.swp
+installed_contracts/
+
