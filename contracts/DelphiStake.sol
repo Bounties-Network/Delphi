@@ -16,21 +16,21 @@ contract DelphiStake {
       bool paid;
     }
 
-    uint stake;
-    address tokenAddress;
+    uint public stake;
+    address public tokenAddress;
 
-    string data;
+    string public data;
 
-    address staker;
-    address arbiter;
+    address public staker;
+    address public arbiter;
 
-    uint lockupPeriod;
-    uint lockupEnding;
-    uint lockupRemaining;
+    uint public lockupPeriod;
+    uint public lockupEnding;
+    uint public lockupRemaining;
 
 
-    Claim[] claims;
-    uint openClaims;
+    Claim[] public claims;
+    uint public openClaims;
 
     modifier onlyStaker(){
         require(msg.sender == staker);
