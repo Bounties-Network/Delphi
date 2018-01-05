@@ -96,6 +96,7 @@ contract DelphiStake {
 
     function openClaim(uint _amount, uint _fee, string _data)
     public
+    payable
     notStakerOrArbiter
     transferredAmountEqualsValue(_fee)
     stakerCanPay(_amount, _fee)
