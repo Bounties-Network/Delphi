@@ -27,7 +27,7 @@ contract('DelphiStake', (accounts) => {
         return;
       }
 
-      assert.fail('A non-arbiter was able to rule on the claim');
+      assert(false, 'A non-arbiter was able to rule on the claim');
     });
 
     it('should revert if the claim has already been ruled', async () => {
@@ -47,7 +47,7 @@ contract('DelphiStake', (accounts) => {
         return;
       }
 
-      assert.fail('A claim was able to be ruled on twice');
+      assert(false, 'A claim was able to be ruled on twice');
     });
 
     it('should properly set the claim\'s accepted status', async () => {
