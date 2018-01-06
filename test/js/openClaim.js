@@ -31,7 +31,7 @@ contract('DelphiStake', (accounts) => {
         return;
       }
 
-      assert.fail('Expected claim by arbiter to fail');
+      assert(false, 'Expected claim by arbiter to fail');
     });
 
     it('should not allow the staker to open a claim', async () => {
@@ -53,7 +53,7 @@ contract('DelphiStake', (accounts) => {
         return;
       }
 
-      assert.fail('expected claim by staker to fail');
+      assert(false, 'expected claim by staker to fail');
     });
 
     it('should revert if _amount + _fee is greater than the available stake', async () => {
@@ -75,7 +75,7 @@ contract('DelphiStake', (accounts) => {
         return;
       }
 
-      assert.fail('expected claim for more than is available in stake to fail');
+      assert(false, 'expected claim for more than is available in stake to fail');
     });
 
     it('should revert if the fee is not transferred with the transaction', async () => {
@@ -86,7 +86,7 @@ contract('DelphiStake', (accounts) => {
       const startingClaims = await ds.openClaims.call();
 
       try {
-        await ds.openClaim(claimAmount, feeAmount, '', { from: claimant, value: feeAmount });
+        await ds.openClaim(claimAmount, feeAmount, '', { from: claimant, value: '0' });
       } catch (err) {
         assert(utils.isEVMRevert(err), err.toString());
 
@@ -97,7 +97,7 @@ contract('DelphiStake', (accounts) => {
         return;
       }
 
-      assert.fail('expected claim for more than is available in stake to fail');
+      assert(false, 'expected revert if the fee is not transferred with the transaction');
     });
 
     it('should add a new claim to the claims array and properly initialize its properties',
