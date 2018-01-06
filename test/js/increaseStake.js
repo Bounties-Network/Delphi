@@ -29,7 +29,7 @@ contract('DelphiStake', (accounts) => {
         return;
       }
 
-      assert.fail('should not have allowed somebody other than the staker to increase the stake');
+      assert(false, 'should not have allowed somebody other than the staker to increase the stake');
     });
 
     it('should revert if _value does not equal msg.value', async () => {
@@ -50,7 +50,7 @@ contract('DelphiStake', (accounts) => {
         return;
       }
 
-      assert.fail('should not have allowed the staker to increase the stake by an amount other ' +
+      assert(false, 'should not have allowed the staker to increase the stake by an amount other ' +
         'than that they explicitly specified');
     });
 
