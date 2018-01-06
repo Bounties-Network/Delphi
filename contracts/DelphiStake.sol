@@ -1,4 +1,4 @@
-pragma solidity ^0.4.19;
+pragma solidity ^0.4.18;
 
 contract DelphiStake {
 
@@ -16,21 +16,21 @@ contract DelphiStake {
       bool paid;
     }
 
-    uint stake;
-    address tokenAddress;
+    uint public stake;
+    address public tokenAddress;
 
-    string data;
+    string public data;
 
-    address staker;
-    address arbiter;
+    address public staker;
+    address public arbiter;
 
-    uint lockupPeriod;
-    uint lockupEnding;
-    uint lockupRemaining;
+    uint public lockupPeriod;
+    uint public lockupEnding;
+    uint public lockupRemaining;
 
 
-    Claim[] claims;
-    uint openClaims;
+    Claim[] public claims;
+    uint public openClaims;
 
     modifier onlyStaker(){
         require(msg.sender == staker);
@@ -96,6 +96,7 @@ contract DelphiStake {
 
     function openClaim(uint _amount, uint _fee, string _data)
     public
+    payable
     notStakerOrArbiter
     transferredAmountEqualsValue(_fee)
     stakerCanPay(_amount, _fee)
