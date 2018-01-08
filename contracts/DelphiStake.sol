@@ -1,36 +1,40 @@
-pragma solidity ^0.4.18;
+pragma ^solidity 0.4.18;
 
 contract DelphiStake {
 
     //TODO
     // Add events
     // add support for any erc20 token
+    // change functions to support using a proxy contract
+    // - add the masterCopy address to storage
+    // - create an init function instead of constructor
 
     struct Claim {
       address claimant;
       uint amount;
       uint fee;
+      uint surplusFee;
       string data;
+      uint ruling;
       bool ruled;
-      bool accepted;
       bool paid;
     }
 
-    uint public stake;
-    address public tokenAddress;
+    uint stake;
+    address tokenAddress;
 
-    string public data;
+    string data;
 
-    address public staker;
-    address public arbiter;
+    address staker;
+    address arbiter;
 
-    uint public lockupPeriod;
-    uint public lockupEnding;
-    uint public lockupRemaining;
+    uint lockupPeriod;
+    uint lockupEnding;
+    uint lockupRemaining;
 
 
-    Claim[] public claims;
-    uint public openClaims;
+    Claim[] claims;
+    uint openClaims;
 
     modifier onlyStaker(){
         require(msg.sender == staker);
@@ -50,10 +54,6 @@ contract DelphiStake {
         _;
     }
 
-    modifier claimAccepted(uint _claimId){
-        require(claims[_claimId].accepted);
-        _;
-    }
     modifier claimNotRuled(uint _claimId){
         require(!claims[_claimId].ruled);
         _;
@@ -78,7 +78,6 @@ contract DelphiStake {
     }
 
 
-
     function DelphiStake(uint _value, address _tokenAddress, string _data, uint _lockupPeriod, address _arbiter)
     public
     payable
@@ -96,12 +95,11 @@ contract DelphiStake {
 
     function openClaim(uint _amount, uint _fee, string _data)
     public
-    payable
     notStakerOrArbiter
     transferredAmountEqualsValue(_fee)
     stakerCanPay(_amount, _fee)
     {
-        claims.push(Claim(msg.sender, _amount, _fee, _data, false, false, false));
+        claims.push(Claim(msg.sender, _amount, _fee, 0, _data, 0, false, false));
         openClaims ++;
         stake -= (_amount + _fee);
         // the claim amount and claim fee are locked up in this contract until the arbiter rules
@@ -109,16 +107,34 @@ contract DelphiStake {
         pauseLockup();
     }
 
-    function ruleOnClaim(uint _claimId, bool _accepted)
+    function increaseClaimFee(uint _claimId, uint _amount)
+    public
+    payable
+    transferredAmountEqualsValue(_amount)
+    {
+      claims[_claimId].surplusFee += _amount;
+    }
+
+    function ruleOnClaim(uint _claimId, uint _ruling)
     public
     onlyArbiter
     claimNotRuled(_claimId)
     {
-        claims[_claimId].accepted = _accepted;
-        if (!_accepted){
-            stake += (claims[_claimId].amount + claims[_claimId].fee);
+        claims[_claimId].ruled = true;
+        claims[_claimId].ruling = _ruling;
+        if (_ruling == 0){
+          arbiter.transfer(claims[_claimId].fee + claims[_claimId].surplusFee);
+        } else if (_ruling == 1){
+          stake += (claims[_claimId].amount + claims[_claimId].fee);
+          arbiter.transfer(claims[_claimId].fee + claims[_claimId].surplusFee);
+        } else if (_ruling == 2){
+          arbiter.transfer(claims[_claimId].fee + claims[_claimId].fee + claims[_claimId].surplusFee);
+          address(0).transfer(claims[_claimId].amount);
+          // burns the claim amount in the event of collusion
+        } else if (_ruling == 3){
+          stake += (claims[_claimId].amount + claims[_claimId].fee);
+          //TODO: what happens to Fsurplus here?
         }
-        arbiter.transfer(claims[_claimId].fee);
 
         openClaims--;
         if (openClaims == 0){
@@ -129,11 +145,13 @@ contract DelphiStake {
     function withdrawClaimAmount(uint _claimId)
     public
     onlyClaimant(_claimId)
-    claimAccepted(_claimId)
     claimUnpaid(_claimId)
     {
         claims[_claimId].paid = true;
-        claims[_claimId].claimant.transfer(claims[_claimId].amount + claims[_claimId].fee);
+        if (claims[_claimId].ruling == 0 || claims[_claimId].ruling == 3){
+            claims[_claimId].claimant.transfer(claims[_claimId].amount + claims[_claimId].fee);
+        }
+
     }
 
     function increaseStake(uint _value)
