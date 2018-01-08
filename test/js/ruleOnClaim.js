@@ -16,12 +16,13 @@ contract('DelphiStake', (accounts) => {
       const ds = await DelphiStake.deployed();
       const claimAmount = '1';
       const feeAmount = '1';
+      const ruling = '1';
 
       await ds.openClaim(claimAmount, feeAmount, '', { from: claimant, value: feeAmount });
       const claimId = (await ds.openClaims.call()).sub(new BN('1', 10));
 
       try {
-        await utils.as(dave, ds.ruleOnClaim, claimId, true);
+        await utils.as(dave, ds.ruleOnClaim, claimId, ruling);
       } catch (err) {
         assert(utils.isEVMRevert(err), err.toString());
         return;
@@ -34,14 +35,15 @@ contract('DelphiStake', (accounts) => {
       const ds = await DelphiStake.deployed();
       const claimAmount = '1';
       const feeAmount = '1';
+      const ruling = '1';
 
       await ds.openClaim(claimAmount, feeAmount, '', { from: claimant, value: feeAmount });
       const claimId = (await ds.openClaims.call()).sub(new BN('1', 10));
 
-      await utils.as(arbiter, ds.ruleOnClaim, claimId, true);
+      await utils.as(arbiter, ds.ruleOnClaim, claimId, ruling);
 
       try {
-        await utils.as(arbiter, ds.ruleOnClaim, claimId, false);
+        await utils.as(arbiter, ds.ruleOnClaim, claimId, ruling);
       } catch (err) {
         assert(utils.isEVMRevert(err), err.toString());
         return;
@@ -50,16 +52,16 @@ contract('DelphiStake', (accounts) => {
       assert(false, 'A claim was able to be ruled on twice');
     });
 
-    it('should properly set the claim\'s accepted status', async () => {
+    it('should properly set the claim\'s ruling', async () => {
       const ds = await DelphiStake.deployed();
       const claimAmount = '1';
       const feeAmount = '1';
+      const ruling = '1';
 
       await ds.openClaim(claimAmount, feeAmount, '', { from: claimant, value: feeAmount });
+      // const claimId = (await ds.openClaims.call()).sub(new BN('1', 10));
 
-      const claimId = (await ds.openClaims.call()).sub(new BN('1', 10));
-
-      await utils.as(arbiter, ds.ruleOnClaim, claimId, true);
+      await utils.as(arbiter, ds.ruleOnClaim, '0', ruling);
 
       // TODO: Check update of actual claim struct property
     });
@@ -72,4 +74,3 @@ contract('DelphiStake', (accounts) => {
     it('should emit a ClaimRuled event');
   });
 });
-
