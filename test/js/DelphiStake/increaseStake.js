@@ -3,7 +3,7 @@
 
 const DelphiStake = artifacts.require('DelphiStake');
 
-const utils = require('./utils.js');
+const utils = require('../utils.js');
 const BN = require('bignumber.js');
 
 contract('DelphiStake', (accounts) => {
