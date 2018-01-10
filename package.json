@@ -3,7 +3,7 @@
   "version": "0.0.1",
   "description": "A decentralized dispute arbitration system",
   "scripts": {
-    "compile": "truffle compile",
+    "compile": "truffle install && truffle compile",
     "test": "npm run lint ./ && truffle test",
     "fix": "eslint --fix",
     "lint": "eslint"
