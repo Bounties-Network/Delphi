@@ -34,44 +34,38 @@ contract DelphiVoting {
 
   /**
   @dev Commits a vote for the specified claim. Can be overwritten while commitPeriod is active
-  @param _stake address of a DelphiStake contract
-  @param _claimNumber nonce of a unique claim for the provided stake
+  @param _claimId The keccak256 of the stake address claim number being voted for
   @param _secretHash keccak256 of a vote and a salt
   @return Boolean indication of isCommitPeriodActive for target claim
   */
   function commitVote(
-    address _stake,
-    uint _claimNumber,
+    bytes32 _claimId,
     bytes32 _secretHash
     ) public {
-    bytes32 claimId = keccak256(_stake, _claimNumber);
-
     require(isValidArbiter(msg.sender));
-    require(commitPeriodActive(claimId));
+    require(commitPeriodActive(_claimId));
 
-    if(!claimExists(claimId)) {
-      initializeClaim(claimId);
+    if(!claimExists(_claimId)) {
+      initializeClaim(_claimId);
     }
 
-    claims[claimId].votes[msg.sender] = _secretHash;
+    claims[_claimId].votes[msg.sender] = _secretHash;
 
-    VoteCommitted(msg.sender, claimId);
+    VoteCommitted(msg.sender, _claimId);
   }
 
   /**
   @dev Reveals a vote for the specified claim.
-  @param _stake address of a DelphiStake contract
-  @param _claimNumber nonce of a unique claim for the provided stake
+  @param _claimId The keccak256 of the stake address claim number being revealed for
   @param _vote the option voted for
   @param _salt the salt concatenated to the vote option when originally hashed to its secret form
   */
-  function revealVote(address _stake, uint _claimNumber, uint _vote, uint _salt) public {
-    bytes32 claimId = keccak256(_stake, _claimNumber);
-    Claim storage claim = claims[claimId];
+  function revealVote(bytes32 _claimId, uint _vote, uint _salt) public {
+    Claim storage claim = claims[_claimId];
 
     require(isValidArbiter(msg.sender));
-    require(revealPeriodActive(claimId)); 
-    require(keccak256(_vote, _salt) == claims[claimId].votes[msg.sender]);
+    require(revealPeriodActive(_claimId)); 
+    require(keccak256(_vote, _salt) == claims[_claimId].votes[msg.sender]);
 
     if(_vote == 0) { claim.votes0 += 1; }
     else if(_vote == 1) { claim.votes1 += 1; }
