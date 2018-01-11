@@ -57,14 +57,14 @@ contract Parameterizer {
   @param _plcrAddr         address of a PLCR voting contract for the provided token
   @param _minDeposit       minimum deposit for listing to be whitelisted  
   @param _pMinDeposit      minimum deposit to propose a reparameterization
-  @param _applyStageLen    period over which applicants wait to be whitelisted
-  @param _pApplyStageLen   period over which reparmeterization proposals wait to be processed 
+  @param _applyPeriodLen    period over which applicants wait to be whitelisted
+  @param _pApplyPeriodLen   period over which reparmeterization proposals wait to be processed 
   @param _dispensationPct  percentage of losing party's deposit distributed to winning party
   @param _pDispensationPct percentage of losing party's deposit distributed to winning party in parameterizer
-  @param _commitStageLen  length of commit period for voting
-  @param _pCommitStageLen length of commit period for voting in parameterizer
-  @param _revealStageLen  length of reveal period for voting
-  @param _pRevealStageLen length of reveal period for voting in parameterizer
+  @param _commitPeriodLen  length of commit period for voting
+  @param _pCommitPeriodLen length of commit period for voting in parameterizer
+  @param _revealPeriodLen  length of reveal period for voting
+  @param _pRevealPeriodLen length of reveal period for voting in parameterizer
   @param _voteQuorum       type of majority out of 100 necessary for vote success
   @param _pVoteQuorum      type of majority out of 100 necessary for vote success in parameterizer
   */
@@ -73,12 +73,12 @@ contract Parameterizer {
     address _plcrAddr,
     uint _minDeposit,
     uint _pMinDeposit,
-    uint _applyStageLen,
-    uint _pApplyStageLen,
-    uint _commitStageLen,
-    uint _pCommitStageLen,
-    uint _revealStageLen,
-    uint _pRevealStageLen,
+    uint _applyPeriodLen,
+    uint _pApplyPeriodLen,
+    uint _commitPeriodLen,
+    uint _pCommitPeriodLen,
+    uint _revealPeriodLen,
+    uint _pRevealPeriodLen,
     uint _dispensationPct,
     uint _pDispensationPct,
     uint _voteQuorum,
@@ -89,12 +89,12 @@ contract Parameterizer {
 
       set("minDeposit", _minDeposit);
       set("pMinDeposit", _pMinDeposit);
-      set("applyStageLen", _applyStageLen);
-      set("pApplyStageLen", _pApplyStageLen);
-      set("commitStageLen", _commitStageLen);
-      set("pCommitStageLen", _pCommitStageLen);
-      set("revealStageLen", _revealStageLen);
-      set("pRevealStageLen", _pRevealStageLen);
+      set("applyPeriodLen", _applyPeriodLen);
+      set("pApplyPeriodLen", _pApplyPeriodLen);
+      set("commitPeriodLen", _commitPeriodLen);
+      set("pCommitPeriodLen", _pCommitPeriodLen);
+      set("revealPeriodLen", _revealPeriodLen);
+      set("pRevealPeriodLen", _pRevealPeriodLen);
       set("dispensationPct", _dispensationPct);
       set("pDispensationPct", _pDispensationPct);
       set("voteQuorum", _voteQuorum);
@@ -120,13 +120,13 @@ contract Parameterizer {
 
     // attach name and value to pollID		
     proposals[propID] = ParamProposal({
-      appExpiry: now + get("pApplyStageLen"),
+      appExpiry: now + get("pApplyPeriodLen"),
       challengeID: 0,
       deposit: deposit,
       name: _name,
       owner: msg.sender,
-      processBy: now + get("pApplyStageLen") + get("pCommitStageLen") +
-        get("pRevealStageLen") + PROCESSBY,
+      processBy: now + get("pApplyPeriodLen") + get("pCommitPeriodLen") +
+        get("pRevealPeriodLen") + PROCESSBY,
       value: _value
     });
 
@@ -149,8 +149,8 @@ contract Parameterizer {
     //start poll
     uint pollID = voting.startPoll(
       get("pVoteQuorum"),
-      get("pCommitStageLen"),
-      get("pRevealStageLen")
+      get("pCommitPeriodLen"),
+      get("pRevealPeriodLen")
     );
 
     challenges[pollID] = Challenge.Data({
