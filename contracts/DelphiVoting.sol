@@ -27,6 +27,11 @@ contract DelphiVoting {
 
   mapping(bytes32 => Claim) public claims;
 
+  modifier onlyArbiters(address _arbiter) {
+    require(arbiterSet.isWhitelisted(keccak256(_arbiter)));
+    _;
+  }
+
   function DelphiVoting(address _arbiterSet, address _parameterizer) public {
     arbiterSet = Registry(_arbiterSet); 
     parameterizer = Parameterizer(_parameterizer);
@@ -41,8 +46,8 @@ contract DelphiVoting {
   function commitVote(
     bytes32 _claimId,
     bytes32 _secretHash
-    ) public {
-    require(isValidArbiter(msg.sender));
+    ) 
+    public onlyArbiters(msg.sender) {
     require(commitPeriodActive(_claimId));
 
     if(!claimExists(_claimId)) {
@@ -60,10 +65,9 @@ contract DelphiVoting {
   @param _vote the option voted for
   @param _salt the salt concatenated to the vote option when originally hashed to its secret form
   */
-  function revealVote(bytes32 _claimId, uint _vote, uint _salt) public {
+  function revealVote(bytes32 _claimId, uint _vote, uint _salt) public onlyArbiters(msg.sender) {
     Claim storage claim = claims[_claimId];
 
-    require(isValidArbiter(msg.sender));
     require(revealPeriodActive(_claimId)); 
     require(keccak256(_vote, _salt) == claims[_claimId].votes[msg.sender]);
 
@@ -93,15 +97,6 @@ contract DelphiVoting {
   }
 
   function claimFee() public pure {}
-
-  /**
-  @dev Checks if the provided arbiter is whitelisted in the arbiterSet
-  @param _arbiter the arbiter whose status is to be checked
-  @return Boolean indicates whether the address is whitelisted as an arbiter or not
-  */
-  function isValidArbiter(address _arbiter) public view returns (bool) {
-    return arbiterSet.isWhitelisted(keccak256(_arbiter));
-  }
 
   /**
   @dev Checks if the commit period is still active for the specified claim
