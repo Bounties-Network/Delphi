@@ -155,6 +155,7 @@ contract DelphiVoting {
     uint greatest = _claim.votes0;
     _claim.result = VoteOptions.Justified;
     
+    // get greatest and set result
     if(greatest < _claim.votes1) {
       greatest = _claim.votes1;
       _claim.result = VoteOptions.NotJustified;
@@ -167,6 +168,24 @@ contract DelphiVoting {
       greatest = _claim.votes3;
       _claim.result = VoteOptions.Fault;
     }
+
+    // see if greatest is tied with anything else and set fault if so
+    if(_claim.result == VoteOptions.Justified) {
+      if(greatest == _claim.votes1 || greatest == _claim.votes2 || greatest == _claim.votes3) {
+        _claim.result = VoteOptions.Fault;
+      }
+    }
+    if(_claim.result == VoteOptions.NotJustified) {
+      if(greatest == _claim.votes0 || greatest == _claim.votes2 || greatest == _claim.votes3) {
+        _claim.result = VoteOptions.Fault;
+      }
+    }
+    if(_claim.result == VoteOptions.Collusive) {
+      if(greatest == _claim.votes0 || greatest == _claim.votes1 || greatest == _claim.votes3) {
+        _claim.result = VoteOptions.Fault;
+      }
+    }
+    // if(_claim.result = VoteOptions.Fault), the result is already fault, so don't bother checking
   }
 }
 
