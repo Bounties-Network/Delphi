@@ -48,6 +48,16 @@ contract DelphiStake {
         require(msg.sender == staker);
         _;
     }
+
+    modifier validClaimID(uint _claimId){
+        require(_claimId < claims.length);
+        _;
+    }
+
+    modifier validSettlementId(uint _claimId, uint _settlementId){
+        require(_settlementId < claims[_claimId].settlements.length);
+        _;
+    }
     modifier notStakerOrArbiter(){
         require(msg.sender!= staker && msg.sender!= arbiter);
         _;
@@ -130,6 +140,7 @@ contract DelphiStake {
     function increaseClaimFee(uint _claimId, uint _amount)
     public
     payable
+    validClaimID(_claimId)
     transferredAmountEqualsValue(_amount)
     {
       claims[_claimId].surplusFee += _amount;
@@ -137,6 +148,7 @@ contract DelphiStake {
 
     function proposeSettlement(uint _claimId, uint _amount)
     public
+    validClaimID(_claimId)
     onlyStakerOrClaimant(_claimId)
     {
       require(claims[_claimId].amount + claims[_claimId].fee >= _amount);
@@ -150,6 +162,8 @@ contract DelphiStake {
     }
 
     function acceptSettlement(uint _claimId, uint _settlementId)
+    validClaimID(_claimId)
+    validSettlementId(_claimId, _settlementId)
     onlyStakerOrClaimant(_claimId)
     {
       if (msg.sender == staker){
@@ -174,6 +188,7 @@ contract DelphiStake {
     function settlementFailed(uint _claimId)
     public
     payable
+    validClaimID(_claimId)
     transferredAmountEqualsValue(_amount)
     onlyStakerOrClaimant(_claimId)
     {
@@ -183,6 +198,7 @@ contract DelphiStake {
     function ruleOnClaim(uint _claimId, uint _ruling)
     public
     onlyArbiter
+    validClaimID(_claimId)
     claimNotRuled(_claimId)
     settlementFailed(_claimId)
     {
@@ -210,6 +226,7 @@ contract DelphiStake {
 
     function withdrawClaimAmount(uint _claimId)
     public
+    validClaimID(_claimId)
     onlyClaimant(_claimId)
     claimUnpaid(_claimId)
     {
