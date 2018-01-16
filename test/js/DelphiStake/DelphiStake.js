@@ -1,5 +1,5 @@
 /* eslint-env mocha */
-/* global contract artifacts assert */
+/* global contract artifacts assert web3 */
 
 const DelphiStake = artifacts.require('DelphiStake');
 
@@ -31,10 +31,17 @@ contract('DelphiStake', (accounts) => {
       const storedArbiter = await ds.arbiter.call();
       assert.strictEqual(arbiter, storedArbiter, 'the arbiter was initialized improperly');
 
-      // TODO: Check contract balance matches provided stake
+      const balance = await web3.eth.getBalance(ds.address);
+      assert.strictEqual(balance.toString(10), stake.toString(10), 'the contract\'s balance and stake did not match');
     });
 
-    it('should revert when _value does not equal msg.value');
+    it('should revert when _value does not equal msg.value', async () => {
+      try {
+        await DelphiStake.new(conf.initialStake, conf.stakeTokenAddr, conf.data,
+          conf.lockupPeriod, conf.arbiter, { from: accounts[0], value: 1 });
+      } catch (err) {
+        assert(utils.isEVMRevert(err), err.toString());
+      }
+    });
   });
 });
-
