@@ -19,7 +19,6 @@ contract DelphiStake {
       bool ruled;
       bool paid;
       bool settlementFailed;
-      Settlement[] settlements;
     }
 
     struct Settlement {
@@ -43,6 +42,7 @@ contract DelphiStake {
 
     Claim[] public claims;
     uint public openClaims;
+    mapping(uint => Settlement[]) public settlements;
 
     modifier onlyStaker(){
         require(msg.sender == staker);
@@ -55,7 +55,7 @@ contract DelphiStake {
     }
 
     modifier validSettlementId(uint _claimId, uint _settlementId){
-        require(_settlementId < claims[_claimId].settlements.length);
+        require(_settlementId < settlements[_claimId].length);
         _;
     }
     modifier notStakerOrArbiter(){
@@ -95,7 +95,7 @@ contract DelphiStake {
         _;
     }
 
-    modifier settlementFailed(uint _claimId){
+    modifier settlementDidFail(uint _claimId){
         require(claims[_claimId].settlementFailed);
         _;
     }
@@ -155,30 +155,31 @@ contract DelphiStake {
       // only allows settlements for up to the amount that's already been staked by the staker as pertaining to this case
 
       if (msg.sender == staker){
-        claims[_claimId].settlements.push(Settlement(_amount, true, false));
+        settlements[_claimId].push(Settlement(_amount, true, false));
       } else {
-        claims[_claimId].settlements.push(Settlement(_amount, false, true));
+        settlements[_claimId].push(Settlement(_amount, false, true));
       }
     }
 
     function acceptSettlement(uint _claimId, uint _settlementId)
+    public
     validClaimID(_claimId)
     validSettlementId(_claimId, _settlementId)
     onlyStakerOrClaimant(_claimId)
     {
       if (msg.sender == staker){
-        claims[_claimId].settlements[_settlementId].stakerAgrees = true;
+        settlements[_claimId][_settlementId].stakerAgrees = true;
       } else {
-        claims[_claimId].settlements[_settlementId].claimantAgrees = true;
+        settlements[_claimId][_settlementId].claimantAgrees = true;
       }
 
-      if (claims[_claimId].settlements[_settlementId].claimantAgrees &&
-          claims[_claimId].settlements[_settlementId].stakerAgrees &&
-          !claims[_claimId].settlementFailed
+      if (settlements[_claimId][_settlementId].claimantAgrees &&
+          settlements[_claimId][_settlementId].stakerAgrees &&
+          !claims[_claimId].settlementFailed &&
           !claims[_claimId].ruled){
         claims[_claimId].ruled = true;
-        claims[_claimId].claimant.transfer(claims[_claimId].settlements[_settlementId].amount + claims[_claimId].fee);
-        stake += (claims[_claimId].amount + claims[_claimId].fee - claims[_claimId].settlements[_settlementId].amount);
+        claims[_claimId].claimant.transfer(settlements[_claimId][_settlementId].amount + claims[_claimId].fee);
+        stake += (claims[_claimId].amount + claims[_claimId].fee - settlements[_claimId][_settlementId].amount);
 
       }
 
@@ -189,7 +190,6 @@ contract DelphiStake {
     public
     payable
     validClaimID(_claimId)
-    transferredAmountEqualsValue(_amount)
     onlyStakerOrClaimant(_claimId)
     {
       claims[_claimId].settlementFailed = true;
@@ -200,7 +200,7 @@ contract DelphiStake {
     onlyArbiter
     validClaimID(_claimId)
     claimNotRuled(_claimId)
-    settlementFailed(_claimId)
+    settlementDidFail(_claimId)
     {
         claims[_claimId].ruled = true;
         claims[_claimId].ruling = _ruling;
