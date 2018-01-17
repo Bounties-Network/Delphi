@@ -268,8 +268,10 @@ contract DelphiStake {
     function pauseLockup()
     internal
     {
-        lockupRemaining = lockupEnding - now;
-        lockupEnding = 0;
+        if (lockupEnding!= 0){
+          lockupRemaining = lockupEnding - now;
+          lockupEnding = 0;
+        }
     }
 
     function getNumClaims()
