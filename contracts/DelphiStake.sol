@@ -38,6 +38,7 @@ contract DelphiStake {
     uint public lockupPeriod;
     uint public lockupEnding;
     uint public lockupRemaining;
+    bool public withdrawInitiated;
 
 
     Claim[] public claims;
@@ -105,7 +106,10 @@ contract DelphiStake {
         _;
     }
 
-
+    modifier withdrawalNotInitiated(){
+        require(!withdrawInitiated);
+        _;
+    }
 
     function DelphiStake(uint _value, address _tokenAddress, string _data, uint _lockupPeriod, address _arbiter)
     public
@@ -249,9 +253,11 @@ contract DelphiStake {
     function initiateWithdrawStake()
     public
     onlyStaker
+    withdrawalNotInitiated
     {
        lockupEnding = now + lockupPeriod;
        lockupRemaining = lockupPeriod;
+       withdrawInitiated = true;
     }
 
     function finalizeWithdrawStake()
