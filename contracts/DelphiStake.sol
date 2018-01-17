@@ -272,4 +272,12 @@ contract DelphiStake {
         lockupEnding = 0;
     }
 
+    function getNumClaims()
+    public
+    constant
+    returns (uint)
+    {
+      return claims.length;
+    }
+
 }
