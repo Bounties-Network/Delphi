@@ -1,5 +1,5 @@
 /* eslint-env mocha */
-/* global contract artifacts assert */
+/* global contract artifacts assert web3 */
 
 const DelphiStake = artifacts.require('DelphiStake');
 
@@ -100,15 +100,50 @@ contract('DelphiStake', (accounts) => {
       assert(false, 'expected revert if the fee is not transferred with the transaction');
     });
 
+    it('should increment the getNumClaims counter', async () => {
+      const ds = await DelphiStake.deployed();
+      const claimAmount = '1';
+      const feeAmount = '1';
+
+      const startingClaims = await ds.getNumClaims();
+
+      await ds.openClaim(claimAmount, feeAmount, '', { from: claimant, value: feeAmount });
+
+      const finalClaims = await ds.getNumClaims();
+      assert.strictEqual(startingClaims.add(new BN('1', 10)).toString(10),
+        finalClaims.toString(10),
+        'claim counter not incremented as-expected');
+    });
+
     it('should add a new claim to the claims array and properly initialize its properties',
       async () => {
         const ds = await DelphiStake.deployed();
         const claimAmount = '1';
         const feeAmount = '1';
 
-        await ds.openClaim(claimAmount, feeAmount, '', { from: claimant, value: feeAmount });
+        const claimId = await ds.getNumClaims();
 
-      // TODO: Check that claim properties are properly initialized
+        await ds.openClaim(claimAmount, feeAmount, 'newclaim', { from: claimant, value: feeAmount });
+
+        const claim = await ds.claims.call(claimId);
+
+        assert.strictEqual(claim[0], claimant, 'initialized claimant incorrectly');
+
+        assert.strictEqual(claim[1].toString(10), claimAmount, 'initialized claim amount incorrectly');
+
+        assert.strictEqual(claim[2].toString(10), feeAmount, 'initialized claim fee incorrectly');
+
+        assert.strictEqual(claim[3].toString(10), '0', 'initialized claim surplus fee incorrectly');
+
+        assert.strictEqual(claim[4], 'newclaim', 'initialized claim data incorrectly');
+
+        assert.strictEqual(claim[5].toString(10), '0', 'initialized claim ruling incorrectly');
+
+        assert.strictEqual(claim[6], false, 'initialized ruled bool incorrectly');
+
+        assert.strictEqual(claim[7], false, 'initialized paid bool incorrectly');
+
+        assert.strictEqual(claim[8], false, 'initialized settlementFailed incorrectly');
       });
 
     it('should increment the openClaims.call counter', async () => {
@@ -127,7 +162,8 @@ contract('DelphiStake', (accounts) => {
     });
 
     it('should decrement the stakers stake by amount + fee', async () => {
-      const ds = await DelphiStake.deployed();
+      const ds = await DelphiStake.new(conf.initialStake, conf.stakeTokenAddr, conf.data,
+        conf.lockupPeriod, arbiter, { from: staker, value: conf.initialStake });
       const claimAmount = new BN('1', 10);
       const feeAmount = new BN('1', 10);
 
@@ -140,14 +176,73 @@ contract('DelphiStake', (accounts) => {
         finalStake.toString(10),
         'stake was not decremented as-expected when a new claim was opened');
 
-      // TODO: Check the actual ether balance as well
-      // Note to Mark: we're going to have to rewrite so much to support both ETH and ERC20.....
+      const newBalance = await web3.eth.getBalance(ds.address);
+      assert.strictEqual(startingStake.add(feeAmount).toString(10), newBalance.toString(10),
+        'balance does not reflect the originally deposited funds and additional fee');
     });
 
-    it('should set lockup remaining to lockupEnding - now');
-    it('should set lockupEnding to zero');
+    it('should not set lockup remaining to lockupEnding - now if no withdrawal was initiated', async () => {
+      const ds = await DelphiStake.new(conf.initialStake, conf.stakeTokenAddr, conf.data,
+        conf.lockupPeriod, arbiter, { from: staker, value: conf.initialStake });
+      const claimAmount = new BN('1', 10);
+      const feeAmount = new BN('1', 10);
+
+      const lockupPeriodog = await ds.lockupPeriod.call();
+      const lockupRemainingog = await ds.lockupRemaining.call();
+      const lockupEndingog = await ds.lockupEnding.call();
+      const withdrawInitiated = await ds.withdrawInitiated.call();
+
+      assert.strictEqual(lockupPeriodog.toString(10), conf.lockupPeriod.toString(10),
+        'lockup period not initialized properly');
+      assert.strictEqual(lockupRemainingog.toString(10), conf.lockupPeriod.toString(10),
+        'lockup remaining not initialized properly');
+      assert.strictEqual(lockupEndingog.toString(10), '0',
+        'lockup ending not initialized properly');
+      assert.strictEqual(withdrawInitiated, false,
+        'contract falsely believes a withdrawal has been initiated');
+
+      await ds.openClaim(claimAmount, feeAmount, '', { from: claimant, value: feeAmount });
+
+      const lockupPeriod = await ds.lockupPeriod.call();
+      const lockupEnding = await ds.lockupEnding.call();
+      const lockupRemaining = await ds.lockupRemaining.call();
+
+      assert.strictEqual(lockupPeriod.toString(10), conf.lockupPeriod.toString(10),
+        'lockup period not correct after claim is initiated (before withdrawal was initiated)');
+      assert.strictEqual(lockupRemaining.toString(10), conf.lockupPeriod.toString(10),
+        'lockup remaining not correct after claim is initiated (before withdrawal was initiated)');
+      assert.strictEqual(lockupEnding.toString(10), '0',
+        'lockup ending not correct after claim is initiated (before withdrawal was initiated)');
+    });
+
+    it('should set lockup remaining to lockupEnding - now if withdrawal was initiated', async () => {
+      const ds = await DelphiStake.new(conf.initialStake, conf.stakeTokenAddr, conf.data,
+        conf.lockupPeriod, arbiter, { from: staker, value: conf.initialStake });
+      const claimAmount = new BN('1', 10);
+      const feeAmount = new BN('1', 10);
+
+      const block = await web3.eth.getBlock('latest');
+      const timestamp = block.timestamp;
+
+      await ds.initiateWithdrawStake({ from: staker });
+
+      const lockupEnding = await ds.lockupEnding.call();
+
+      assert.approximately(parseInt(lockupEnding.sub(timestamp), 10),
+        parseInt(conf.lockupPeriod, 10), 5, 'lockup ending not correct after withdrawal initiated');
+
+      await ds.openClaim(claimAmount, feeAmount, '', { from: claimant, value: feeAmount });
+
+      const newBlock = await web3.eth.getBlock('latest');
+      const newTimestamp = newBlock.timestamp;
+      const newLockupRemaining = await ds.lockupRemaining.call();
+
+      assert.approximately(parseInt(lockupEnding.sub(newTimestamp), 10),
+        parseInt(newLockupRemaining, 10), 5, 'lockup remaining not correctly paused after claim opened');
+    });
+
+    it('should set lockupEnding to zero if withdrawal was initiated');
     it('should emit a NewClaim event');
     it('should append claims to the end of the claim array, without overwriting earlier claims');
   });
 });
-
