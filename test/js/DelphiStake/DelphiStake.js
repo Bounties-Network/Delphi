@@ -28,6 +28,10 @@ contract('DelphiStake', (accounts) => {
       assert.strictEqual(lockupPeriod.toString(10), conf.lockupPeriod,
         'the lockup period was initialized improperly');
 
+      const lockupRemaining = await ds.lockupRemaining.call();
+      assert.strictEqual(lockupRemaining.toString(10), conf.lockupPeriod,
+        'the lockup remaining was initialized improperly');
+
       const storedArbiter = await ds.arbiter.call();
       assert.strictEqual(arbiter, storedArbiter, 'the arbiter was initialized improperly');
 
