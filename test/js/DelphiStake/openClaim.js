@@ -251,7 +251,7 @@ contract('DelphiStake', (accounts) => {
       await ds.initiateWithdrawStake({ from: staker });
 
       await ds.openClaim(claimAmount, feeAmount, '', { from: claimant, value: feeAmount });
-      
+
       const lockupEnding = await ds.lockupEnding.call();
 
       assert.strictEqual(lockupEnding.toString(10), '0',
@@ -259,6 +259,23 @@ contract('DelphiStake', (accounts) => {
     });
 
     it('should emit a NewClaim event');
-    it('should append claims to the end of the claim array, without overwriting earlier claims');
+    // TODO: add events
+
+    it('should append claims to the end of the claim array, without overwriting earlier claims', async () => {
+      const ds = await DelphiStake.new(conf.initialStake, conf.stakeTokenAddr, conf.data,
+        conf.lockupPeriod, arbiter, { from: staker, value: conf.initialStake });
+      const claimAmount = new BN('1', 10);
+      const feeAmount = new BN('1', 10);
+
+
+      await ds.initiateWithdrawStake({ from: staker });
+
+      await ds.openClaim(claimAmount, feeAmount, '', { from: claimant, value: feeAmount });
+
+      const lockupEnding = await ds.lockupEnding.call();
+
+      assert.strictEqual(lockupEnding.toString(10), '0',
+        'lockup ending not correctly paused after claim opened');
+    });
   });
 });
