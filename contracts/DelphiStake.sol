@@ -113,10 +113,11 @@ contract DelphiStake {
         _;
     }
 
-    function DelphiStake(uint _value, EIP20 _token, string _data, uint _lockupPeriod, address _arbiter)
+    function initDelphiStake(uint _value, EIP20 _token, string _data, uint _lockupPeriod, address _arbiter)
     public
     payable
     {
+        require(token == address(0)); // only possible if init hasn't been called before
         require(_token.transferFrom(msg.sender, this, _value));
         stake = _value;
         token = _token;
