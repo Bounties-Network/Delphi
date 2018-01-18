@@ -1,10 +1,12 @@
 pragma solidity ^0.4.18;
 
+import "tokens/eip20/EIP20.sol";
+
+
 contract DelphiStake {
 
     //TODO
     // Add events
-    // add support for any erc20 token
     // change functions to support using a proxy contract
     // - add the masterCopy address to storage
     // - create an init function instead of constructor
@@ -28,7 +30,7 @@ contract DelphiStake {
     }
 
     uint public stake;
-    address public tokenAddress;
+    EIP20 public token;
 
     string public data;
 
@@ -83,7 +85,7 @@ contract DelphiStake {
     }
 
     modifier transferredAmountEqualsValue(uint _value){
-        require(msg.value == _value);
+        require(token.transferFrom(msg.sender, this, _value));
         _;
     }
     modifier lockupElapsed(){
@@ -111,13 +113,13 @@ contract DelphiStake {
         _;
     }
 
-    function DelphiStake(uint _value, address _tokenAddress, string _data, uint _lockupPeriod, address _arbiter)
+    function DelphiStake(uint _value, EIP20 _token, string _data, uint _lockupPeriod, address _arbiter)
     public
     payable
-    transferredAmountEqualsValue(_value)
     {
+        require(_token.transferFrom(msg.sender, this, _value));
         stake = _value;
-        tokenAddress = _tokenAddress;
+        token = _token;
         data = _data;
         lockupPeriod = _lockupPeriod;
         lockupRemaining = _lockupPeriod;
@@ -182,7 +184,7 @@ contract DelphiStake {
           !claims[_claimId].settlementFailed &&
           !claims[_claimId].ruled){
         claims[_claimId].ruled = true;
-        claims[_claimId].claimant.transfer(settlements[_claimId][_settlementId].amount + claims[_claimId].fee);
+        require(token.transfer(claims[_claimId].claimant, (settlements[_claimId][_settlementId].amount + claims[_claimId].fee)));
         stake += (claims[_claimId].amount + claims[_claimId].fee - settlements[_claimId][_settlementId].amount);
 
       }
@@ -209,13 +211,13 @@ contract DelphiStake {
         claims[_claimId].ruled = true;
         claims[_claimId].ruling = _ruling;
         if (_ruling == 0){
-          arbiter.transfer(claims[_claimId].fee + claims[_claimId].surplusFee);
+          require(token.transfer(arbiter, (claims[_claimId].fee + claims[_claimId].surplusFee)));
         } else if (_ruling == 1){
           stake += (claims[_claimId].amount + claims[_claimId].fee);
-          arbiter.transfer(claims[_claimId].fee + claims[_claimId].surplusFee);
+          require(token.transfer(arbiter, (claims[_claimId].fee + claims[_claimId].surplusFee)));
         } else if (_ruling == 2){
-          arbiter.transfer(claims[_claimId].fee + claims[_claimId].fee + claims[_claimId].surplusFee);
-          address(0).transfer(claims[_claimId].amount);
+          require(token.transfer(arbiter, (claims[_claimId].fee + claims[_claimId].fee + claims[_claimId].surplusFee)));
+          require(token.transfer(address(0), claims[_claimId].amount));
           // burns the claim amount in the event of collusion
         } else if (_ruling == 3){
           stake += (claims[_claimId].amount + claims[_claimId].fee);
@@ -234,11 +236,10 @@ contract DelphiStake {
     onlyClaimant(_claimId)
     claimUnpaid(_claimId)
     {
-        claims[_claimId].paid = true;
         if (claims[_claimId].ruling == 0 || claims[_claimId].ruling == 3){
-            claims[_claimId].claimant.transfer(claims[_claimId].amount + claims[_claimId].fee);
+            claims[_claimId].paid = true;
+            require(token.transfer(claims[_claimId].claimant, (claims[_claimId].amount + claims[_claimId].fee)));
         }
-
     }
 
     function increaseStake(uint _value)
@@ -267,8 +268,7 @@ contract DelphiStake {
     {
        uint oldStake = stake;
        stake = 0;
-       staker.transfer(oldStake);
-
+       require(token.transfer(staker, oldStake));
     }
 
     function pauseLockup()
