@@ -228,8 +228,8 @@ contract('DelphiStake', (accounts) => {
 
       const lockupEnding = await ds.lockupEnding.call();
 
-      assert.approximately(parseInt(lockupEnding.sub(timestamp), 10),
-        parseInt(conf.lockupPeriod, 10), 5, 'lockup ending not correct after withdrawal initiated');
+      assert.strictEqual(parseInt(lockupEnding.sub(timestamp), 10), parseInt(conf.lockupPeriod, 10),
+       'lockup ending not correct after withdrawal initiated');
 
       await ds.openClaim(claimAmount, feeAmount, '', { from: claimant, value: feeAmount });
 
@@ -237,8 +237,8 @@ contract('DelphiStake', (accounts) => {
       const newTimestamp = newBlock.timestamp;
       const newLockupRemaining = await ds.lockupRemaining.call();
 
-      assert.approximately(parseInt(lockupEnding.sub(newTimestamp), 10),
-        parseInt(newLockupRemaining, 10), 5, 'lockup remaining not correctly paused after claim opened');
+      assert.strictEqual(parseInt(lockupEnding.sub(newTimestamp), 10), parseInt(newLockupRemaining, 10),
+        'lockup remaining not correctly paused after claim opened');
     });
 
     it('should set lockupEnding to zero if withdrawal was initiated');
