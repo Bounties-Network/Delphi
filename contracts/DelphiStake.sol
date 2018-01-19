@@ -11,6 +11,16 @@ contract DelphiStake {
     // - add the masterCopy address to storage
     // - create an init function instead of constructor
 
+    event ClaimOpened(address _claimant, uint _claimId);
+    event FeeIncreased(address _increasedBy, uint _claimId, uint _amount);
+    event SettlementProposed(address _proposedBy, uint _claimId, uint _settlementId);
+    event SettlementAccepted(address _acceptedBy, uint _claimId, uint _settlementId);
+    event SettlementFailed(address _failedBy, uint _claimId);
+    event ClaimRuled(uint _claimId);
+    event WithdrawInitiated();
+    event WithdrawFinalized();
+
+
     struct Claim {
       address claimant;
       uint amount;
@@ -142,6 +152,7 @@ contract DelphiStake {
         // the claim amount and claim fee are locked up in this contract until the arbiter rules
 
         pauseLockup();
+        ClaimOpened(msg.sender, claims.length - 1);
     }
 
     function increaseClaimFee(uint _claimId, uint _amount)
@@ -151,6 +162,7 @@ contract DelphiStake {
     transferredAmountEqualsValue(_amount)
     {
       claims[_claimId].surplusFee += _amount;
+      FeeIncreased(msg.sender, _claimId, _amount);
     }
 
     function proposeSettlement(uint _claimId, uint _amount)
@@ -166,6 +178,7 @@ contract DelphiStake {
       } else {
         settlements[_claimId].push(Settlement(_amount, false, true));
       }
+      SettlementProposed(msg.sender, _claimId, settlements[_claimId].length - 1);
     }
 
     function acceptSettlement(uint _claimId, uint _settlementId)
@@ -191,6 +204,7 @@ contract DelphiStake {
       }
 
       // TODO: doesn't cover the case where the settlement amount is greater than the sum of the fees
+      SettlementAccepted(msg.sender, _claimId, _settlementId);
     }
 
     function settlementFailed(uint _claimId)
@@ -200,6 +214,7 @@ contract DelphiStake {
     onlyStakerOrClaimant(_claimId)
     {
       claims[_claimId].settlementFailed = true;
+      SettlementFailed(msg.sender, _claimId);
     }
 
     function ruleOnClaim(uint _claimId, uint _ruling)
@@ -229,6 +244,7 @@ contract DelphiStake {
         if (openClaims == 0){
             lockupEnding = now + lockupRemaining;
         }
+        ClaimRuled(_claimId);
     }
 
     function withdrawClaimAmount(uint _claimId)
@@ -260,6 +276,7 @@ contract DelphiStake {
        lockupEnding = now + lockupPeriod;
        lockupRemaining = lockupPeriod;
        withdrawInitiated = true;
+       WithdrawInitiated();
     }
 
     function finalizeWithdrawStake()
@@ -270,6 +287,10 @@ contract DelphiStake {
        uint oldStake = stake;
        stake = 0;
        require(token.transfer(staker, oldStake));
+       withdrawInitiated = false;
+       lockupEnding = 0;
+       lockupRemaining = lockupPeriod;
+       WithdrawFinalized();
     }
 
     function pauseLockup()
