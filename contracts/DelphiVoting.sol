@@ -48,11 +48,12 @@ contract DelphiVoting {
     bytes32 _secretHash
     ) 
     public onlyArbiters(msg.sender) {
-    require(commitPeriodActive(_claimId));
 
     if(!claimExists(_claimId)) {
       initializeClaim(_claimId);
     }
+
+    require(commitPeriodActive(_claimId));
 
     claims[_claimId].votes[msg.sender] = _secretHash;
 
