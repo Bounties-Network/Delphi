@@ -19,6 +19,7 @@ contract DelphiVoting {
     uint votes2;           
     uint votes3;            
     mapping(address => bytes32) votes;
+    mapping(address => bool) hasRevealed;
     mapping(address => bool) claimedReward;
   }
 
@@ -70,6 +71,7 @@ contract DelphiVoting {
     Claim storage claim = claims[_claimId];
 
     require(revealPeriodActive(_claimId)); 
+    require(!claim.hasRevealed[msg.sender]);
     require(keccak256(_vote, _salt) == claims[_claimId].votes[msg.sender]);
 
     if(_vote == 0) { claim.votes0 += 1; }
@@ -77,6 +79,7 @@ contract DelphiVoting {
     else if(_vote == 2) { claim.votes2 += 1; }
     else if(_vote == 3) { claim.votes3 += 1; }
 
+    claim.hasRevealed[msg.sender] = true;
   }
 
   /**
