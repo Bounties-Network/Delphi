@@ -139,6 +139,16 @@ contract DelphiVoting {
   }
 
   /**
+  @dev Checks if a claim exists, throws if the provided claim is in an impossible state
+  @param _claimId The claimId whose existance is to be evaluated.
+  @return Boolean Indicates whether a claim exists for the provided claimId
+  */
+  function getArbiterCommitForClaim(bytes32 _claimId, address _arbiter)
+  view public returns (bytes32) {
+    return claims[_claimId].votes[_arbiter];
+  }
+
+  /**
   @dev Initialize a claim struct by setting its commit and reveal end times
   @param _claimId The claimId to be initialized
   */
