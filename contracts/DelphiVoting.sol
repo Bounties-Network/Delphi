@@ -143,9 +143,9 @@ contract DelphiVoting {
   @param _claimId The claimId to be initialized
   */
   function initializeClaim(bytes32 _claimId) private {
-    claims[_claimId].commitEndTime = now + parameterizer.get('commitPeriodLen');
+    claims[_claimId].commitEndTime = now + parameterizer.get('commitStageLen');
     claims[_claimId].revealEndTime =
-      claims[_claimId].commitEndTime + parameterizer.get('revealPeriodLen');
+      claims[_claimId].commitEndTime + parameterizer.get('revealStageLen');
   }
 
   /**
