@@ -127,7 +127,6 @@ contract DelphiStake {
 
     function initDelphiStake(uint _value, EIP20 _token, string _data, uint _lockupPeriod, address _arbiter)
     public
-    payable
     {
         require(token == address(0)); // only possible if init hasn't been called before
         require(_token.transferFrom(msg.sender, this, _value));
@@ -151,7 +150,6 @@ contract DelphiStake {
 
     function openClaim(uint _amount, uint _fee, string _data)
     public
-    payable
     notStakerOrArbiter
     transferredAmountEqualsValue(_fee)
     stakerCanPay(_amount, _fee)
@@ -167,7 +165,6 @@ contract DelphiStake {
 
     function increaseClaimFee(uint _claimId, uint _amount)
     public
-    payable
     validClaimID(_claimId)
     transferredAmountEqualsValue(_amount)
     {
@@ -218,7 +215,6 @@ contract DelphiStake {
 
     function settlementFailed(uint _claimId)
     public
-    payable
     validClaimID(_claimId)
     onlyStakerOrClaimant(_claimId)
     {
@@ -270,7 +266,6 @@ contract DelphiStake {
 
     function increaseStake(uint _value)
     public
-    payable
     onlyStaker
     transferredAmountEqualsValue(_value)
     {
