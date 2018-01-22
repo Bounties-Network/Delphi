@@ -6,11 +6,11 @@ import "tokens/eip20/EIP20.sol";
 contract DelphiStake {
 
     //TODO
-    // Add events
     // change functions to support using a proxy contract
     // - add the masterCopy address to storage
     // - create an init function instead of constructor
 
+    event ClaimantWhitelisted(address _claimant);
     event ClaimOpened(address _claimant, uint _claimId);
     event FeeIncreased(address _increasedBy, uint _claimId, uint _amount);
     event SettlementProposed(address _proposedBy, uint _claimId, uint _settlementId);
@@ -56,6 +56,8 @@ contract DelphiStake {
     Claim[] public claims;
     uint public openClaims;
     mapping(uint => Settlement[]) public settlements;
+
+    mapping(address => bool) public allowedClaimants;
 
     modifier onlyStaker(){
         require(msg.sender == staker);
@@ -139,6 +141,14 @@ contract DelphiStake {
 
     }
 
+    function whitelistClaimant(address _claimant)
+    public
+    onlyStaker
+    {
+      allowedClaimants[_claimant] = true;
+      ClaimantWhitelisted(_claimant);
+    }
+
     function openClaim(uint _amount, uint _fee, string _data)
     public
     payable
@@ -203,7 +213,6 @@ contract DelphiStake {
 
       }
 
-      // TODO: doesn't cover the case where the settlement amount is greater than the sum of the fees
       SettlementAccepted(msg.sender, _claimId, _settlementId);
     }
 
@@ -237,7 +246,7 @@ contract DelphiStake {
           // burns the claim amount in the event of collusion
         } else if (_ruling == 3){
           stake += (claims[_claimId].amount + claims[_claimId].fee);
-          //TODO: what happens to Fsurplus here?
+          // TODO: send fsurplus to arbiters
         }
 
         openClaims--;
