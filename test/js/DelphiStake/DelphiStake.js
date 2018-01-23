@@ -1,5 +1,5 @@
 /* eslint-env mocha */
-/* global contract artifacts assert web3 */
+/* global contract artifacts assert  */
 
 const DelphiStake = artifacts.require('DelphiStake');
 const EIP20 = artifacts.require('EIP20');
@@ -10,7 +10,7 @@ const conf = utils.getConfig();
 
 contract('DelphiStake', (accounts) => {
   describe('Function: DelphiStake', () => {
-    const [staker, claimant, arbiter] = accounts;
+    const [staker, , arbiter] = accounts;
     it('should instantiate the contract with the expected values', async () => {
       const token = await EIP20.new(1000000, 'Delphi Tokens', 18, 'DELPHI', { from: staker });
 
