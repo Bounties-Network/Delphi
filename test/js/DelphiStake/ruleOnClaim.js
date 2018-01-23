@@ -4,6 +4,8 @@
 // TODO: Grab claimIds from events
 
 const DelphiStake = artifacts.require('DelphiStake');
+const EIP20 = artifacts.require('EIP20');
+
 
 const utils = require('../utils.js');
 const BN = require('bignumber.js');
@@ -16,13 +18,29 @@ contract('DelphiStake', (accounts) => {
     const [staker, claimant, arbiter, dave] = accounts;
 
     it('should revert if called by a non-arbiter', async () => {
-      const ds = await DelphiStake.deployed();
+      const token = await EIP20.new(1000000, 'Delphi Tokens', 18, 'DELPHI', { from: staker });
+      await token.transfer(claimant, 100000, { from: staker });
+      await token.transfer(arbiter, 100000, { from: staker });
+
+      const ds = await DelphiStake.new();
+
+      await token.approve(ds.address, conf.initialStake, { from: staker });
+      await token.transfer(arbiter, 1000, {from: staker});
+
+      await ds.initDelphiStake(conf.initialStake, token.address, conf.data,
+        conf.lockupPeriod, arbiter, { from: staker });
+
       const claimAmount = '1';
       const feeAmount = '1';
       const ruling = '1';
 
-      await ds.openClaim(claimAmount, feeAmount, '', { from: claimant, value: feeAmount });
-      const claimId = (await ds.openClaims.call()).sub(new BN('1', 10));
+      await token.approve(ds.address, feeAmount, { from: claimant });
+
+      await ds.whitelistClaimant(claimant, { from: staker });
+
+      const claimId = await ds.getNumClaims();
+
+      await ds.openClaim(claimant, claimAmount, feeAmount, '', { from: claimant });
 
       await ds.settlementFailed(claimId, { from: claimant });
 
@@ -37,13 +55,29 @@ contract('DelphiStake', (accounts) => {
     });
 
     it('should revert if settlement never failed', async () => {
-      const ds = await DelphiStake.deployed();
+      const token = await EIP20.new(1000000, 'Delphi Tokens', 18, 'DELPHI', { from: staker });
+      await token.transfer(claimant, 100000, { from: staker });
+      await token.transfer(arbiter, 100000, { from: staker });
+
+      const ds = await DelphiStake.new();
+
+      await token.approve(ds.address, conf.initialStake, { from: staker });
+      await token.transfer(arbiter, 1000, {from: staker});
+
+      await ds.initDelphiStake(conf.initialStake, token.address, conf.data,
+        conf.lockupPeriod, arbiter, { from: staker });
+
       const claimAmount = '1';
       const feeAmount = '1';
       const ruling = '1';
 
-      await ds.openClaim(claimAmount, feeAmount, '', { from: claimant, value: feeAmount });
-      const claimId = (await ds.openClaims.call()).sub(new BN('1', 10));
+      await token.approve(ds.address, feeAmount, { from: claimant });
+
+      await ds.whitelistClaimant(claimant, { from: staker });
+
+      const claimId = await ds.getNumClaims();
+
+      await ds.openClaim(claimant, claimAmount, feeAmount, '', { from: claimant });
 
       try {
         await utils.as(arbiter, ds.ruleOnClaim, claimId, ruling);
@@ -54,14 +88,30 @@ contract('DelphiStake', (accounts) => {
     });
 
     it('should revert if the claim has already been ruled', async () => {
-      const ds = await DelphiStake.new(conf.initialStake, conf.stakeTokenAddr, conf.data,
-        conf.lockupPeriod, arbiter, { from: staker, value: conf.initialStake });
+      const token = await EIP20.new(1000000, 'Delphi Tokens', 18, 'DELPHI', { from: staker });
+      await token.transfer(claimant, 100000, { from: staker });
+      await token.transfer(arbiter, 100000, { from: staker });
+
+      const ds = await DelphiStake.new();
+
+      await token.approve(ds.address, conf.initialStake, { from: staker });
+      await token.transfer(arbiter, 1000, {from: staker});
+
+      await ds.initDelphiStake(conf.initialStake, token.address, conf.data,
+        conf.lockupPeriod, arbiter, { from: staker });
+
       const claimAmount = '1';
       const feeAmount = '1';
       const ruling = '1';
-      const claimId = '0';
 
-      await ds.openClaim(claimAmount, feeAmount, '', { from: claimant, value: feeAmount });
+      await token.approve(ds.address, feeAmount, { from: claimant });
+
+      await ds.whitelistClaimant(claimant, { from: staker });
+
+      const claimId = await ds.getNumClaims();
+
+      await ds.openClaim(claimant, claimAmount, feeAmount, '', { from: claimant });
+
       await ds.settlementFailed(claimId, { from: claimant });
 
       await ds.ruleOnClaim(claimId, ruling, { from: arbiter });
@@ -77,18 +127,33 @@ contract('DelphiStake', (accounts) => {
     });
 
     it('should properly set the claim\'s ruling', async () => {
-      const ds = await DelphiStake.new(conf.initialStake, conf.stakeTokenAddr, conf.data,
-        conf.lockupPeriod, arbiter, { from: staker, value: conf.initialStake });
+      const token = await EIP20.new(1000000, 'Delphi Tokens', 18, 'DELPHI', { from: staker });
+      await token.transfer(claimant, 100000, { from: staker });
+      await token.transfer(arbiter, 100000, { from: staker });
+
+      const ds = await DelphiStake.new();
+
+      await token.approve(ds.address, conf.initialStake, { from: staker });
+      await token.transfer(arbiter, 1000, {from: staker});
+
+      await ds.initDelphiStake(conf.initialStake, token.address, conf.data,
+        conf.lockupPeriod, arbiter, { from: staker });
+
       const claimAmount = '1';
       const feeAmount = '1';
       const ruling = '1';
-      const claimId = '0';
 
+      await token.approve(ds.address, feeAmount, { from: claimant });
 
-      await ds.openClaim(claimAmount, feeAmount, '', { from: claimant, value: feeAmount });
+      await ds.whitelistClaimant(claimant, { from: staker });
+
+      const claimId = await ds.getNumClaims();
+
+      await ds.openClaim(claimant, claimAmount, feeAmount, '', { from: claimant });
+
       await ds.settlementFailed(claimId, { from: claimant });
 
-      await utils.as(arbiter, ds.ruleOnClaim, '0', ruling);
+      await ds.ruleOnClaim(claimId, ruling, { from: arbiter });
 
       const claim = await ds.claims.call('0');
 
@@ -97,66 +162,112 @@ contract('DelphiStake', (accounts) => {
     });
 
     it('should add the claim\'s amount and fee to the stake iff the claim is not accepted', async () => {
-      const ds = await DelphiStake.new(conf.initialStake, conf.stakeTokenAddr, conf.data,
-        conf.lockupPeriod, arbiter, { from: staker, value: conf.initialStake });
+      const token = await EIP20.new(1000000, 'Delphi Tokens', 18, 'DELPHI', { from: staker });
+      await token.transfer(claimant, 100000, { from: staker });
+      await token.transfer(arbiter, 100000, { from: staker });
+
+      const ds = await DelphiStake.new();
+
+      await token.approve(ds.address, conf.initialStake, { from: staker });
+      await token.transfer(arbiter, 1000, {from: staker});
+
+      await ds.initDelphiStake(conf.initialStake, token.address, conf.data,
+        conf.lockupPeriod, arbiter, { from: staker });
+
       const claimAmount = '1';
       const feeAmount = '1';
       const ruling = '1';
-      const claimId = '0';
 
-      const stakeBeforeClaim = await ds.stake.call();
+      await token.approve(ds.address, feeAmount, { from: claimant });
 
-      await ds.openClaim(claimAmount, feeAmount, '', { from: claimant, value: feeAmount });
+      await ds.whitelistClaimant(claimant, { from: staker });
+
+      const claimId = await ds.getNumClaims();
+
+      await ds.openClaim(claimant, claimAmount, feeAmount, '', { from: claimant });
+
       await ds.settlementFailed(claimId, { from: claimant });
 
-      await utils.as(arbiter, ds.ruleOnClaim, '0', ruling);
+      await ds.ruleOnClaim(claimId, ruling, { from: arbiter });
 
-      const claim = await ds.claims.call('0');
+      const newStake = await ds.stake.call();
 
-      assert.strictEqual(claim[5].toString(10), '1', 'initialized claim ruling incorrectly');
+      assert.strictEqual(newStake.toString(10), conf.initialStake, 'stake not returned to original amount');
+
+
 
     });
 
     it('should not alter the stake if the claim is accepted', async () => {
-      const ds = await DelphiStake.new(conf.initialStake, conf.stakeTokenAddr, conf.data,
-        conf.lockupPeriod, arbiter, { from: staker, value: conf.initialStake });
+      const token = await EIP20.new(1000000, 'Delphi Tokens', 18, 'DELPHI', { from: staker });
+      await token.transfer(claimant, 100000, { from: staker });
+      await token.transfer(arbiter, 100000, { from: staker });
+
+      const ds = await DelphiStake.new();
+
+      await token.approve(ds.address, conf.initialStake, { from: staker });
+      await token.transfer(arbiter, 1000, {from: staker});
+
+      await ds.initDelphiStake(conf.initialStake, token.address, conf.data,
+        conf.lockupPeriod, arbiter, { from: staker });
+
       const claimAmount = '1';
       const feeAmount = '1';
       const ruling = '0';
-      const claimId = '0';
 
-      await ds.openClaim(claimAmount, feeAmount, '', { from: claimant, value: feeAmount });
+      await token.approve(ds.address, feeAmount, { from: claimant });
 
-      const stakeBeforeRuling = await ds.stake.call();
+      await ds.whitelistClaimant(claimant, { from: staker });
+
+      const claimId = await ds.getNumClaims();
+
+      await ds.openClaim(claimant, claimAmount, feeAmount, '', { from: claimant });
 
       await ds.settlementFailed(claimId, { from: claimant });
 
-      await utils.as(arbiter, ds.ruleOnClaim, '0', ruling);
+      const stakeBeforeRuling = await ds.stake.call();
 
-      const stakeAfterClaim = await ds.stake.call();
 
-      assert.strictEqual(stakeBeforeRuling.toString(10), stakeAfterClaim.toString(10),
+      await ds.ruleOnClaim(claimId, ruling, { from: arbiter });
+
+      const stakeAfterRuling = await ds.stake.call();
+
+      assert.strictEqual(stakeBeforeRuling.toString(10), stakeAfterRuling.toString(10),
         'stake incorrectly changed after ruling');
     });
 
     it('should transfer the fee to the arbiter', async () => {
-      const ds = await DelphiStake.new(conf.initialStake, conf.stakeTokenAddr, conf.data,
-        conf.lockupPeriod, arbiter, { from: staker, value: conf.initialStake });
+      const token = await EIP20.new(1000000, 'Delphi Tokens', 18, 'DELPHI', { from: staker });
+      await token.transfer(claimant, 100000, { from: staker });
+      await token.transfer(arbiter, 100000, { from: staker });
+
+      const ds = await DelphiStake.new();
+
+      await token.approve(ds.address, conf.initialStake, { from: staker });
+      await token.transfer(arbiter, 1000, {from: staker});
+
+      await ds.initDelphiStake(conf.initialStake, token.address, conf.data,
+        conf.lockupPeriod, arbiter, { from: staker });
+
       const claimAmount = '1';
       const feeAmount = '1';
-      const ruling = '0';
-      const claimId = '0';
+      const ruling = '1';
 
-      await ds.openClaim(claimAmount, feeAmount, '', { from: claimant, value: feeAmount });
+      await token.approve(ds.address, feeAmount, { from: claimant });
 
+      await ds.whitelistClaimant(claimant, { from: staker });
+
+      const claimId = await ds.getNumClaims();
+
+      await ds.openClaim(claimant, claimAmount, feeAmount, '', { from: claimant });
 
       await ds.settlementFailed(claimId, { from: claimant });
 
-      const balanceBeforeRuling = await web3.eth.getBalance(arbiter);
+      const balanceBeforeRuling = await token.balanceOf(arbiter);
 
-      await utils.as(arbiter, ds.ruleOnClaim, '0', ruling);
+      await ds.ruleOnClaim(claimId, ruling, { from: arbiter });
 
-      const balanceAfterRuling = await web3.eth.getBalance(arbiter);
+      const balanceAfterRuling = await token.balanceOf(arbiter);
 
       assert.strictEqual(balanceBeforeRuling.add(feeAmount).toString(10), balanceAfterRuling.toString(10),
         'fee not paid to the arbiter');
