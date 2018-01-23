@@ -2,6 +2,7 @@
 /* global contract artifacts assert web3 */
 
 const DelphiStake = artifacts.require('DelphiStake');
+const EIP20 = artifacts.require('EIP20');
 
 const utils = require('../utils.js');
 
@@ -9,16 +10,23 @@ const conf = utils.getConfig();
 
 contract('DelphiStake', (accounts) => {
   describe('Function: DelphiStake', () => {
-    const [, , arbiter] = accounts;
+    const [staker, claimant, arbiter] = accounts;
     it('should instantiate the contract with the expected values', async () => {
-      const ds = await DelphiStake.deployed();
+      const token = await EIP20.new(1000000, 'Delphi Tokens', 18, 'DELPHI', { from: staker });
+
+      const ds = await DelphiStake.new();
+
+      await token.approve(ds.address, conf.initialStake, { from: staker });
+
+      await ds.initDelphiStake(conf.initialStake, token.address, conf.data,
+        conf.lockupPeriod, arbiter, { from: staker });
 
       const stake = await ds.stake.call();
       assert.strictEqual(stake.toString(10), conf.initialStake,
         'the stake was initialized improperly');
 
-      const tokenAddress = await ds.tokenAddress.call();
-      assert.strictEqual(tokenAddress, conf.stakeTokenAddr,
+      const tokenAddress = await ds.token.call();
+      assert.strictEqual(tokenAddress, token.address,
         'the stake token address was initialized improperly');
 
       const data = await ds.data.call();
@@ -35,14 +43,21 @@ contract('DelphiStake', (accounts) => {
       const storedArbiter = await ds.arbiter.call();
       assert.strictEqual(arbiter, storedArbiter, 'the arbiter was initialized improperly');
 
-      const balance = await web3.eth.getBalance(ds.address);
+      const balance = await token.balanceOf(ds.address);
       assert.strictEqual(balance.toString(10), stake.toString(10), 'the contract\'s balance and stake did not match');
     });
 
-    it('should revert when _value does not equal msg.value', async () => {
+    it('should revert when _value does not equal the amount of tokens sent', async () => {
+      const token = await EIP20.new(1000000, 'Delphi Tokens', 18, 'DELPHI', { from: staker });
+
+      const ds = await DelphiStake.new();
+
+      await token.approve(ds.address, 10, { from: staker });
+
+
       try {
-        await DelphiStake.new(conf.initialStake, conf.stakeTokenAddr, conf.data,
-          conf.lockupPeriod, conf.arbiter, { from: accounts[0], value: 1 });
+        await ds.initDelphiStake(conf.initialStake, token.address, conf.data,
+          conf.lockupPeriod, arbiter, { from: staker });
       } catch (err) {
         assert(utils.isEVMRevert(err), err.toString());
       }
