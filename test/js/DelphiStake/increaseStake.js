@@ -2,22 +2,38 @@
 /* global contract artifacts assert */
 
 const DelphiStake = artifacts.require('DelphiStake');
+const EIP20 = artifacts.require('EIP20');
 
 const utils = require('../utils.js');
+
+const conf = utils.getConfig();
+
 const BN = require('bignumber.js');
 
 contract('DelphiStake', (accounts) => {
   describe('Function: increaseStake', () => {
-    const [staker, , , dave] = accounts;
+    const [staker, claimant, arbiter, dave] = accounts;
 
     it('should revert if called by any entity other than the staker', async () => {
-      const ds = await DelphiStake.deployed();
+      const token = await EIP20.new(1000000, 'Delphi Tokens', 18, 'DELPHI', { from: staker });
+      await token.transfer(claimant, 100000, { from: staker });
+      await token.transfer(arbiter, 100000, { from: staker });
+
+      const ds = await DelphiStake.new();
+
+      await token.approve(ds.address, conf.initialStake, { from: staker });
+
+      await ds.initDelphiStake(conf.initialStake, token.address, conf.data,
+        conf.lockupPeriod, arbiter, { from: staker });
+
+      const claimAmount = '1';
+      const feeAmount = '1';
       const incAmount = '1';
 
       const initialStake = await ds.stake.call();
 
       try {
-        await ds.increaseStake(incAmount, { from: dave, value: incAmount });
+        await ds.increaseStake(incAmount, { from: dave });
       } catch (err) {
         assert(utils.isEVMRevert(err), err.toString());
 
@@ -32,13 +48,25 @@ contract('DelphiStake', (accounts) => {
       assert(false, 'should not have allowed somebody other than the staker to increase the stake');
     });
 
-    it('should revert if _value does not equal msg.value', async () => {
-      const ds = await DelphiStake.deployed();
+    it('should revert if _value does not equal the tokens transferred', async () => {
+      const token = await EIP20.new(1000000, 'Delphi Tokens', 18, 'DELPHI', { from: staker });
+      await token.transfer(claimant, 100000, { from: staker });
+      await token.transfer(arbiter, 100000, { from: staker });
+
+      const ds = await DelphiStake.new();
+
+      await token.approve(ds.address, conf.initialStake, { from: staker });
+
+      await ds.initDelphiStake(conf.initialStake, token.address, conf.data,
+        conf.lockupPeriod, arbiter, { from: staker });
+
+      const claimAmount = '1';
+      const feeAmount = '1';
 
       const initialStake = await ds.stake.call();
 
       try {
-        await ds.increaseStake('1', { value: '0', from: staker });
+        await ds.increaseStake('1', { from: staker });
       } catch (err) {
         assert(utils.isEVMRevert(err), err.toString());
 
@@ -46,7 +74,10 @@ contract('DelphiStake', (accounts) => {
         assert.strictEqual(initialStake.toString(10), finalStake.toString(10),
           'the stake mysteriously incremented');
 
-        // TODO: check actual balances
+        const tokenBalance = await token.balanceOf(ds.address);
+
+        assert.strictEqual('100', tokenBalance.toString(10),
+          'did not properly deposit the expected number of tokens');
         return;
       }
 
@@ -55,21 +86,36 @@ contract('DelphiStake', (accounts) => {
     });
 
     it('should increment the stake by _value', async () => {
-      const ds = await DelphiStake.deployed();
+      const token = await EIP20.new(1000000, 'Delphi Tokens', 18, 'DELPHI', { from: staker });
+      await token.transfer(claimant, 100000, { from: staker });
+      await token.transfer(arbiter, 100000, { from: staker });
+
+      const ds = await DelphiStake.new();
+
+      await token.approve(ds.address, conf.initialStake, { from: staker });
+
+      await ds.initDelphiStake(conf.initialStake, token.address, conf.data,
+        conf.lockupPeriod, arbiter, { from: staker });
+
+      const claimAmount = '1';
+      const feeAmount = '1';
       const incAmount = '1';
 
       const initialStake = await ds.stake.call();
-      await ds.increaseStake(incAmount, { from: staker, value: incAmount });
+      await token.approve(ds.address, incAmount, { from: staker });
+
+      await ds.increaseStake(incAmount, { from: staker });
 
       const finalStake = await ds.stake.call();
       assert.strictEqual(initialStake.add(new BN(incAmount, 10)).toString(10),
         finalStake.toString(10),
         'did not properly increment stake');
 
-      // TODO: check actual balances
+      const tokenBalance = await token.balanceOf(ds.address);
+      assert.strictEqual('101', tokenBalance.toString(10),
+        'did not properly deposit the expected number of tokens');
     });
 
     it('should emit a StakeIncreased event');
   });
 });
-
