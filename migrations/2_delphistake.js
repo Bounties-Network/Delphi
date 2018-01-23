@@ -13,7 +13,5 @@ module.exports = (deployer, network, accounts) => {
     arbiter = conf.arbiter;
   }
 
-  deployer.deploy(DelphiStake, conf.initialStake, conf.stakeTokenAddr, conf.data,
-    conf.lockupPeriod, arbiter, { value: conf.initialStake });
+  deployer.deploy(DelphiStake);
 };
-
