@@ -14,7 +14,6 @@ contract('DelphiStake', (accounts) => {
     const [staker, claimant, arbiter] = accounts;
 
     it('should not allow the arbiter to open a claim', async () => {
-
       const token = await EIP20.new(1000000, 'Delphi Tokens', 18, 'DELPHI', { from: staker });
       await token.transfer(claimant, 100000, { from: staker });
       await token.transfer(arbiter, 100000, { from: staker });
@@ -36,7 +35,7 @@ contract('DelphiStake', (accounts) => {
       await token.approve(ds.address, feeAmount, { from: arbiter });
 
       try {
-        await ds.openClaim(arbiter, claimAmount, feeAmount, '', { from: arbiter});
+        await ds.openClaim(arbiter, claimAmount, feeAmount, '', { from: arbiter });
       } catch (err) {
         assert(utils.isEVMRevert(err), err.toString());
 
@@ -72,7 +71,7 @@ contract('DelphiStake', (accounts) => {
       await token.approve(ds.address, feeAmount, { from: staker });
 
       try {
-        await ds.openClaim(staker, claimAmount, feeAmount, '', { from: staker});
+        await ds.openClaim(staker, claimAmount, feeAmount, '', { from: staker });
       } catch (err) {
         assert(utils.isEVMRevert(err), err.toString());
 
@@ -106,7 +105,7 @@ contract('DelphiStake', (accounts) => {
       await token.approve(ds.address, feeAmount, { from: staker });
 
       try {
-        await ds.openClaim(staker, claimAmount, feeAmount, '', { from: staker});
+        await ds.openClaim(staker, claimAmount, feeAmount, '', { from: staker });
       } catch (err) {
         assert(utils.isEVMRevert(err), err.toString());
 
@@ -142,7 +141,7 @@ contract('DelphiStake', (accounts) => {
       await token.approve(ds.address, feeAmount, { from: claimant });
 
       try {
-        await ds.openClaim(claimant, claimAmount, feeAmount, '', { from: claimant});
+        await ds.openClaim(claimant, claimAmount, feeAmount, '', { from: claimant });
       } catch (err) {
         assert(utils.isEVMRevert(err), err.toString());
 
@@ -164,7 +163,7 @@ contract('DelphiStake', (accounts) => {
       const ds = await DelphiStake.new();
 
       await token.approve(ds.address, conf.initialStake, { from: staker });
-      await token.transfer(arbiter, 1000, {from: staker});
+      await token.transfer(arbiter, 1000, { from: staker });
 
       await ds.initDelphiStake(conf.initialStake, token.address, conf.data,
         conf.lockupPeriod, arbiter, { from: staker });
@@ -176,11 +175,8 @@ contract('DelphiStake', (accounts) => {
 
       await ds.whitelistClaimant(claimant, { from: staker });
 
-
-      //await token.approve(ds.address, feeAmount, { from: arbiter });
-
       try {
-        await ds.openClaim(claimant, claimAmount, feeAmount, '', { from: claimant});
+        await ds.openClaim(claimant, claimAmount, feeAmount, '', { from: claimant });
       } catch (err) {
         assert(utils.isEVMRevert(err), err.toString());
 
@@ -202,7 +198,7 @@ contract('DelphiStake', (accounts) => {
       const ds = await DelphiStake.new();
 
       await token.approve(ds.address, conf.initialStake, { from: staker });
-      await token.transfer(arbiter, 1000, {from: staker});
+      await token.transfer(arbiter, 1000, { from: staker });
 
       await ds.initDelphiStake(conf.initialStake, token.address, conf.data,
         conf.lockupPeriod, arbiter, { from: staker });
@@ -233,15 +229,13 @@ contract('DelphiStake', (accounts) => {
         const ds = await DelphiStake.new();
 
         await token.approve(ds.address, conf.initialStake, { from: staker });
-        await token.transfer(arbiter, 1000, {from: staker});
+        await token.transfer(arbiter, 1000, { from: staker });
 
         await ds.initDelphiStake(conf.initialStake, token.address, conf.data,
           conf.lockupPeriod, arbiter, { from: staker });
 
         const claimAmount = '1';
         const feeAmount = '1';
-
-        const startingClaims = await ds.openClaims.call();
 
         await token.approve(ds.address, feeAmount, { from: claimant });
 
@@ -280,7 +274,7 @@ contract('DelphiStake', (accounts) => {
       const ds = await DelphiStake.new();
 
       await token.approve(ds.address, conf.initialStake, { from: staker });
-      await token.transfer(arbiter, 1000, {from: staker});
+      await token.transfer(arbiter, 1000, { from: staker });
 
       await ds.initDelphiStake(conf.initialStake, token.address, conf.data,
         conf.lockupPeriod, arbiter, { from: staker });
@@ -310,15 +304,13 @@ contract('DelphiStake', (accounts) => {
       const ds = await DelphiStake.new();
 
       await token.approve(ds.address, conf.initialStake, { from: staker });
-      await token.transfer(arbiter, 1000, {from: staker});
+      await token.transfer(arbiter, 1000, { from: staker });
 
       await ds.initDelphiStake(conf.initialStake, token.address, conf.data,
         conf.lockupPeriod, arbiter, { from: staker });
 
       const claimAmount = new BN('1', 10);
       const feeAmount = new BN('1', 10);
-
-      const startingClaims = await ds.openClaims.call();
 
       await token.approve(ds.address, feeAmount, { from: claimant });
 
@@ -346,7 +338,7 @@ contract('DelphiStake', (accounts) => {
       const ds = await DelphiStake.new();
 
       await token.approve(ds.address, conf.initialStake, { from: staker });
-      await token.transfer(arbiter, 1000, {from: staker});
+      await token.transfer(arbiter, 1000, { from: staker });
 
       await ds.initDelphiStake(conf.initialStake, token.address, conf.data,
         conf.lockupPeriod, arbiter, { from: staker });
@@ -387,7 +379,6 @@ contract('DelphiStake', (accounts) => {
     });
 
     it('should set lockup remaining to lockupEnding - now if withdrawal was initiated', async () => {
-
       const token = await EIP20.new(1000000, 'Delphi Tokens', 18, 'DELPHI', { from: staker });
       await token.transfer(claimant, 100000, { from: staker });
       await token.transfer(arbiter, 100000, { from: staker });
@@ -395,7 +386,7 @@ contract('DelphiStake', (accounts) => {
       const ds = await DelphiStake.new();
 
       await token.approve(ds.address, conf.initialStake, { from: staker });
-      await token.transfer(arbiter, 1000, {from: staker});
+      await token.transfer(arbiter, 1000, { from: staker });
 
       await ds.initDelphiStake(conf.initialStake, token.address, conf.data,
         conf.lockupPeriod, arbiter, { from: staker });
@@ -410,8 +401,9 @@ contract('DelphiStake', (accounts) => {
 
       const lockupEnding = await ds.lockupEnding.call();
 
-      assert.approximately(parseInt(lockupEnding.sub(timestamp), 10), parseInt(conf.lockupPeriod, 10), 5,
-       'lockup ending not correct after withdrawal initiated');
+      assert.approximately(parseInt(lockupEnding.sub(timestamp), 10),
+        parseInt(conf.lockupPeriod, 10), 5,
+        'lockup ending not correct after withdrawal initiated');
 
       await token.approve(ds.address, feeAmount, { from: claimant });
 
@@ -423,7 +415,8 @@ contract('DelphiStake', (accounts) => {
       const newTimestamp = newBlock.timestamp;
       const newLockupRemaining = await ds.lockupRemaining.call();
 
-      assert.approximately(parseInt(lockupEnding.sub(newTimestamp), 10), parseInt(newLockupRemaining, 10), 5,
+      assert.approximately(parseInt(lockupEnding.sub(newTimestamp), 10),
+        parseInt(newLockupRemaining, 10), 5,
         'lockup remaining not correctly paused after claim opened');
     });
 
@@ -435,7 +428,7 @@ contract('DelphiStake', (accounts) => {
       const ds = await DelphiStake.new();
 
       await token.approve(ds.address, conf.initialStake, { from: staker });
-      await token.transfer(arbiter, 1000, {from: staker});
+      await token.transfer(arbiter, 1000, { from: staker });
 
       await ds.initDelphiStake(conf.initialStake, token.address, conf.data,
         conf.lockupPeriod, arbiter, { from: staker });
@@ -469,7 +462,7 @@ contract('DelphiStake', (accounts) => {
       const ds = await DelphiStake.new();
 
       await token.approve(ds.address, conf.initialStake, { from: staker });
-      await token.transfer(arbiter, 1000, {from: staker});
+      await token.transfer(arbiter, 1000, { from: staker });
 
       await ds.initDelphiStake(conf.initialStake, token.address, conf.data,
         conf.lockupPeriod, arbiter, { from: staker });
@@ -523,7 +516,6 @@ contract('DelphiStake', (accounts) => {
       assert.strictEqual(claim3[6], false, 'initialized ruled bool incorrectly');
       assert.strictEqual(claim3[7], false, 'initialized paid bool incorrectly');
       assert.strictEqual(claim3[8], false, 'initialized settlementFailed incorrectly');
-
     });
   });
 });

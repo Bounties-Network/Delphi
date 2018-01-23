@@ -8,7 +8,6 @@ const EIP20 = artifacts.require('EIP20');
 
 
 const utils = require('../utils.js');
-const BN = require('bignumber.js');
 
 const conf = utils.getConfig();
 
@@ -25,7 +24,7 @@ contract('DelphiStake', (accounts) => {
       const ds = await DelphiStake.new();
 
       await token.approve(ds.address, conf.initialStake, { from: staker });
-      await token.transfer(arbiter, 1000, {from: staker});
+      await token.transfer(arbiter, 1000, { from: staker });
 
       await ds.initDelphiStake(conf.initialStake, token.address, conf.data,
         conf.lockupPeriod, arbiter, { from: staker });
@@ -62,7 +61,7 @@ contract('DelphiStake', (accounts) => {
       const ds = await DelphiStake.new();
 
       await token.approve(ds.address, conf.initialStake, { from: staker });
-      await token.transfer(arbiter, 1000, {from: staker});
+      await token.transfer(arbiter, 1000, { from: staker });
 
       await ds.initDelphiStake(conf.initialStake, token.address, conf.data,
         conf.lockupPeriod, arbiter, { from: staker });
@@ -83,7 +82,6 @@ contract('DelphiStake', (accounts) => {
         await utils.as(arbiter, ds.ruleOnClaim, claimId, ruling);
       } catch (err) {
         assert(utils.isEVMRevert(err), err.toString());
-        return;
       }
     });
 
@@ -95,7 +93,7 @@ contract('DelphiStake', (accounts) => {
       const ds = await DelphiStake.new();
 
       await token.approve(ds.address, conf.initialStake, { from: staker });
-      await token.transfer(arbiter, 1000, {from: staker});
+      await token.transfer(arbiter, 1000, { from: staker });
 
       await ds.initDelphiStake(conf.initialStake, token.address, conf.data,
         conf.lockupPeriod, arbiter, { from: staker });
@@ -134,7 +132,7 @@ contract('DelphiStake', (accounts) => {
       const ds = await DelphiStake.new();
 
       await token.approve(ds.address, conf.initialStake, { from: staker });
-      await token.transfer(arbiter, 1000, {from: staker});
+      await token.transfer(arbiter, 1000, { from: staker });
 
       await ds.initDelphiStake(conf.initialStake, token.address, conf.data,
         conf.lockupPeriod, arbiter, { from: staker });
@@ -158,7 +156,6 @@ contract('DelphiStake', (accounts) => {
       const claim = await ds.claims.call('0');
 
       assert.strictEqual(claim[5].toString(10), '1', 'initialized claim ruling incorrectly');
-
     });
 
     it('should add the claim\'s amount and fee to the stake iff the claim is not accepted', async () => {
@@ -169,7 +166,7 @@ contract('DelphiStake', (accounts) => {
       const ds = await DelphiStake.new();
 
       await token.approve(ds.address, conf.initialStake, { from: staker });
-      await token.transfer(arbiter, 1000, {from: staker});
+      await token.transfer(arbiter, 1000, { from: staker });
 
       await ds.initDelphiStake(conf.initialStake, token.address, conf.data,
         conf.lockupPeriod, arbiter, { from: staker });
@@ -193,9 +190,6 @@ contract('DelphiStake', (accounts) => {
       const newStake = await ds.stake.call();
 
       assert.strictEqual(newStake.toString(10), conf.initialStake, 'stake not returned to original amount');
-
-
-
     });
 
     it('should not alter the stake if the claim is accepted', async () => {
@@ -206,7 +200,7 @@ contract('DelphiStake', (accounts) => {
       const ds = await DelphiStake.new();
 
       await token.approve(ds.address, conf.initialStake, { from: staker });
-      await token.transfer(arbiter, 1000, {from: staker});
+      await token.transfer(arbiter, 1000, { from: staker });
 
       await ds.initDelphiStake(conf.initialStake, token.address, conf.data,
         conf.lockupPeriod, arbiter, { from: staker });
@@ -244,7 +238,7 @@ contract('DelphiStake', (accounts) => {
       const ds = await DelphiStake.new();
 
       await token.approve(ds.address, conf.initialStake, { from: staker });
-      await token.transfer(arbiter, 1000, {from: staker});
+      await token.transfer(arbiter, 1000, { from: staker });
 
       await ds.initDelphiStake(conf.initialStake, token.address, conf.data,
         conf.lockupPeriod, arbiter, { from: staker });
@@ -269,8 +263,8 @@ contract('DelphiStake', (accounts) => {
 
       const balanceAfterRuling = await token.balanceOf(arbiter);
 
-      assert.strictEqual(balanceBeforeRuling.add(feeAmount).toString(10), balanceAfterRuling.toString(10),
-        'fee not paid to the arbiter');
+      assert.strictEqual(balanceBeforeRuling.add(feeAmount).toString(10),
+        balanceAfterRuling.toString(10), 'fee not paid to the arbiter');
     });
 
     it('should decrement openClaims');

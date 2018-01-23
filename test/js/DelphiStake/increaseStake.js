@@ -26,8 +26,6 @@ contract('DelphiStake', (accounts) => {
       await ds.initDelphiStake(conf.initialStake, token.address, conf.data,
         conf.lockupPeriod, arbiter, { from: staker });
 
-      const claimAmount = '1';
-      const feeAmount = '1';
       const incAmount = '1';
 
       const initialStake = await ds.stake.call();
@@ -59,9 +57,6 @@ contract('DelphiStake', (accounts) => {
 
       await ds.initDelphiStake(conf.initialStake, token.address, conf.data,
         conf.lockupPeriod, arbiter, { from: staker });
-
-      const claimAmount = '1';
-      const feeAmount = '1';
 
       const initialStake = await ds.stake.call();
 
@@ -97,8 +92,6 @@ contract('DelphiStake', (accounts) => {
       await ds.initDelphiStake(conf.initialStake, token.address, conf.data,
         conf.lockupPeriod, arbiter, { from: staker });
 
-      const claimAmount = '1';
-      const feeAmount = '1';
       const incAmount = '1';
 
       const initialStake = await ds.stake.call();
