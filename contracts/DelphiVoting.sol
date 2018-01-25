@@ -18,7 +18,7 @@ contract DelphiVoting {
     uint votes1;          
     uint votes2;           
     uint votes3;            
-    mapping(address => bytes32) votes;
+    mapping(address => bytes32) commits;
     mapping(address => bool) hasRevealed;
     mapping(address => bool) claimedReward;
   }
@@ -56,7 +56,7 @@ contract DelphiVoting {
 
     require(commitPeriodActive(_claimId));
 
-    claims[_claimId].votes[msg.sender] = _secretHash;
+    claims[_claimId].commits[msg.sender] = _secretHash;
 
     VoteCommitted(msg.sender, _claimId);
   }
@@ -72,7 +72,7 @@ contract DelphiVoting {
 
     require(revealPeriodActive(_claimId)); 
     require(!claim.hasRevealed[msg.sender]);
-    require(keccak256(_vote, _salt) == claims[_claimId].votes[msg.sender]);
+    require(keccak256(_vote, _salt) == claims[_claimId].commits[msg.sender]);
 
     if(_vote == 0) { claim.votes0 += 1; }
     else if(_vote == 1) { claim.votes1 += 1; }
@@ -148,7 +148,7 @@ contract DelphiVoting {
   */
   function getArbiterCommitForClaim(bytes32 _claimId, address _arbiter)
   view public returns (bytes32) {
-    return claims[_claimId].votes[_arbiter];
+    return claims[_claimId].commits[_arbiter];
   }
 
   /**
