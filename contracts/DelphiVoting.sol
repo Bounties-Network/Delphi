@@ -14,10 +14,7 @@ contract DelphiVoting {
     uint commitEndTime;
     uint revealEndTime; 
     VoteOptions result;
-    uint votes0;		     
-    uint votes1;          
-    uint votes2;           
-    uint votes3;            
+    mapping(uint => uint) tallies;
     mapping(address => bytes32) commits;
     mapping(address => bool) hasRevealed;
     mapping(address => bool) claimedReward;
@@ -68,16 +65,28 @@ contract DelphiVoting {
   @param _salt the salt concatenated to the vote option when originally hashed to its secret form
   */
   function revealVote(bytes32 _claimId, uint _vote, uint _salt) public onlyArbiters(msg.sender) {
+    VoteOptions vote = VoteOptions(_vote);
     Claim storage claim = claims[_claimId];
 
     require(revealPeriodActive(_claimId)); 
     require(!claim.hasRevealed[msg.sender]);
     require(keccak256(_vote, _salt) == claims[_claimId].commits[msg.sender]);
 
-    if(_vote == 0) { claim.votes0 += 1; }
-    else if(_vote == 1) { claim.votes1 += 1; }
-    else if(_vote == 2) { claim.votes2 += 1; }
-    else if(_vote == 3) { claim.votes3 += 1; }
+    if(vote == VoteOptions.Justified) {
+      claim.tallies[uint(VoteOptions.Justified)] += 1;
+    }
+
+    else if(vote == VoteOptions.NotJustified) {
+      claim.tallies[uint(VoteOptions.NotJustified)] += 1;
+    }
+
+    else if(vote == VoteOptions.Collusive) { 
+      claim.tallies[uint(VoteOptions.Collusive)] += 1;
+    }
+
+    else if(vote == VoteOptions.Fault) {
+      claim.tallies[uint(VoteOptions.Fault)] += 1;
+    }
 
     claim.hasRevealed[msg.sender] = true;
   }
@@ -166,36 +175,42 @@ contract DelphiVoting {
   @param _claim storage pointer to a Claim struct
   */
   function updateResult(Claim storage _claim) private {
-    uint greatest = _claim.votes0;
+    uint greatest = _claim.tallies[uint(VoteOptions.Justified)];
     _claim.result = VoteOptions.Justified;
-    
+
     // get greatest and set result
-    if(greatest < _claim.votes1) {
-      greatest = _claim.votes1;
+    if(greatest < _claim.tallies[uint(VoteOptions.NotJustified)]) {
+      greatest = _claim.tallies[uint(VoteOptions.NotJustified)];
       _claim.result = VoteOptions.NotJustified;
     }
-    if(greatest < _claim.votes2) {
-      greatest = _claim.votes2;
+    if(greatest < _claim.tallies[uint(VoteOptions.Collusive)]) {
+      greatest = _claim.tallies[uint(VoteOptions.Collusive)];
       _claim.result = VoteOptions.Collusive;
     }
-    if(greatest < _claim.votes3) {
-      greatest = _claim.votes3;
+    if(greatest < _claim.tallies[uint(VoteOptions.Fault)]) {
+      greatest = _claim.tallies[uint(VoteOptions.Fault)];
       _claim.result = VoteOptions.Fault;
     }
 
     // see if greatest is tied with anything else and set fault if so
     if(_claim.result == VoteOptions.Justified) {
-      if(greatest == _claim.votes1 || greatest == _claim.votes2 || greatest == _claim.votes3) {
+      if(greatest == _claim.tallies[uint(VoteOptions.NotJustified)] ||
+         greatest == _claim.tallies[uint(VoteOptions.Collusive)] ||
+         greatest == _claim.tallies[uint(VoteOptions.Fault)]) {
         _claim.result = VoteOptions.Fault;
       }
     }
     if(_claim.result == VoteOptions.NotJustified) {
-      if(greatest == _claim.votes0 || greatest == _claim.votes2 || greatest == _claim.votes3) {
+      if(greatest == _claim.tallies[uint(VoteOptions.Justified)] ||
+         greatest == _claim.tallies[uint(VoteOptions.Collusive)] ||
+         greatest == _claim.tallies[uint(VoteOptions.Fault)]) {
         _claim.result = VoteOptions.Fault;
       }
     }
     if(_claim.result == VoteOptions.Collusive) {
-      if(greatest == _claim.votes0 || greatest == _claim.votes1 || greatest == _claim.votes3) {
+      if(greatest == _claim.tallies[uint(VoteOptions.Justified)] ||
+         greatest == _claim.tallies[uint(VoteOptions.NotJustified)] ||
+         greatest == _claim.tallies[uint(VoteOptions.Fault)]) {
         _claim.result = VoteOptions.Fault;
       }
     }
