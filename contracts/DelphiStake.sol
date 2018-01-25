@@ -314,4 +314,15 @@ contract DelphiStake {
       return claims.length;
     }
 
+    function getTotalFeeForClaim(uint _claimId)
+    public
+    view
+    returns (uint)
+    {
+      Claim storage claim = claims[_claimId];
+      require(claim.ruled);
+
+      return claim.fee + claim.surplusFee;
+    }
+
 }
