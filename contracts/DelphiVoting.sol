@@ -19,6 +19,7 @@ contract DelphiVoting {
     uint votes2;           
     uint votes3;            
     mapping(address => bytes32) votes;
+    mapping(address => bool) hasRevealed;
     mapping(address => bool) claimedReward;
   }
 
@@ -48,11 +49,12 @@ contract DelphiVoting {
     bytes32 _secretHash
     ) 
     public onlyArbiters(msg.sender) {
-    require(commitPeriodActive(_claimId));
 
     if(!claimExists(_claimId)) {
       initializeClaim(_claimId);
     }
+
+    require(commitPeriodActive(_claimId));
 
     claims[_claimId].votes[msg.sender] = _secretHash;
 
@@ -69,6 +71,7 @@ contract DelphiVoting {
     Claim storage claim = claims[_claimId];
 
     require(revealPeriodActive(_claimId)); 
+    require(!claim.hasRevealed[msg.sender]);
     require(keccak256(_vote, _salt) == claims[_claimId].votes[msg.sender]);
 
     if(_vote == 0) { claim.votes0 += 1; }
@@ -76,6 +79,7 @@ contract DelphiVoting {
     else if(_vote == 2) { claim.votes2 += 1; }
     else if(_vote == 3) { claim.votes3 += 1; }
 
+    claim.hasRevealed[msg.sender] = true;
   }
 
   /**
@@ -138,13 +142,23 @@ contract DelphiVoting {
   }
 
   /**
+  @dev Checks if a claim exists, throws if the provided claim is in an impossible state
+  @param _claimId The claimId whose existance is to be evaluated.
+  @return Boolean Indicates whether a claim exists for the provided claimId
+  */
+  function getArbiterCommitForClaim(bytes32 _claimId, address _arbiter)
+  view public returns (bytes32) {
+    return claims[_claimId].votes[_arbiter];
+  }
+
+  /**
   @dev Initialize a claim struct by setting its commit and reveal end times
   @param _claimId The claimId to be initialized
   */
   function initializeClaim(bytes32 _claimId) private {
-    claims[_claimId].commitEndTime = now + parameterizer.get('commitPeriodLen');
+    claims[_claimId].commitEndTime = now + parameterizer.get('commitStageLen');
     claims[_claimId].revealEndTime =
-      claims[_claimId].commitEndTime + parameterizer.get('revealPeriodLen');
+      claims[_claimId].commitEndTime + parameterizer.get('revealStageLen');
   }
 
   /**
