@@ -109,7 +109,22 @@ contract DelphiVoting {
     ds.ruleOnClaim(_claimNumber, uint256(claim.result));
   }
 
-  function claimFee() public pure {}
+  function claimFee(address _stake, uint _claimNumber, uint _vote, uint _salt)
+  public onlyArbiters(msg.sender) {
+    DelphiStake ds = DelphiStake(_stake);
+    EIP20 token = ds.token();
+    Claim storage claim = claims[keccak256(_stake, _claimNumber)];
+
+    require(!claim.claimedReward[msg.sender]);
+    require(keccak256(_vote, _salt) == claim.commits[msg.sender]);
+    require(VoteOptions(_vote) == claim.result);
+    
+    uint totalFee = ds.getTotalFeeForClaim(_claimNumber);
+    uint arbiterFee = totalFee/claim.tallies[uint(claim.result)]; 
+    token.transfer(msg.sender, arbiterFee);
+
+    claim.claimedReward[msg.sender] = true;
+  }
 
   /**
   @dev Checks if the commit period is still active for the specified claim
