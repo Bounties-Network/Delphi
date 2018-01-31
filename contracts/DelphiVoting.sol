@@ -176,6 +176,16 @@ contract DelphiVoting {
   }
 
   /**
+  @dev Returns the number of revealed votes for the provided vote option in a given claim
+  @param _claimId The claimId tallies are to be inspected
+  @param _option The vote option to return a total for
+  @return uint Tally of revealed votes for the provided option in the given claimId
+  */
+  function revealedVotesForOption(bytes32 _claimId, uint _option) public view returns (uint) {
+    return claims[_claimId].tallies[_option];
+  }
+
+  /**
   @dev Initialize a claim struct by setting its commit and reveal end times
   @param _claimId The claimId to be initialized
   */
