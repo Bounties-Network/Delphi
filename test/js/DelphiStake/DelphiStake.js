@@ -61,6 +61,7 @@ contract('DelphiStake', (accounts) => {
       } catch (err) {
         assert(utils.isEVMRevert(err), err.toString());
       }
+      assert(false, 'did not revert after trying to init the stake with an incorrect amount of tokens');
     });
   });
 });
