@@ -60,6 +60,8 @@ contract('DelphiStake', (accounts) => {
           conf.lockupPeriod, arbiter, { from: staker });
       } catch (err) {
         assert(utils.isEVMRevert(err), err.toString());
+
+        return;
       }
       assert(false, 'did not revert after trying to init the stake with an incorrect amount of tokens');
     });
