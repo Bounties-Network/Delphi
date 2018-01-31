@@ -308,7 +308,7 @@ contract DelphiStake {
 
     function getNumClaims()
     public
-    constant
+    view
     returns (uint)
     {
       return claims.length;
