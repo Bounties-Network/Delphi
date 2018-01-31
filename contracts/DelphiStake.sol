@@ -96,7 +96,7 @@ contract DelphiStake {
         _;
     }
 
-    modifier transferredAmountEqualsValue(address _transferrer, uint _value){
+    modifier transferValue(address _transferrer, uint _value){
         require(token.transferFrom(_transferrer, this, _value));
         _;
     }
@@ -151,7 +151,7 @@ contract DelphiStake {
     function openClaim(address _claimant, uint _amount, uint _fee, string _data)
     public
     notStakerOrArbiter
-    transferredAmountEqualsValue(_claimant, _fee)
+    transferValue(_claimant, _fee)
     stakerCanPay(_amount, _fee)
     {
         claims.push(Claim(_claimant, _amount, _fee, 0, _data, 0, false, false, false));
@@ -166,7 +166,7 @@ contract DelphiStake {
     function increaseClaimFee(uint _claimId, uint _amount)
     public
     validClaimID(_claimId)
-    transferredAmountEqualsValue(msg.sender, _amount)
+    transferValue(msg.sender, _amount)
     {
       claims[_claimId].surplusFee += _amount;
       FeeIncreased(msg.sender, _claimId, _amount);
@@ -267,7 +267,7 @@ contract DelphiStake {
     function increaseStake(uint _value)
     public
     onlyStaker
-    transferredAmountEqualsValue(msg.sender, _value)
+    transferValue(msg.sender, _value)
     {
         stake += _value;
     }
