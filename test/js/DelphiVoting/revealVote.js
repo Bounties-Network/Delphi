@@ -10,7 +10,7 @@ const fs = require('fs');
 const config = JSON.parse(fs.readFileSync('./conf/registryConfig.json'));
 
 contract('DelphiVoting', (accounts) => {
-  describe('Function: commitVote', () => {
+  describe('Function: revealVote', () => {
     const [arbiter] = accounts;
 
     before(async () => {
@@ -27,13 +27,13 @@ contract('DelphiVoting', (accounts) => {
 
       await utils.increaseTime(config.paramDefaults.commitStageLength + 1);
 
-      const initialTally = (await dv.claims.call(claimId))[4];
+      const initialTally = (await dv.revealedVotesForOption.call(claimId, '1'));
       assert.strictEqual(initialTally.toString(10), '0',
         'the initial vote tally was not as-expected');
 
       await utils.as(arbiter, dv.revealVote, claimId, '1', '420');
 
-      const finalTally = (await dv.claims.call(claimId))[4];
+      const finalTally = (await dv.revealedVotesForOption.call(claimId, '1'));
       assert.strictEqual(finalTally.toString(10), '1',
         'the final vote tally was not as-expected');
     });
@@ -42,14 +42,14 @@ contract('DelphiVoting', (accounts) => {
       const dv = await DelphiVoting.deployed();
       const claimId = utils.getClaimId(DelphiStake.address, '1');
 
-      const initialTally = (await dv.claims.call(claimId))[4];
+      const initialTally = (await dv.revealedVotesForOption.call(claimId, '1'));
 
       try {
         await utils.as(arbiter, dv.revealVote, claimId, '1', '420');
       } catch (err) {
         assert(utils.isEVMRevert(err), err.toString());
 
-        const finalTally = (await dv.claims.call(claimId))[4];
+        const finalTally = (await dv.revealedVotesForOption.call(claimId, '1'));
         assert(finalTally.eq(initialTally), 'an arbiter was able to reveal twice');
 
         return;
