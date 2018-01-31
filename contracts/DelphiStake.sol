@@ -177,7 +177,7 @@ contract DelphiStake {
     validClaimID(_claimId)
     onlyStakerOrClaimant(_claimId)
     {
-      require(claims[_claimId].amount + claims[_claimId].fee >= _amount);
+      require((claims[_claimId].amount + claims[_claimId].fee) >= _amount);
       // only allows settlements for up to the amount that's already been staked by the staker as pertaining to this case
 
       if (msg.sender == staker){
