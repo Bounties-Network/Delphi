@@ -1,17 +1,44 @@
 /* global artifacts */
 
 const Registry = artifacts.require('Registry.sol');
+const DelphiStake = artifacts.require('DelphiStake.sol');
+const EIP20 = artifacts.require('tokens/eip20/EIP20.sol');
 
 const HttpProvider = require('ethjs-provider-http');
 const EthRPC = require('ethjs-rpc');
 const fs = require('fs');
 const abi = require('ethereumjs-abi');
+const BN = require('bignumber.js');
 
 const ethRPC = new EthRPC(new HttpProvider('http://localhost:7545'));
 
 const config = JSON.parse(fs.readFileSync('./conf/registryConfig.json'));
+const delphiConfig = JSON.parse(fs.readFileSync('./conf/config.json'));
 
 const utils = {
+
+  initDelphiStake: async (staker, arbiter) => {
+    const ds = await DelphiStake.deployed();
+    const token = await EIP20.new(1000000, 'Delphi Tokens', 18, 'DELPHI', { from: staker });
+    await token.approve(ds.address, delphiConfig.initialStake, { from: staker });
+
+    await ds.initDelphiStake(delphiConfig.initialStake, token.address, delphiConfig.data,
+      delphiConfig.lockupPeriod, arbiter, { from: staker });
+  },
+
+  makeNewClaim: async (claimant, amount, fee, data) => {
+    const ds = await DelphiStake.deployed();
+    const token = EIP20.at(await ds.token.call());
+
+    await utils.as(claimant, token.approve, ds.address, new BN(amount, 10).plus(new BN(fee, 10)));
+    const receipt = await utils.as(claimant, ds.openClaim, claimant, amount, fee, data);
+
+    const claimId = receipt.logs[0].args._claimId; // eslint-disable-line no-underscore-dangle
+
+    await utils.as(claimant, ds.settlementFailed, claimId);
+
+    return claimId;
+  },
 
   addToWhitelist: async (listingHash, deposit, actor) => {
     const registry = await Registry.deployed();
