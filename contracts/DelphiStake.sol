@@ -300,7 +300,7 @@ contract DelphiStake {
     function pauseLockup()
     internal
     {
-        if (lockupEnding!= 0){
+        if (lockupEnding != 0){
           lockupRemaining = lockupEnding - now;
           lockupEnding = 0;
         }
