@@ -83,6 +83,7 @@ contract('DelphiStake', (accounts) => {
       } catch (err) {
         assert(utils.isEVMRevert(err), err.toString());
       }
+      assert(false, 'did not revert after trying to rule on a claim whose settlement has not yet failed');
     });
 
     it('should revert if the claim has already been ruled', async () => {

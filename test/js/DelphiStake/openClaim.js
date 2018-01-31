@@ -116,7 +116,7 @@ contract('DelphiStake', (accounts) => {
         return;
       }
 
-      assert(false, 'expected claim by staker to fail');
+      assert(false, 'expected claim by non-whitelisted individual to fail');
     });
 
     it('should revert if _amount + _fee is greater than the available stake', async () => {
