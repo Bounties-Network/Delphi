@@ -177,7 +177,8 @@ contract('DelphiVoting', (accounts) => {
         'Bob did not get the proper fee allocation');
     });
 
-    it('should not allow an arbiter to claim a fee when they did not vote');
+    it('should not allow an arbiter to claim a fee when they did not commit');
+    it('should not allow an arbiter to claim a fee when they committed but did not reveal');
   });
 });
 
