@@ -14,7 +14,7 @@
     "ethereumjs-abi": "0.6.5",
     "ethjs-provider-http": "0.1.6",
     "ethjs-rpc": "0.1.5",
-    "truffle": "4.0.5",
+    "truffle": "4.0.6",
     "truffle-hdwallet-provider": "0.0.3"
   },
   "devDependencies": {
