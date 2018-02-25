@@ -39,6 +39,8 @@ contract DelphiStake {
       bool claimantAgrees;
     }
 
+    address public masterCopy;
+    
     uint public stake;
     EIP20 public token;
 
