@@ -40,7 +40,7 @@ contract DelphiStake {
     }
 
     address public masterCopy;
-    
+
     uint public stake;
     EIP20 public token;
 
@@ -127,6 +127,11 @@ contract DelphiStake {
         _;
     }
 
+    modifier isWhitelisted(){
+      require(allowedClaimants[msg.sender]);
+      _;
+    }
+
     function initDelphiStake(uint _value, EIP20 _token, string _data, uint _lockupPeriod, address _arbiter)
     public
     {
@@ -155,6 +160,7 @@ contract DelphiStake {
     notStakerOrArbiter
     transferValue(_claimant, _fee)
     stakerCanPay(_amount, _fee)
+    isWhitelisted
     {
         claims.push(Claim(_claimant, _amount, _fee, 0, _data, 0, false, false, false));
         openClaims ++;
