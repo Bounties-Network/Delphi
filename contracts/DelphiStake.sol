@@ -99,10 +99,6 @@ contract DelphiStake {
         _;
     }
 
-    modifier transferValue(address _transferrer, uint _value){
-        require(token.transferFrom(_transferrer, this, _value));
-        _;
-    }
     modifier lockupElapsed(){
         require(now >= lockupEnding && lockupEnding != 0);
         // if lockupEnding is 0, it means either the lockup is paused due to outstanding claims, or that a withdrawal has not yet been initiated
@@ -159,10 +155,10 @@ contract DelphiStake {
     function openClaim(address _claimant, uint _amount, uint _fee, string _data)
     public
     notStakerOrArbiter
-    transferValue(_claimant, _fee)
     stakerCanPay(_amount, _fee)
     isWhitelisted
     {
+        require(token.transferFrom(_claimant, this, _fee));
         claims.push(Claim(_claimant, _amount, _fee, 0, _data, 0, false, false, false));
         openClaims ++;
         stake -= (_amount + _fee);
@@ -175,8 +171,8 @@ contract DelphiStake {
     function increaseClaimFee(uint _claimId, uint _amount)
     public
     validClaimID(_claimId)
-    transferValue(msg.sender, _amount)
     {
+      require(token.transferFrom(msg.sender, this, _amount));
       claims[_claimId].surplusFee += _amount;
       FeeIncreased(msg.sender, _claimId, _amount);
     }
@@ -276,8 +272,8 @@ contract DelphiStake {
     function increaseStake(uint _value)
     public
     onlyStaker
-    transferValue(msg.sender, _value)
     {
+        require(token.transferFrom(msg.sender, this, _value));
         stake += _value;
     }
 
