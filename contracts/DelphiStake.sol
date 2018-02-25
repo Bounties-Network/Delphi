@@ -18,6 +18,7 @@ contract DelphiStake {
     event SettlementFailed(address _failedBy, uint _claimId);
     event ClaimRuled(uint _claimId);
     event WithdrawInitiated();
+    event WithdrawPaused();
     event WithdrawFinalized();
 
 
@@ -312,6 +313,7 @@ contract DelphiStake {
           lockupRemaining = lockupEnding - now;
           lockupEnding = 0;
         }
+        WithdrawPaused();
     }
 
     function getNumClaims()
