@@ -43,6 +43,8 @@ contract('DelphiVoting', (accounts) => {
       const salt = '420';
       const secretHash = utils.getSecretHash(vote, salt);
 
+      await utils.as(staker, ds.whitelistClaimant, claimant);
+
       // Make a new claim
       const claimNumber = // should be zero
         await utils.makeNewClaim(claimant, claimAmount, feeAmount, 'i love cats');
@@ -106,6 +108,8 @@ contract('DelphiVoting', (accounts) => {
         const salt = '420';
         const pluralitySecretHash = utils.getSecretHash(pluralityVote, salt);
         const nonPluralitySecretHash = utils.getSecretHash(nonPluralityVote, salt);
+
+        await utils.as(staker, ds.whitelistClaimant, claimant);
 
         // Make a new claim
         const claimNumber = // should be one
@@ -181,4 +185,3 @@ contract('DelphiVoting', (accounts) => {
     it('should not allow an arbiter to claim a fee when they committed but did not reveal');
   });
 });
-
