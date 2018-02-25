@@ -105,7 +105,7 @@ contract('DelphiStake', (accounts) => {
       await token.approve(ds.address, feeAmount, { from: claimant });
 
       try {
-        await ds.openClaim(claimant, claimAmount, feeAmount, '', { from: claimant  });
+        await ds.openClaim(claimant, claimAmount, feeAmount, '', { from: claimant });
       } catch (err) {
         assert(utils.isEVMRevert(err), err.toString());
 
