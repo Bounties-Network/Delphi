@@ -8,7 +8,7 @@ contract('DelphiStake', () => {
     it('should revert if there are open claims against the stake');
     it('should transfer the entire stake amount to the staker');
     it('should set stake to zero');
-    it('should emit a StakeWithdrawn event');
+    it('should emit a WithdrawFinalized event');
+    it('should emit a WithdrawPaused event');
   });
 });
-
