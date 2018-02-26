@@ -21,7 +21,7 @@ contract('DelphiStake', (accounts) => {
       await ds.initDelphiStake(conf.initialStake, token.address, conf.data,
         conf.lockupPeriod, arbiter, { from: staker });
 
-      const stake = await ds.stake.call();
+      const stake = await ds.claimableStake.call();
       assert.strictEqual(stake.toString(10), conf.initialStake,
         'the stake was initialized improperly');
 

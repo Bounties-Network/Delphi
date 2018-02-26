@@ -189,7 +189,7 @@ contract('DelphiStake', (accounts) => {
 
       await ds.ruleOnClaim(claimId, ruling, { from: arbiter });
 
-      const newStake = await ds.stake.call();
+      const newStake = await ds.claimableStake.call();
 
       assert.strictEqual(newStake.toString(10), conf.initialStake, 'stake not returned to original amount');
     });
@@ -221,12 +221,12 @@ contract('DelphiStake', (accounts) => {
 
       await ds.settlementFailed(claimId, { from: claimant });
 
-      const stakeBeforeRuling = await ds.stake.call();
+      const stakeBeforeRuling = await ds.claimableStake.call();
 
 
       await ds.ruleOnClaim(claimId, ruling, { from: arbiter });
 
-      const stakeAfterRuling = await ds.stake.call();
+      const stakeAfterRuling = await ds.claimableStake.call();
 
       assert.strictEqual(stakeBeforeRuling.toString(10), stakeAfterRuling.toString(10),
         'stake incorrectly changed after ruling');

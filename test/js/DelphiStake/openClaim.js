@@ -316,11 +316,11 @@ contract('DelphiStake', (accounts) => {
 
       await ds.whitelistClaimant(claimant, { from: staker });
 
-      const startingStake = await ds.stake.call();
+      const startingStake = await ds.claimableStake.call();
 
       await ds.openClaim(claimant, claimAmount, feeAmount, '', { from: claimant });
 
-      const finalStake = await ds.stake();
+      const finalStake = await ds.claimableStake();
       assert.strictEqual(startingStake.sub(claimAmount.add(feeAmount)).toString(10),
         finalStake.toString(10),
         'stake was not decremented as-expected when a new claim was opened');
