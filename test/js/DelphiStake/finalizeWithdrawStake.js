@@ -10,5 +10,6 @@ contract('DelphiStake', () => {
     it('should set stake to zero');
     it('should emit a WithdrawFinalized event');
     it('should emit a WithdrawPaused event');
+    it('should emit a WithdrawalResumed event');
   });
 });
