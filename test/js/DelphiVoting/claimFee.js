@@ -43,11 +43,9 @@ contract('DelphiVoting', (accounts) => {
       const salt = '420';
       const secretHash = utils.getSecretHash(vote, salt);
 
-      await utils.as(staker, ds.whitelistClaimant, claimant);
-
       // Make a new claim
       const claimNumber = // should be zero
-        await utils.makeNewClaim(claimant, claimAmount, feeAmount, 'i love cats');
+        await utils.makeNewClaim(staker, claimant, claimAmount, feeAmount, 'i love cats');
       const claimId = utils.getClaimId(DelphiStake.address, claimNumber.toNumber(10));
 
       // Commit vote
@@ -109,11 +107,9 @@ contract('DelphiVoting', (accounts) => {
         const pluralitySecretHash = utils.getSecretHash(pluralityVote, salt);
         const nonPluralitySecretHash = utils.getSecretHash(nonPluralityVote, salt);
 
-        await utils.as(staker, ds.whitelistClaimant, claimant);
-
         // Make a new claim
         const claimNumber = // should be one
-        await utils.makeNewClaim(claimant, claimAmount, feeAmount, 'i love cats');
+        await utils.makeNewClaim(staker, claimant, claimAmount, feeAmount, 'i love cats');
         const claimId = utils.getClaimId(DelphiStake.address, claimNumber.toNumber(10));
 
         // commit votes
