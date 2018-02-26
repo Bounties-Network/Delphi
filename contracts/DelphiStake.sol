@@ -134,6 +134,7 @@ contract DelphiStake {
     public
     {
         require(token == address(0)); // only possible if init hasn't been called before
+        require(_lockupPeriod > 0);
         require(_token.transferFrom(msg.sender, this, _value));
         claimableStake = _value;
         token = _token;
