@@ -18,7 +18,8 @@ contract DelphiStake {
     event SettlementFailed(address _failedBy, uint _claimId);
     event ClaimRuled(uint _claimId);
     event WithdrawInitiated();
-    event WithdrawPaused();
+    event WithdrawalPaused();
+    event WithdrawalResumed();
     event WithdrawFinalized();
 
 
@@ -212,13 +213,11 @@ contract DelphiStake {
               settlement.stakerAgrees &&
               !claim.settlementFailed &&
               !claim.ruled);
-          
+
       claim.ruled = true;
       require(token.transfer(claim.claimant, (settlement.amount + claim.fee)));
       claimableStake += (claim.amount + claim.fee - settlement.amount);
       decreaseOpenClaims();
-
-
 
       SettlementAccepted(msg.sender, _claimId, _settlementId);
     }
@@ -313,7 +312,7 @@ contract DelphiStake {
           lockupRemaining = lockupEnding - now;
           lockupEnding = 0;
         }
-        WithdrawPaused();
+        WithdrawalPaused();
     }
 
     function decreaseOpenClaims()
@@ -322,6 +321,7 @@ contract DelphiStake {
       openClaims--;
       if (openClaims == 0){
           lockupEnding = now + lockupRemaining;
+          WithdrawalResumed();
       }
     }
 
