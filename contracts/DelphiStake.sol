@@ -42,7 +42,7 @@ contract DelphiStake {
 
     address public masterCopy;
 
-    uint public stake;
+    uint public claimableStake;
     EIP20 public token;
 
     string public data;
@@ -105,7 +105,7 @@ contract DelphiStake {
         _;
     }
     modifier stakerCanPay(uint _amount, uint _fee){
-        require(stake >= (_amount + _fee));
+        require(claimableStake >= (_amount + _fee));
         _;
     }
 
@@ -134,7 +134,7 @@ contract DelphiStake {
     {
         require(token == address(0)); // only possible if init hasn't been called before
         require(_token.transferFrom(msg.sender, this, _value));
-        stake = _value;
+        claimableStake = _value;
         token = _token;
         data = _data;
         lockupPeriod = _lockupPeriod;
@@ -161,7 +161,7 @@ contract DelphiStake {
         require(token.transferFrom(_claimant, this, _fee));
         claims.push(Claim(_claimant, _amount, _fee, 0, _data, 0, false, false, false));
         openClaims ++;
-        stake -= (_amount + _fee);
+        claimableStake -= (_amount + _fee);
         // the claim amount and claim fee are locked up in this contract until the arbiter rules
 
         pauseLockup();
@@ -212,7 +212,7 @@ contract DelphiStake {
           !claims[_claimId].ruled){
         claims[_claimId].ruled = true;
         require(token.transfer(claims[_claimId].claimant, (settlements[_claimId][_settlementId].amount + claims[_claimId].fee)));
-        stake += (claims[_claimId].amount + claims[_claimId].fee - settlements[_claimId][_settlementId].amount);
+        claimableStake += (claims[_claimId].amount + claims[_claimId].fee - settlements[_claimId][_settlementId].amount);
 
       }
 
@@ -240,14 +240,14 @@ contract DelphiStake {
         if (_ruling == 0){
           require(token.transfer(arbiter, (claims[_claimId].fee + claims[_claimId].surplusFee)));
         } else if (_ruling == 1){
-          stake += (claims[_claimId].amount + claims[_claimId].fee);
+          claimableStake += (claims[_claimId].amount + claims[_claimId].fee);
           require(token.transfer(arbiter, (claims[_claimId].fee + claims[_claimId].surplusFee)));
         } else if (_ruling == 2){
           require(token.transfer(arbiter, (claims[_claimId].fee + claims[_claimId].fee + claims[_claimId].surplusFee)));
           require(token.transfer(address(0), claims[_claimId].amount));
           // burns the claim amount in the event of collusion
         } else if (_ruling == 3){
-          stake += (claims[_claimId].amount + claims[_claimId].fee);
+          claimableStake += (claims[_claimId].amount + claims[_claimId].fee);
           // TODO: send fsurplus to arbiters
         }
 
@@ -275,7 +275,7 @@ contract DelphiStake {
     onlyStaker
     {
         require(token.transferFrom(msg.sender, this, _value));
-        stake += _value;
+        claimableStake += _value;
     }
 
     function initiateWithdrawStake()
@@ -294,8 +294,8 @@ contract DelphiStake {
     onlyStaker
     lockupElapsed
     {
-       uint oldStake = stake;
-       stake = 0;
+       uint oldStake = claimableStake;
+       claimableStake = 0;
        require(token.transfer(staker, oldStake));
        withdrawInitiated = false;
        lockupEnding = 0;

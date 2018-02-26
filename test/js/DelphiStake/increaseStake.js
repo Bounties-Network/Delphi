@@ -28,14 +28,14 @@ contract('DelphiStake', (accounts) => {
 
       const incAmount = '1';
 
-      const initialStake = await ds.stake.call();
+      const initialStake = await ds.claimableStake.call();
 
       try {
         await ds.increaseStake(incAmount, { from: dave });
       } catch (err) {
         assert(utils.isEVMRevert(err), err.toString());
 
-        const finalStake = await ds.stake.call();
+        const finalStake = await ds.claimableStake.call();
         assert.strictEqual(initialStake.toString(10), finalStake.toString(10),
           'the stake mysteriously incremented');
 
@@ -58,14 +58,14 @@ contract('DelphiStake', (accounts) => {
       await ds.initDelphiStake(conf.initialStake, token.address, conf.data,
         conf.lockupPeriod, arbiter, { from: staker });
 
-      const initialStake = await ds.stake.call();
+      const initialStake = await ds.claimableStake.call();
 
       try {
         await ds.increaseStake('1', { from: staker });
       } catch (err) {
         assert(utils.isEVMRevert(err), err.toString());
 
-        const finalStake = await ds.stake.call();
+        const finalStake = await ds.claimableStake.call();
         assert.strictEqual(initialStake.toString(10), finalStake.toString(10),
           'the stake mysteriously incremented');
 
@@ -94,12 +94,12 @@ contract('DelphiStake', (accounts) => {
 
       const incAmount = '1';
 
-      const initialStake = await ds.stake.call();
+      const initialStake = await ds.claimableStake.call();
       await token.approve(ds.address, incAmount, { from: staker });
 
       await ds.increaseStake(incAmount, { from: staker });
 
-      const finalStake = await ds.stake.call();
+      const finalStake = await ds.claimableStake.call();
       assert.strictEqual(initialStake.add(new BN(incAmount, 10)).toString(10),
         finalStake.toString(10),
         'did not properly increment stake');
