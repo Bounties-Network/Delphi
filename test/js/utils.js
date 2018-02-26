@@ -26,18 +26,20 @@ const utils = {
       delphiConfig.lockupPeriod, arbiter, { from: staker });
   },
 
-  makeNewClaim: async (claimant, amount, fee, data) => {
+  makeNewClaim: async (staker, claimant, amount, fee, data) => {
     const ds = await DelphiStake.deployed();
     const token = EIP20.at(await ds.token.call());
+
+    await utils.as(staker, ds.whitelistClaimant, claimant);
 
     await utils.as(claimant, token.approve, ds.address, new BN(amount, 10).plus(new BN(fee, 10)));
     const receipt = await utils.as(claimant, ds.openClaim, claimant, amount, fee, data);
 
-    const claimId = receipt.logs[0].args._claimId; // eslint-disable-line no-underscore-dangle
+    const claimId = await ds.getNumClaims();
 
-    await utils.as(claimant, ds.settlementFailed, claimId);
+    await utils.as(claimant, ds.settlementFailed, claimId.sub(1));
 
-    return claimId;
+    return claimId.sub(1);
   },
 
   addToWhitelist: async (listingHash, deposit, actor) => {
@@ -110,4 +112,3 @@ const utils = {
 };
 
 module.exports = utils;
-
