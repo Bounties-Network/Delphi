@@ -215,6 +215,7 @@ contract DelphiStake {
               !claim.ruled);
 
       claim.ruled = true;
+      claim.paid = true;
       require(token.transfer(claim.claimant, (settlement.amount + claim.fee)));
       claimableStake += (claim.amount + claim.fee - settlement.amount);
       decreaseOpenClaims();
