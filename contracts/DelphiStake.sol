@@ -208,15 +208,17 @@ contract DelphiStake {
         settlement.claimantAgrees = true;
       }
 
-      if (settlement.claimantAgrees &&
-          settlement.stakerAgrees &&
-          !claim.settlementFailed &&
-          !claim.ruled){
-        claim.ruled = true;
-        require(token.transfer(claim.claimant, (settlement.amount + claim.fee)));
-        claimableStake += (claim.amount + claim.fee - settlement.amount);
+      require (settlement.claimantAgrees &&
+              settlement.stakerAgrees &&
+              !claim.settlementFailed &&
+              !claim.ruled);
+          
+      claim.ruled = true;
+      require(token.transfer(claim.claimant, (settlement.amount + claim.fee)));
+      claimableStake += (claim.amount + claim.fee - settlement.amount);
+      decreaseOpenClaims();
 
-      }
+
 
       SettlementAccepted(msg.sender, _claimId, _settlementId);
     }
@@ -253,11 +255,8 @@ contract DelphiStake {
           claimableStake += (claim.amount + claim.fee);
           // TODO: send fsurplus to arbiters
         }
+        decreaseOpenClaims();
 
-        openClaims--;
-        if (openClaims == 0){
-            lockupEnding = now + lockupRemaining;
-        }
         ClaimRuled(_claimId);
     }
 
@@ -315,6 +314,15 @@ contract DelphiStake {
           lockupEnding = 0;
         }
         WithdrawPaused();
+    }
+
+    function decreaseOpenClaims()
+    internal
+    {
+      openClaims--;
+      if (openClaims == 0){
+          lockupEnding = now + lockupRemaining;
+      }
     }
 
     function getNumClaims()
