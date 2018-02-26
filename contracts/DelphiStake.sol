@@ -173,6 +173,7 @@ contract DelphiStake {
     public
     validClaimID(_claimId)
     claimNotRuled(_claimId)
+    settlementDidFail(_claimId)
     {
       require(token.transferFrom(msg.sender, this, _amount));
       claims[_claimId].surplusFee += _amount;
