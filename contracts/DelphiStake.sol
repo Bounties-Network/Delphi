@@ -200,19 +200,21 @@ contract DelphiStake {
     validSettlementId(_claimId, _settlementId)
     onlyStakerOrClaimant(_claimId)
     {
+      Settlement storage settlement = settlements[_claimId][_settlementId];
+      Claim storage claim = claims[_claimId];
       if (msg.sender == staker){
-        settlements[_claimId][_settlementId].stakerAgrees = true;
+        settlement.stakerAgrees = true;
       } else {
-        settlements[_claimId][_settlementId].claimantAgrees = true;
+        settlement.claimantAgrees = true;
       }
 
-      if (settlements[_claimId][_settlementId].claimantAgrees &&
-          settlements[_claimId][_settlementId].stakerAgrees &&
-          !claims[_claimId].settlementFailed &&
-          !claims[_claimId].ruled){
-        claims[_claimId].ruled = true;
-        require(token.transfer(claims[_claimId].claimant, (settlements[_claimId][_settlementId].amount + claims[_claimId].fee)));
-        claimableStake += (claims[_claimId].amount + claims[_claimId].fee - settlements[_claimId][_settlementId].amount);
+      if (settlement.claimantAgrees &&
+          settlement.stakerAgrees &&
+          !claim.settlementFailed &&
+          !claim.ruled){
+        claim.ruled = true;
+        require(token.transfer(claim.claimant, (settlement.amount + claim.fee)));
+        claimableStake += (claim.amount + claim.fee - settlement.amount);
 
       }
 
@@ -235,19 +237,20 @@ contract DelphiStake {
     claimNotRuled(_claimId)
     settlementDidFail(_claimId)
     {
-        claims[_claimId].ruled = true;
-        claims[_claimId].ruling = _ruling;
+        Claim storage claim = claims[_claimId];
+        claim.ruled = true;
+        claim.ruling = _ruling;
         if (_ruling == 0){
-          require(token.transfer(arbiter, (claims[_claimId].fee + claims[_claimId].surplusFee)));
+          require(token.transfer(arbiter, (claim.fee + claim.surplusFee)));
         } else if (_ruling == 1){
-          claimableStake += (claims[_claimId].amount + claims[_claimId].fee);
-          require(token.transfer(arbiter, (claims[_claimId].fee + claims[_claimId].surplusFee)));
+          claimableStake += (claim.amount + claim.fee);
+          require(token.transfer(arbiter, (claim.fee + claim.surplusFee)));
         } else if (_ruling == 2){
-          require(token.transfer(arbiter, (claims[_claimId].fee + claims[_claimId].fee + claims[_claimId].surplusFee)));
-          require(token.transfer(address(0), claims[_claimId].amount));
+          require(token.transfer(arbiter, (claim.fee + claim.fee + claim.surplusFee)));
+          require(token.transfer(address(0), claim.amount));
           // burns the claim amount in the event of collusion
         } else if (_ruling == 3){
-          claimableStake += (claims[_claimId].amount + claims[_claimId].fee);
+          claimableStake += (claim.amount + claim.fee);
           // TODO: send fsurplus to arbiters
         }
 
@@ -264,9 +267,10 @@ contract DelphiStake {
     onlyClaimant(_claimId)
     claimUnpaid(_claimId)
     {
-        if (claims[_claimId].ruling == 0 || claims[_claimId].ruling == 3){
-            claims[_claimId].paid = true;
-            require(token.transfer(claims[_claimId].claimant, (claims[_claimId].amount + claims[_claimId].fee)));
+        Claim storage claim = claims[_claimId];
+        if (claim.ruling == 0 || claim.ruling == 3){
+            claim.paid = true;
+            require(token.transfer(claim.claimant, (claim.amount + claim.fee)));
         }
     }
 
