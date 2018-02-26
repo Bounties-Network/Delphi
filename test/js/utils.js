@@ -33,7 +33,7 @@ const utils = {
     await utils.as(staker, ds.whitelistClaimant, claimant);
 
     await utils.as(claimant, token.approve, ds.address, new BN(amount, 10).plus(new BN(fee, 10)));
-    const receipt = await utils.as(claimant, ds.openClaim, claimant, amount, fee, data);
+    await utils.as(claimant, ds.openClaim, claimant, amount, fee, data);
 
     const claimId = await ds.getNumClaims();
 
