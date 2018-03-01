@@ -221,7 +221,7 @@ contract DelphiStake {
       claim.paid = true;
       require(token.transfer(claim.claimant, (settlement.amount + claim.fee)));
       claimableStake += (claim.amount + claim.fee - settlement.amount);
-      decreaseOpenClaims();
+      decrementOpenClaims();
 
       SettlementAccepted(msg.sender, _claimId, _settlementId);
     }
@@ -258,7 +258,7 @@ contract DelphiStake {
           claimableStake += (claim.amount + claim.fee);
           // TODO: send fsurplus to arbiters
         }
-        decreaseOpenClaims();
+        decrementOpenClaims();
 
         ClaimRuled(_claimId);
     }
@@ -319,7 +319,7 @@ contract DelphiStake {
         WithdrawalPaused();
     }
 
-    function decreaseOpenClaims()
+    function decrementOpenClaims()
     internal
     {
       openClaims--;
