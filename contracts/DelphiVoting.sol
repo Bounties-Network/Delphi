@@ -37,34 +37,42 @@ contract DelphiVoting {
 
   /**
   @dev Commits a vote for the specified claim. Can be overwritten while commitPeriod is active
-  @param _claimId The keccak256 of the stake address claim number being voted for
+  @param _stake the address of a DelphiStake contract
+  @param _claimNumber an initialized claim in the provided DelphiStake
   @param _secretHash keccak256 of a vote and a salt
-  @return Boolean indication of isCommitPeriodActive for target claim
   */
-  function commitVote(
-    bytes32 _claimId,
-    bytes32 _secretHash
-    ) 
-    public onlyArbiters(msg.sender) {
+  function commitVote(address _stake, uint _claimNumber, bytes32 _secretHash)
+  public onlyArbiters(msg.sender) {
+    bytes32 claimId = keccak256(_stake, _claimNumber);
+    DelphiStake ds = DelphiStake(_stake);
 
-    if(!claimExists(_claimId)) {
-      initializeClaim(_claimId);
+    // Check if the claim exists. This does not check if the claim has already been ruled
+    require(_claimNumber < ds.getNumClaims());
+
+    // Check if anybody has ever committed a vote for this claim before. If not, initialize a new
+    // claim by setting commit and reveal end times for this claim struct in the claims mapping
+    if(!claimExists(claimId)) {
+      initializeClaim(claimId);
     }
 
-    require(commitPeriodActive(_claimId));
+    // Do not allow votes to be committed after the commit period has ended
+    require(commitPeriodActive(claimId));
 
-    claims[_claimId].commits[msg.sender] = _secretHash;
+    // Set this voter's commit for this claim to their provided secretHash.
+    claims[claimId].commits[msg.sender] = _secretHash;
 
-    VoteCommitted(msg.sender, _claimId);
+    VoteCommitted(msg.sender, claimId);
   }
 
   /**
   @dev Reveals a vote for the specified claim.
-  @param _claimId The keccak256 of the stake address claim number being revealed for
-  @param _vote the option voted for
+  @param _claimId the keccak256 of a DelphiStake address and a claim number for which the message
+  sender has previously committed a vote
+  @param _vote the option voted for in the original secret hash.
   @param _salt the salt concatenated to the vote option when originally hashed to its secret form
   */
-  function revealVote(bytes32 _claimId, uint _vote, uint _salt) public onlyArbiters(msg.sender) {
+  function revealVote(bytes32 _claimId, uint _vote, uint _salt)
+  public onlyArbiters(msg.sender) {
     VoteOptions vote = VoteOptions(_vote);
     Claim storage claim = claims[_claimId];
 
