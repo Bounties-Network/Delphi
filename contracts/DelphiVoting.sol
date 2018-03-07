@@ -53,7 +53,7 @@ contract DelphiVoting {
     require(_claimNumber < ds.getNumClaims());
 
     // Check if anybody has ever committed a vote for this claim before. If not, initialize a new
-    // claim by setting commit and reveal end times for this claim struct in the claims mapping
+    // claim by setting commit and reveal end times for this claim in the claims mapping
     if(!claimExists(claimId)) {
       initializeClaim(claimId);
     }
@@ -64,6 +64,8 @@ contract DelphiVoting {
     // Set this voter's commit for this claim to their provided secretHash.
     claims[claimId].commits[msg.sender] = _secretHash;
 
+    // Fire an event saying the message sender voted for this claimID.
+    // TODO: Make this event fire the stake and claim number instead of the claimID.
     VoteCommitted(msg.sender, claimId);
   }
 
@@ -79,26 +81,28 @@ contract DelphiVoting {
     VoteOptions vote = VoteOptions(_vote);
     Claim storage claim = claims[_claimId];
 
+    // Do not allow revealing while the reveal period is not active
     require(revealPeriodActive(_claimId)); 
+    // Do not allow a voter to reveal more than once
     require(!claim.hasRevealed[msg.sender]);
+    // Require the provided vote is consistent with the original commit
     require(keccak256(_vote, _salt) == claims[_claimId].commits[msg.sender]);
 
+    // Tally the vote
     if(vote == VoteOptions.Justified) {
       claim.tallies[uint(VoteOptions.Justified)] += 1;
     }
-
     else if(vote == VoteOptions.NotJustified) {
       claim.tallies[uint(VoteOptions.NotJustified)] += 1;
     }
-
     else if(vote == VoteOptions.Collusive) { 
       claim.tallies[uint(VoteOptions.Collusive)] += 1;
     }
-
     else if(vote == VoteOptions.Fault) {
       claim.tallies[uint(VoteOptions.Fault)] += 1;
     }
 
+    // Set hasRevealed to true so this voter cannot reveal again
     claim.hasRevealed[msg.sender] = true;
   }
 
@@ -110,39 +114,56 @@ contract DelphiVoting {
   function submitRuling(address _stake, uint _claimNumber) public {
     bytes32 claimId = keccak256(_stake, _claimNumber);
     DelphiStake ds = DelphiStake(_stake);
-    Claim storage claim = claims[claimId];
+    Claim storage claim = claims[claimId]; // Grabbing a pointer
 
+    // Do not allow submissions for claims which nobody has voted in
     require(claimExists(claimId));
+    // Do not allow submissions where either the commit or reveal periods have not ended
     require(!commitPeriodActive(claimId) && !revealPeriodActive(claimId)); 
 
-    updateResult(claim);
+    // Tally the votes and set the result
+    tallyVotes(claim);
 
+    // Call the DS contract with the result of the arbitration
     ds.ruleOnClaim(_claimNumber, uint256(claim.result));
   }
 
+  /**
+  @dev allow an arbiter who participated in the plurality voting bloc to claim their share of the
+  fee
+  @param _stake address of a DelphiStake contract
+  @param _claimNumber nonce of a unique claim for the provided stake
+  @param _vote the option voted for in the original secret hash.
+  @param _salt the salt concatenated to the vote option when originally hashed to its secret form
+  */
   function claimFee(address _stake, uint _claimNumber, uint _vote, uint _salt)
   public onlyArbiters(msg.sender) {
     DelphiStake ds = DelphiStake(_stake);
     EIP20 token = ds.token();
-    Claim storage claim = claims[keccak256(_stake, _claimNumber)];
+    Claim storage claim = claims[keccak256(_stake, _claimNumber)]; // Grabbing a pointer
 
+    // Do not allow arbiters to claim rewards for a claim more than once
     require(!claim.claimedReward[msg.sender]);
+    // Check that the arbiter actually committed the vote they say they did
     require(keccak256(_vote, _salt) == claim.commits[msg.sender]);
+    // Require the vote cast was in the plurality
     require(VoteOptions(_vote) == claim.result);
     
+    // Get the total fee for the claim, compute what this arbiter's share is and transfer it
     uint totalFee = ds.getTotalFeeForClaim(_claimNumber);
-    uint arbiterFee = totalFee/claim.tallies[uint(claim.result)]; 
+    uint arbiterFee = totalFee/claim.tallies[uint(claim.result)]; // TODO: safemath
     token.transfer(msg.sender, arbiterFee);
 
+    // Set claimedReward to true so the arbiter cannot claim again
     claim.claimedReward[msg.sender] = true;
   }
 
   /**
   @dev Checks if the commit period is still active for the specified claim
   @param _claimId Integer identifier associated with target claim
-  @return Boolean indication of isCommitPeriodActive for target claim
+  @return bool indicating whetherh the commit period is active for this claim
   */
-  function commitPeriodActive(bytes32 _claimId) view public returns (bool active) {
+  function commitPeriodActive(bytes32 _claimId) view public returns (bool) {
       require(claimExists(_claimId));
 
       return (block.timestamp < claims[_claimId].commitEndTime);
@@ -150,10 +171,10 @@ contract DelphiVoting {
 
   /**
   @dev Checks if the reveal period is still active for the specified claim
-  @param _claimId Integer identifier associated with target claim
-  @return Boolean indication of isCommitPeriodActive for target claim
+  @param _claimId the keccak256 of a DelphiStake address and a claim number
+  @return bool indicating whetherh the reveal period is active for this claim
   */
-  function revealPeriodActive(bytes32 _claimId) view public returns (bool active) {
+  function revealPeriodActive(bytes32 _claimId) view public returns (bool) {
       require(claimExists(_claimId));
 
       return
@@ -162,24 +183,26 @@ contract DelphiVoting {
 
   /**
   @dev Checks if a claim exists, throws if the provided claim is in an impossible state
-  @param _claimId The claimId whose existance is to be evaluated.
+  @param _claimId the keccak256 of a DelphiStake address and a claim number
   @return Boolean Indicates whether a claim exists for the provided claimId
   */
-  function claimExists(bytes32 _claimId) view public returns (bool exists) {
+  function claimExists(bytes32 _claimId) view public returns (bool) {
     uint commitEndTime = claims[_claimId].commitEndTime;
     uint revealEndTime = claims[_claimId].revealEndTime;
 
+    // It should not be possible that one of these is zero while the other is not.
     assert(!(commitEndTime == 0 && revealEndTime != 0));
     assert(!(commitEndTime != 0 && revealEndTime == 0));
 
+    // If either is zero, this claim does not exist.
     if(commitEndTime == 0 || revealEndTime == 0) { return false; }
     return true;
   }
 
   /**
-  @dev Checks if a claim exists, throws if the provided claim is in an impossible state
-  @param _claimId The claimId whose existance is to be evaluated.
-  @return Boolean Indicates whether a claim exists for the provided claimId
+  @dev returns the commit hash of the provided arbiter for some claim
+  @param _claimId the keccak256 of a DelphiStake address and a claim number
+  @return bytes32 the arbiter's commit hash for this claim
   */
   function getArbiterCommitForClaim(bytes32 _claimId, address _arbiter)
   view public returns (bytes32) {
@@ -188,7 +211,7 @@ contract DelphiVoting {
 
   /**
   @dev Returns the number of revealed votes for the provided vote option in a given claim
-  @param _claimId The claimId tallies are to be inspected
+  @param _claimId the keccak256 of a DelphiStake address and a claim number
   @param _option The vote option to return a total for
   @return uint Tally of revealed votes for the provided option in the given claimId
   */
@@ -198,7 +221,7 @@ contract DelphiVoting {
 
   /**
   @dev Initialize a claim struct by setting its commit and reveal end times
-  @param _claimId The claimId to be initialized
+  @param _claimId the keccak256 of a DelphiStake address and a claim number
   */
   function initializeClaim(bytes32 _claimId) private {
     claims[_claimId].commitEndTime = now + parameterizer.get('commitStageLen');
@@ -210,7 +233,7 @@ contract DelphiVoting {
   @dev Updates the winning option in the claim to that with the greatest number of votes
   @param _claim storage pointer to a Claim struct
   */
-  function updateResult(Claim storage _claim) private {
+  function tallyVotes(Claim storage _claim) private {
     uint greatest = _claim.tallies[uint(VoteOptions.Justified)];
     _claim.result = VoteOptions.Justified;
 
