@@ -11,7 +11,7 @@ const config = JSON.parse(fs.readFileSync('./conf/registryConfig.json'));
 
 contract('DelphiVoting', (accounts) => {
   describe('Function: revealVote', () => {
-    const [arbiter] = accounts;
+    const [staker, claimant, arbiter] = accounts;
 
     before(async () => {
       await utils.addToWhitelist(utils.getArbiterListingId(arbiter),
@@ -20,10 +20,17 @@ contract('DelphiVoting', (accounts) => {
 
     it('should reveal an arbiter\'s vote and update the vote tally', async () => {
       const dv = await DelphiVoting.deployed();
-      const claimId = utils.getClaimId(DelphiStake.address, '1');
-      const secretHash = utils.getSecretHash('1', '420');
+      const ds = await DelphiStake.deployed();
 
-      await utils.as(arbiter, dv.commitVote, claimId, secretHash);
+      const claimAmount = '10';
+      const feeAmount = '5';
+
+      const claimNumber = // should be zero
+        await utils.makeNewClaim(staker, claimant, claimAmount, feeAmount, 'i love cats');
+      const secretHash = utils.getSecretHash('1', '420');
+      const claimId = utils.getClaimId(ds.address, claimNumber.toString(10));
+
+      await utils.as(arbiter, dv.commitVote, ds.address, claimNumber, secretHash);
 
       await utils.increaseTime(config.paramDefaults.commitStageLength + 1);
 
@@ -40,7 +47,9 @@ contract('DelphiVoting', (accounts) => {
 
     it('should not allow an arbiter to reveal twice', async () => {
       const dv = await DelphiVoting.deployed();
-      const claimId = utils.getClaimId(DelphiStake.address, '1');
+
+      const claimNumber = '0'; // Use previous claim number
+      const claimId = utils.getClaimId(DelphiStake.address, claimNumber);
 
       const initialTally = (await dv.revealedVotesForOption.call(claimId, '1'));
 

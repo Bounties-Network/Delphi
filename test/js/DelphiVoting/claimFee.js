@@ -16,9 +16,7 @@ contract('DelphiVoting', (accounts) => {
     const [staker, claimant, arbiterAlice, arbiterBob, arbiterCharlie] = accounts;
 
     before(async () => {
-      const dv = await DelphiVoting.deployed();
       const ds = await DelphiStake.deployed();
-      await utils.initDelphiStake(staker, dv.address);
       const token = EIP20.at(await ds.token.call());
 
       // The claimant will need tokens to fund fees when they make claims
@@ -46,10 +44,10 @@ contract('DelphiVoting', (accounts) => {
       // Make a new claim
       const claimNumber = // should be zero
         await utils.makeNewClaim(staker, claimant, claimAmount, feeAmount, 'i love cats');
-      const claimId = utils.getClaimId(DelphiStake.address, claimNumber.toNumber(10));
+      const claimId = utils.getClaimId(ds.address, claimNumber.toString(10));
 
       // Commit vote
-      await utils.as(arbiterAlice, dv.commitVote, claimId, secretHash);
+      await utils.as(arbiterAlice, dv.commitVote, ds.address, claimNumber, secretHash);
       await utils.increaseTime(config.paramDefaults.commitStageLength + 1);
 
       // Reveal vote
@@ -110,12 +108,13 @@ contract('DelphiVoting', (accounts) => {
         // Make a new claim
         const claimNumber = // should be one
         await utils.makeNewClaim(staker, claimant, claimAmount, feeAmount, 'i love cats');
-        const claimId = utils.getClaimId(DelphiStake.address, claimNumber.toNumber(10));
+        const claimId = utils.getClaimId(ds.address, claimNumber.toString(10));
 
         // commit votes
-        await utils.as(arbiterAlice, dv.commitVote, claimId, pluralitySecretHash);
-        await utils.as(arbiterBob, dv.commitVote, claimId, pluralitySecretHash);
-        await utils.as(arbiterCharlie, dv.commitVote, claimId, nonPluralitySecretHash);
+        await utils.as(arbiterAlice, dv.commitVote, ds.address, claimNumber, pluralitySecretHash);
+        await utils.as(arbiterBob, dv.commitVote, ds.address, claimNumber, pluralitySecretHash);
+        await utils.as(arbiterCharlie, dv.commitVote, ds.address, claimNumber,
+          nonPluralitySecretHash);
         await utils.increaseTime(config.paramDefaults.commitStageLength + 1);
 
         // reveal votes
