@@ -14,6 +14,7 @@ contract('DelphiVoting', (accounts) => {
     const [staker, claimant, arbiter] = accounts;
 
     before(async () => {
+      // Add an arbiter to the whitelist
       await utils.addToWhitelist(utils.getArbiterListingId(arbiter),
         config.paramDefaults.minDeposit, arbiter);
     });
@@ -22,25 +23,36 @@ contract('DelphiVoting', (accounts) => {
       const dv = await DelphiVoting.deployed();
       const ds = await DelphiStake.deployed();
 
-      const claimAmount = '10';
-      const feeAmount = '5';
+      // Set constants
+      const CLAIM_AMOUNT = '10';
+      const FEE_AMOUNT = '5';
+      const VOTE = '1';
+      const SALT = '420';
+      const DATA = 'i love cats';
 
+      // Open a new claim on the DS and generate a claim ID for it
       const claimNumber = // should be zero
-        await utils.makeNewClaim(staker, claimant, claimAmount, feeAmount, 'i love cats');
-      const secretHash = utils.getSecretHash('1', '420');
+        await utils.makeNewClaim(staker, claimant, CLAIM_AMOUNT, FEE_AMOUNT, DATA);
       const claimId = utils.getClaimId(ds.address, claimNumber.toString(10));
 
+      // Generate a secret hash and commit it as a vote
+      const secretHash = utils.getSecretHash(VOTE, SALT);
       await utils.as(arbiter, dv.commitVote, ds.address, claimNumber, secretHash);
 
+      // Increase time to get to the reveal phase
       await utils.increaseTime(config.paramDefaults.commitStageLength + 1);
 
-      const initialTally = (await dv.revealedVotesForOption.call(claimId, '1'));
+      // Capture the initial tally for the vote option we committed, before revealing. It should
+      // be zero.
+      const initialTally = (await dv.revealedVotesForOption.call(claimId, VOTE));
       assert.strictEqual(initialTally.toString(10), '0',
         'the initial vote tally was not as-expected');
 
-      await utils.as(arbiter, dv.revealVote, claimId, '1', '420');
+      // Reveal the arbiter's vote
+      await utils.as(arbiter, dv.revealVote, claimId, VOTE, SALT);
 
-      const finalTally = (await dv.revealedVotesForOption.call(claimId, '1'));
+      // The final tally for the option we revealed for should be one.
+      const finalTally = (await dv.revealedVotesForOption.call(claimId, VOTE));
       assert.strictEqual(finalTally.toString(10), '1',
         'the final vote tally was not as-expected');
     });
@@ -48,18 +60,26 @@ contract('DelphiVoting', (accounts) => {
     it('should not allow an arbiter to reveal twice', async () => {
       const dv = await DelphiVoting.deployed();
 
-      const claimNumber = '0'; // Use previous claim number
-      const claimId = utils.getClaimId(DelphiStake.address, claimNumber);
+      // Set constants
+      const CLAIM_NUMBER = '0'; // Use previous claim number
+      const VOTE = '1'; // Use the same vote option we used before
+      const SALT = '420';
 
-      const initialTally = (await dv.revealedVotesForOption.call(claimId, '1'));
+      // Generate a claim ID
+      const claimId = utils.getClaimId(DelphiStake.address, CLAIM_NUMBER);
 
+      // Get the initial tally for the vote option we are going to try re-revealing in
+      const initialTally = (await dv.revealedVotesForOption.call(claimId, VOTE));
       try {
-        await utils.as(arbiter, dv.revealVote, claimId, '1', '420');
+        // Attempt to reveal again
+        await utils.as(arbiter, dv.revealVote, claimId, VOTE, SALT);
       } catch (err) {
         assert(utils.isEVMRevert(err), err.toString());
 
-        const finalTally = (await dv.revealedVotesForOption.call(claimId, '1'));
-        assert(finalTally.eq(initialTally), 'an arbiter was able to reveal twice');
+        // The final tally should not have changed.
+        const finalTally = (await dv.revealedVotesForOption.call(claimId, VOTE));
+        assert(finalTally.toString(10), initialTally.toString(10),
+          'an arbiter was able to reveal twice');
 
         return;
       }
