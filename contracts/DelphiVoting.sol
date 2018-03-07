@@ -46,7 +46,10 @@ contract DelphiVoting {
     bytes32 claimId = keccak256(_stake, _claimNumber);
     DelphiStake ds = DelphiStake(_stake);
 
-    // Check if the claim exists. This does not check if the claim has already been ruled
+    // Do not allow secretHash to be zero
+    require(_secretHash != 0);
+    // Check if the claim has been instantiated in the DelphiStake.
+    // Do not allow voting on claims which are uninitialized in the DS.
     require(_claimNumber < ds.getNumClaims());
 
     // Check if anybody has ever committed a vote for this claim before. If not, initialize a new
