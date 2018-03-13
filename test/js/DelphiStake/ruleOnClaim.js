@@ -6,6 +6,7 @@
 const DelphiStake = artifacts.require('DelphiStake');
 const EIP20 = artifacts.require('EIP20');
 
+const BN = require('bignumber.js');
 
 const utils = require('../utils.js');
 
@@ -203,10 +204,106 @@ contract('DelphiStake', (accounts) => {
         balanceAfterRuling.toString(10), 'fee not paid to the arbiter');
     });
 
-    it('should decrement openClaims');
+    it('should decrement openClaims', async () => {
+      const claimAmount = '1';
+      const feeAmount = '1';
+      const ruling = '1';
 
-    it('it should set lockupEnding to now + lockupRemaining iff openClaims is zero after ruling');
+      // Open a new claim
+      await ds.whitelistClaimant(claimant, { from: staker });
+      await token.approve(ds.address, feeAmount, { from: claimant });
+      const { logs } = await ds.openClaim(claimant, claimAmount, feeAmount, '', { from: claimant });
+      const claimId = utils.getLog(logs, 'ClaimOpened').args._claimId; // eslint-disable-line
 
-    it('should emit a ClaimRuled event');
+      // Get the initial number of open claims
+      const initialOpenClaims = await ds.openClaims.call();
+
+      // Cancel settlement and rule on the claim
+      await ds.settlementFailed(claimId, { from: claimant });
+      await ds.ruleOnClaim(claimId, ruling, { from: arbiter });
+
+      // Since the claim is closed now, expect openClaims to be less than it was before we closed
+      // the claim.
+      const finalOpenClaims = await ds.openClaims.call();
+      assert(finalOpenClaims.lt(initialOpenClaims), 'openClaims not decremented after ruling');
+    });
+
+    it('it should set lockupEnding to now + lockupRemaining iff openClaims is zero after ruling',
+      async () => {
+        const claimAmount = '1';
+        const feeAmount = '1';
+        const ruling = '1';
+
+        // Initiate a withdrawal and get the initial lockup ending time
+        await ds.initiateWithdrawStake({ from: staker });
+        const initialLockupEnding = await ds.lockupEnding.call();
+
+        // Open claim A 
+        await ds.whitelistClaimant(claimant, { from: staker });
+        await token.approve(ds.address, feeAmount, { from: claimant });
+        const logsA =
+          (await ds.openClaim(claimant, claimAmount, feeAmount, '', { from: claimant })).logs;
+        const claimIdA = utils.getLog(logsA, 'ClaimOpened').args._claimId; // eslint-disable-line
+
+        // Open claim B 
+        await ds.whitelistClaimant(claimant, { from: staker });
+        await token.approve(ds.address, feeAmount, { from: claimant });
+        const logsB =
+          (await ds.openClaim(claimant, claimAmount, feeAmount, '', { from: claimant })).logs;
+        const claimIdB = utils.getLog(logsB, 'ClaimOpened').args._claimId; // eslint-disable-line
+
+        // Spend a duration equal to half the lockup period in the claims
+        const interval = new BN(conf.lockupPeriod, 10).div(new BN('2', 10));
+        await utils.increaseTime(interval.toNumber(10));
+
+        // Cancel settlement and rule on claim A
+        await ds.settlementFailed(claimIdA, { from: claimant });
+        await ds.ruleOnClaim(claimIdA, ruling, { from: arbiter });
+
+        // Now, while there is still an open claim, expect lockup ending to be zero
+        const intermediateLockupEnding = await ds.lockupEnding.call();
+        assert.strictEqual(intermediateLockupEnding.toString(10), '0',
+          'the lockup countdown was resumed when their were still open claims');
+
+        // Cancel settlement and rule on claim B
+        await ds.settlementFailed(claimIdB, { from: claimant });
+        await ds.ruleOnClaim(claimIdB, ruling, { from: arbiter });
+
+        // The final lockup ending time should be the original end time plus the interval spent in
+        // the claim, +/- five seconds for clock drift.
+        const finalLockupEnding = await ds.lockupEnding.call();
+        assert.approximately(finalLockupEnding.toNumber(10),
+          initialLockupEnding.add(interval).toNumber(10),
+          5,
+          'lockupEnding was not as-expected when the final open claim was ruled.');
+      });
+
+    it('should emit a ClaimRuled event', async () => {
+      const claimAmount = '1';
+      const feeAmount = '1';
+      const ruling = '1';
+
+      // Open a new claim
+      await ds.whitelistClaimant(claimant, { from: staker });
+      await token.approve(ds.address, feeAmount, { from: claimant });
+      const openClaimLogs
+        = (await ds.openClaim(claimant, claimAmount, feeAmount, '', { from: claimant })).logs;
+      const claimId =
+        utils.getLog(openClaimLogs, 'ClaimOpened').args._claimId; // eslint-disable-line
+
+      // Cancel settlement and rule on claim. Capture the logs on ruling.
+      await ds.settlementFailed(claimId, { from: claimant });
+      const ruledLogs = (await ds.ruleOnClaim(claimId, ruling, { from: arbiter })).logs;
+
+      // Expect utils.getLog to find in the logs returned in openClaim a 'ClaimOpened' event
+      assert(typeof utils.getLog(ruledLogs, 'ClaimRuled') !== 'undefined',
+        'An expected log was not emitted');
+
+      // Expect the ClaimRuled log to have a valid claimId argument
+      assert.strictEqual(
+        utils.getLog(ruledLogs, 'ClaimRuled').args._claimId.toString(10), // eslint-disable-line
+        '0',
+        'The event either did not contain a _claimId arg, or the emitted claimId was incorrect');
+    });
   });
 });
