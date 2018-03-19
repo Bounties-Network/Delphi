@@ -17,6 +17,11 @@ contract('DelphiVoting', (accounts) => {
 
     before(async () => {
       const ds = await DelphiStake.deployed();
+<<<<<<< HEAD
+=======
+      console.log("about to init");
+      await utils.initDelphiStake(staker, dv.address);
+>>>>>>> updated tests for new min fee
       const token = EIP20.at(await ds.token.call());
 
       // The claimant will need tokens to fund fees when they make claims. The zero account
@@ -37,6 +42,7 @@ contract('DelphiVoting', (accounts) => {
       const ds = await DelphiStake.deployed();
       const token = EIP20.at(await ds.token.call());
 
+<<<<<<< HEAD
       // Set constants
       const CLAIM_AMOUNT = '10';
       const FEE_AMOUNT = '5';
@@ -47,6 +53,13 @@ contract('DelphiVoting', (accounts) => {
       const claimNumber = // should be zero, since this is the first test
         await utils.makeNewClaim(staker, claimant, CLAIM_AMOUNT, FEE_AMOUNT, 'i love cats');
       const claimId = utils.getClaimId(ds.address, claimNumber.toString(10));
+=======
+      const claimAmount = '10';
+      const feeAmount = '10';
+      const vote = '1';
+      const salt = '420';
+      const secretHash = utils.getSecretHash(vote, salt);
+>>>>>>> updated tests for new min fee
 
       // Get the secret hash for the salted vote
       const secretHash = utils.getSecretHash(VOTE, SALT);
@@ -114,7 +127,7 @@ contract('DelphiVoting', (accounts) => {
 
         // Set constants
         const CLAIM_AMOUNT = '10';
-        const FEE_AMOUNT = '5';
+        const FEE_AMOUNT = '10';
         const PLURALITY_VOTE = '1';
         const NON_PLURALITY_VOTE = '0';
         const SALT = '420';
@@ -175,9 +188,9 @@ contract('DelphiVoting', (accounts) => {
 
       // Use previous claim, since we have two arbiters who still have not claimed for it
       const CLAIM_NUMBER = '1';
-      const FEE_AMOUNT = new BN('5', 10); // Use previous fee amount
+      const FEE_AMOUNT = new BN('10', 10); // Use previous fee amount
       const PLURALITY_VOTE = '1'; // Use previous plurality vote
-      const SALT = '420'; // Use previous salt 
+      const SALT = '420'; // Use previous salt
       const PLURALITY_ARBITERS_COUNT = new BN('2', 10); // Alice and Bob voted in the plurality
 
       // Capture Alice's starting token balance, claim the fee and get her final balance
