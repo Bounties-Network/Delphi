@@ -18,7 +18,7 @@ contract('DelphiStake', (accounts) => {
 
       await token.approve(ds.address, conf.initialStake, { from: staker });
 
-      await ds.initDelphiStake(conf.initialStake, token.address, conf.data,
+      await ds.initDelphiStake(conf.initialStake, token.address, conf.minFee, conf.data,
         conf.lockupPeriod, arbiter, { from: staker });
 
       const stake = await ds.claimableStake.call();
@@ -56,7 +56,7 @@ contract('DelphiStake', (accounts) => {
 
 
       try {
-        await ds.initDelphiStake(conf.initialStake, token.address, conf.data,
+        await ds.initDelphiStake(conf.initialStake, token.address, conf.minFee, conf.data,
           conf.lockupPeriod, arbiter, { from: staker });
       } catch (err) {
         assert(utils.isEVMRevert(err), err.toString());
