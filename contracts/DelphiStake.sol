@@ -37,6 +37,8 @@ contract DelphiStake {
 
     address public masterCopy; // THIS MUST ALWAYS BE IN THE FIRST STORAGE SLOT
 
+    uint public minimumFee;
+
     uint public claimableStake;
     EIP20 public token;
 
@@ -86,6 +88,11 @@ contract DelphiStake {
         _;
     }
 
+    modifier largeEnoughFee(uint _newFee){
+        require(_newFee >= minimumFee);
+        _;
+    }
+
     modifier claimNotRuled(uint _claimId){
         require(!claims[_claimId].ruled);
         _;
@@ -132,12 +139,13 @@ contract DelphiStake {
     be done.
     @param _value the number of tokens to stake
     @param _token the token which this stake is denominated in
+    @param _minimumFee
     @param _data an arbitrary string, perhaps an IPFS hash, containing any data the staker likes
     @param _lockupPeriod the duration the staker will have to wait between initializing a
     withdrawal and finalizing it, during which claims can be made against them
     @param _arbiter the entity which can adjudicate in claims made against this stake
     */
-    function initDelphiStake(uint _value, EIP20 _token, string _data, uint _lockupPeriod, address _arbiter)
+    function initDelphiStake(uint _value, EIP20 _token, uint _minimumFee, string _data, uint _lockupPeriod, address _arbiter)
     public
     {
         // This function can only be called if it hasn't been called before, or if the token was
@@ -154,6 +162,7 @@ contract DelphiStake {
         // Initialize contract storage.
         claimableStake = _value;
         token = _token;
+        minimumFee = _minimumFee;
         data = _data;
         lockupPeriod = _lockupPeriod;
         lockupRemaining = _lockupPeriod;
@@ -199,6 +208,7 @@ contract DelphiStake {
     notStakerOrArbiter
     stakerCanPay(_amount, _fee)
     isWhitelisted
+    largeEnoughFee(_fee)
     {
         // Transfer the fee into the DelphiStake
         require(token.transferFrom(_claimant, this, _fee));
