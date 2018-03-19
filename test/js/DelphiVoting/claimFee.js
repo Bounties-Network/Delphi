@@ -18,6 +18,7 @@ contract('DelphiVoting', (accounts) => {
     before(async () => {
       const dv = await DelphiVoting.deployed();
       const ds = await DelphiStake.deployed();
+      console.log("about to init");
       await utils.initDelphiStake(staker, dv.address);
       const token = EIP20.at(await ds.token.call());
 
@@ -38,7 +39,7 @@ contract('DelphiVoting', (accounts) => {
       const token = EIP20.at(await ds.token.call());
 
       const claimAmount = '10';
-      const feeAmount = '5';
+      const feeAmount = '10';
       const vote = '1';
       const salt = '420';
       const secretHash = utils.getSecretHash(vote, salt);
@@ -100,7 +101,7 @@ contract('DelphiVoting', (accounts) => {
         const token = EIP20.at(await ds.token.call());
 
         const claimAmount = '10';
-        const feeAmount = '5';
+        const feeAmount = '10';
         const pluralityVote = '1';
         const nonPluralityVote = '0';
         const salt = '420';
@@ -151,7 +152,7 @@ contract('DelphiVoting', (accounts) => {
       const token = EIP20.at(await ds.token.call());
 
       const claimNumber = '1'; // Use previous claim
-      const feeAmount = new BN('5', 10); // Use previous fee amount
+      const feeAmount = new BN('10', 10); // Use previous fee amount
       const pluralityVote = '1'; // Use previous plurality vote
       const salt = '420'; // Use previous salt
       const pluralityArbiters = new BN('2', 10); // Alice and Bob voted in the plurality

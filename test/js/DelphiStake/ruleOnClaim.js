@@ -26,11 +26,11 @@ contract('DelphiStake', (accounts) => {
       await token.approve(ds.address, conf.initialStake, { from: staker });
       await token.transfer(arbiter, 1000, { from: staker });
 
-      await ds.initDelphiStake(conf.initialStake, token.address, conf.data,
+      await ds.initDelphiStake(conf.initialStake, token.address, conf.minFee, conf.data,
         conf.lockupPeriod, arbiter, { from: staker });
 
       const claimAmount = '1';
-      const feeAmount = '1';
+      const feeAmount = '10';
       const ruling = '1';
 
       await token.approve(ds.address, feeAmount, { from: claimant });
@@ -63,11 +63,11 @@ contract('DelphiStake', (accounts) => {
       await token.approve(ds.address, conf.initialStake, { from: staker });
       await token.transfer(arbiter, 1000, { from: staker });
 
-      await ds.initDelphiStake(conf.initialStake, token.address, conf.data,
+      await ds.initDelphiStake(conf.initialStake, token.address, conf.minFee, conf.data,
         conf.lockupPeriod, arbiter, { from: staker });
 
       const claimAmount = '1';
-      const feeAmount = '1';
+      const feeAmount = '10';
       const ruling = '1';
 
       await token.approve(ds.address, feeAmount, { from: claimant });
@@ -97,11 +97,11 @@ contract('DelphiStake', (accounts) => {
       await token.approve(ds.address, conf.initialStake, { from: staker });
       await token.transfer(arbiter, 1000, { from: staker });
 
-      await ds.initDelphiStake(conf.initialStake, token.address, conf.data,
+      await ds.initDelphiStake(conf.initialStake, token.address, conf.minFee, conf.data,
         conf.lockupPeriod, arbiter, { from: staker });
 
       const claimAmount = '1';
-      const feeAmount = '1';
+      const feeAmount = '10';
       const ruling = '1';
 
       await token.approve(ds.address, feeAmount, { from: claimant });
@@ -136,11 +136,11 @@ contract('DelphiStake', (accounts) => {
       await token.approve(ds.address, conf.initialStake, { from: staker });
       await token.transfer(arbiter, 1000, { from: staker });
 
-      await ds.initDelphiStake(conf.initialStake, token.address, conf.data,
+      await ds.initDelphiStake(conf.initialStake, token.address, conf.minFee, conf.data,
         conf.lockupPeriod, arbiter, { from: staker });
 
       const claimAmount = '1';
-      const feeAmount = '1';
+      const feeAmount = '10';
       const ruling = '1';
 
       await token.approve(ds.address, feeAmount, { from: claimant });
@@ -170,11 +170,11 @@ contract('DelphiStake', (accounts) => {
       await token.approve(ds.address, conf.initialStake, { from: staker });
       await token.transfer(arbiter, 1000, { from: staker });
 
-      await ds.initDelphiStake(conf.initialStake, token.address, conf.data,
+      await ds.initDelphiStake(conf.initialStake, token.address, conf.minFee, conf.data,
         conf.lockupPeriod, arbiter, { from: staker });
 
       const claimAmount = '1';
-      const feeAmount = '1';
+      const feeAmount = '10';
       const ruling = '1';
 
       await token.approve(ds.address, feeAmount, { from: claimant });
@@ -204,11 +204,11 @@ contract('DelphiStake', (accounts) => {
       await token.approve(ds.address, conf.initialStake, { from: staker });
       await token.transfer(arbiter, 1000, { from: staker });
 
-      await ds.initDelphiStake(conf.initialStake, token.address, conf.data,
+      await ds.initDelphiStake(conf.initialStake, token.address, conf.minFee, conf.data,
         conf.lockupPeriod, arbiter, { from: staker });
 
       const claimAmount = '1';
-      const feeAmount = '1';
+      const feeAmount = '10';
       const ruling = '0';
 
       await token.approve(ds.address, feeAmount, { from: claimant });
@@ -242,11 +242,11 @@ contract('DelphiStake', (accounts) => {
       await token.approve(ds.address, conf.initialStake, { from: staker });
       await token.transfer(arbiter, 1000, { from: staker });
 
-      await ds.initDelphiStake(conf.initialStake, token.address, conf.data,
+      await ds.initDelphiStake(conf.initialStake, token.address, conf.minFee, conf.data,
         conf.lockupPeriod, arbiter, { from: staker });
 
       const claimAmount = '1';
-      const feeAmount = '1';
+      const feeAmount = '10';
       const ruling = '1';
 
       await token.approve(ds.address, feeAmount, { from: claimant });
