@@ -177,21 +177,6 @@ contract('DelphiStake', (accounts) => {
     });
 
     it('should add the claim\'s amount and fee to the stake iff the claim is not accepted', async () => {
-<<<<<<< HEAD
-=======
-      const token = await EIP20.new(1000000, 'Delphi Tokens', 18, 'DELPHI', { from: staker });
-      await token.transfer(claimant, 100000, { from: staker });
-      await token.transfer(arbiter, 100000, { from: staker });
-
-      const ds = await DelphiStake.new();
-
-      await token.approve(ds.address, conf.initialStake, { from: staker });
-      await token.transfer(arbiter, 1000, { from: staker });
-
-      await ds.initDelphiStake(conf.initialStake, token.address, conf.minFee, conf.data,
-        conf.lockupPeriod, arbiter, { from: staker });
-
->>>>>>> updated tests for new min fee
       const claimAmount = '1';
       const feeAmount = '10';
       const ruling = '1';
@@ -214,21 +199,6 @@ contract('DelphiStake', (accounts) => {
     });
 
     it('should not alter the stake if the claim is accepted', async () => {
-<<<<<<< HEAD
-=======
-      const token = await EIP20.new(1000000, 'Delphi Tokens', 18, 'DELPHI', { from: staker });
-      await token.transfer(claimant, 100000, { from: staker });
-      await token.transfer(arbiter, 100000, { from: staker });
-
-      const ds = await DelphiStake.new();
-
-      await token.approve(ds.address, conf.initialStake, { from: staker });
-      await token.transfer(arbiter, 1000, { from: staker });
-
-      await ds.initDelphiStake(conf.initialStake, token.address, conf.minFee, conf.data,
-        conf.lockupPeriod, arbiter, { from: staker });
-
->>>>>>> updated tests for new min fee
       const claimAmount = '1';
       const feeAmount = '10';
       const ruling = '0';
@@ -255,21 +225,6 @@ contract('DelphiStake', (accounts) => {
     });
 
     it('should transfer the fee to the arbiter', async () => {
-<<<<<<< HEAD
-=======
-      const token = await EIP20.new(1000000, 'Delphi Tokens', 18, 'DELPHI', { from: staker });
-      await token.transfer(claimant, 100000, { from: staker });
-      await token.transfer(arbiter, 100000, { from: staker });
-
-      const ds = await DelphiStake.new();
-
-      await token.approve(ds.address, conf.initialStake, { from: staker });
-      await token.transfer(arbiter, 1000, { from: staker });
-
-      await ds.initDelphiStake(conf.initialStake, token.address, conf.minFee, conf.data,
-        conf.lockupPeriod, arbiter, { from: staker });
-
->>>>>>> updated tests for new min fee
       const claimAmount = '1';
       const feeAmount = '10';
       const ruling = '1';
@@ -321,7 +276,7 @@ contract('DelphiStake', (accounts) => {
     it('it should set lockupEnding to now + lockupRemaining iff openClaims is zero after ruling',
       async () => {
         const claimAmount = '1';
-        const feeAmount = '1';
+        const feeAmount = '10';
         const ruling = '1';
 
         // Initiate a withdrawal and get the initial lockup ending time
@@ -370,7 +325,7 @@ contract('DelphiStake', (accounts) => {
 
     it('should emit a ClaimRuled event', async () => {
       const claimAmount = '1';
-      const feeAmount = '1';
+      const feeAmount = '10';
       const ruling = '1';
 
       // Open a new claim
