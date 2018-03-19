@@ -109,6 +109,10 @@ const utils = {
   ),
 
   getConfig: () => JSON.parse(fs.readFileSync('conf/config.json')),
+
+  getLog: (logs, event) => logs.find(log => log.event.includes(event)),
+
 };
+
 
 module.exports = utils;
