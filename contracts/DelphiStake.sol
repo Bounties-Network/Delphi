@@ -43,6 +43,8 @@ contract DelphiStake {
 
     address public masterCopy;
 
+    uint public minimumFee;
+
     uint public claimableStake;
     EIP20 public token;
 
@@ -91,6 +93,11 @@ contract DelphiStake {
         _;
     }
 
+    modifier largeEnoughFee(uint _newFee){
+        require(_newFee >= minimumFee);
+        _;
+    }
+
     modifier claimNotRuled(uint _claimId){
         require(!claims[_claimId].ruled);
         _;
@@ -130,7 +137,7 @@ contract DelphiStake {
       _;
     }
 
-    function initDelphiStake(uint _value, EIP20 _token, string _data, uint _lockupPeriod, address _arbiter)
+    function initDelphiStake(uint _value, EIP20 _token, uint _minimumFee, string _data, uint _lockupPeriod, address _arbiter)
     public
     {
         require(token == address(0)); // only possible if init hasn't been called before
@@ -139,12 +146,12 @@ contract DelphiStake {
         require(_token.transferFrom(msg.sender, this, _value));
         claimableStake = _value;
         token = _token;
+        minimumFee = _minimumFee;
         data = _data;
         lockupPeriod = _lockupPeriod;
         lockupRemaining = _lockupPeriod;
         arbiter = _arbiter;
         staker = msg.sender;
-
     }
 
     function whitelistClaimant(address _claimant)
@@ -160,6 +167,7 @@ contract DelphiStake {
     notStakerOrArbiter
     stakerCanPay(_amount, _fee)
     isWhitelisted
+    largeEnoughFee(_fee)
     {
         require(token.transferFrom(_claimant, this, _fee));
         claims.push(Claim(_claimant, _amount, _fee, 0, _data, 0, false, false, false));
