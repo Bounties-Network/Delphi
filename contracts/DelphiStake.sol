@@ -122,6 +122,11 @@ contract DelphiStake {
         _;
     }
 
+    modifier settlementDidNotFail(uint _claimId){
+        require(!claims[_claimId].settlementFailed);
+        _;
+    }
+
     modifier onlyStakerOrClaimant(uint _claimId){
         require(msg.sender == staker || msg.sender == claims[_claimId].claimant);
         _;
@@ -132,8 +137,13 @@ contract DelphiStake {
         _;
     }
 
-    modifier isWhitelisted(){
-      require(allowedClaimants[msg.sender]);
+    modifier isWhitelisted(address _claimant){
+      require(allowedClaimants[_claimant]);
+      _;
+    }
+
+    modifier noOpenClaims(){
+      require(openClaims == 0);
       _;
     }
 
@@ -166,7 +176,7 @@ contract DelphiStake {
     public
     notStakerOrArbiter
     stakerCanPay(_amount, _fee)
-    isWhitelisted
+    isWhitelisted(_claimant)
     largeEnoughFee(_fee)
     {
         require(token.transferFrom(_claimant, this, _fee));
@@ -194,6 +204,7 @@ contract DelphiStake {
     public
     validClaimID(_claimId)
     onlyStakerOrClaimant(_claimId)
+    settlementDidNotFail(_claimId)
     {
       require((claims[_claimId].amount + claims[_claimId].fee) >= _amount);
       // only allows settlements for up to the amount that's already been staked by the staker as pertaining to this case
@@ -211,6 +222,7 @@ contract DelphiStake {
     validClaimID(_claimId)
     validSettlementId(_claimId, _settlementId)
     onlyStakerOrClaimant(_claimId)
+    settlementDidNotFail(_claimId)
     {
       Settlement storage settlement = settlements[_claimId][_settlementId];
       Claim storage claim = claims[_claimId];
@@ -296,6 +308,7 @@ contract DelphiStake {
     public
     onlyStaker
     withdrawalNotInitiated
+    noOpenClaims
     {
        lockupEnding = now + lockupPeriod;
        lockupRemaining = lockupPeriod;
