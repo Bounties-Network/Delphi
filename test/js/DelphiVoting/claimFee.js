@@ -17,6 +17,7 @@ contract('DelphiVoting', (accounts) => {
 
     before(async () => {
       const ds = await DelphiStake.deployed();
+      await utils.initDelphiStake(staker, dv.address);
       const token = EIP20.at(await ds.token.call());
 
       // The claimant will need tokens to fund fees when they make claims. The zero account
@@ -47,7 +48,6 @@ contract('DelphiVoting', (accounts) => {
       const claimNumber = // should be zero, since this is the first test
         await utils.makeNewClaim(staker, claimant, CLAIM_AMOUNT, FEE_AMOUNT, 'i love cats');
       const claimId = utils.getClaimId(ds.address, claimNumber.toString(10));
-
       // Get the secret hash for the salted vote
       const secretHash = utils.getSecretHash(VOTE, SALT);
 
