@@ -231,7 +231,7 @@ contract('DelphiStake', (accounts) => {
     it('it should set lockupEnding to now + lockupRemaining iff openClaims is zero after ruling',
       async () => {
         const claimAmount = '1';
-        const feeAmount = '1';
+        const feeAmount = '10';
         const ruling = '1';
 
         // Initiate a withdrawal and get the initial lockup ending time
@@ -280,7 +280,7 @@ contract('DelphiStake', (accounts) => {
 
     it('should emit a ClaimRuled event', async () => {
       const claimAmount = '1';
-      const feeAmount = '1';
+      const feeAmount = '10';
       const ruling = '1';
 
       // Open a new claim
