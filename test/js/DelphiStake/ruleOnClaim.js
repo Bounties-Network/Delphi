@@ -61,21 +61,6 @@ contract('DelphiStake', (accounts) => {
     });
 
     it('should revert if settlement never failed', async () => {
-<<<<<<< HEAD
-=======
-      const token = await EIP20.new(1000000, 'Delphi Tokens', 18, 'DELPHI', { from: staker });
-      await token.transfer(claimant, 100000, { from: staker });
-      await token.transfer(arbiter, 100000, { from: staker });
-
-      const ds = await DelphiStake.new();
-
-      await token.approve(ds.address, conf.initialStake, { from: staker });
-      await token.transfer(arbiter, 1000, { from: staker });
-
-      await ds.initDelphiStake(conf.initialStake, token.address, conf.minFee, conf.data,
-        conf.lockupPeriod, arbiter, { from: staker });
-
->>>>>>> updated tests for new min fee
       const claimAmount = '1';
       const feeAmount = '10';
       const ruling = '1';
@@ -98,21 +83,6 @@ contract('DelphiStake', (accounts) => {
     });
 
     it('should revert if the claim has already been ruled', async () => {
-<<<<<<< HEAD
-=======
-      const token = await EIP20.new(1000000, 'Delphi Tokens', 18, 'DELPHI', { from: staker });
-      await token.transfer(claimant, 100000, { from: staker });
-      await token.transfer(arbiter, 100000, { from: staker });
-
-      const ds = await DelphiStake.new();
-
-      await token.approve(ds.address, conf.initialStake, { from: staker });
-      await token.transfer(arbiter, 1000, { from: staker });
-
-      await ds.initDelphiStake(conf.initialStake, token.address, conf.minFee, conf.data,
-        conf.lockupPeriod, arbiter, { from: staker });
-
->>>>>>> updated tests for new min fee
       const claimAmount = '1';
       const feeAmount = '10';
       const ruling = '1';
@@ -140,21 +110,6 @@ contract('DelphiStake', (accounts) => {
     });
 
     it('should properly set the claim\'s ruling', async () => {
-<<<<<<< HEAD
-=======
-      const token = await EIP20.new(1000000, 'Delphi Tokens', 18, 'DELPHI', { from: staker });
-      await token.transfer(claimant, 100000, { from: staker });
-      await token.transfer(arbiter, 100000, { from: staker });
-
-      const ds = await DelphiStake.new();
-
-      await token.approve(ds.address, conf.initialStake, { from: staker });
-      await token.transfer(arbiter, 1000, { from: staker });
-
-      await ds.initDelphiStake(conf.initialStake, token.address, conf.minFee, conf.data,
-        conf.lockupPeriod, arbiter, { from: staker });
-
->>>>>>> updated tests for new min fee
       const claimAmount = '1';
       const feeAmount = '10';
       const ruling = '1';
