@@ -239,6 +239,23 @@ contract DelphiStake {
         ClaimOpened(msg.sender, claims.length - 1);
     }
 
+    function openClaimWithoutSettlement(address _claimant, uint _amount, uint _fee, string _data)
+    public
+    notStakerOrArbiter
+    stakerCanPay(_amount, _fee)
+    isWhitelisted(_claimant)
+    largeEnoughFee(_fee)
+    {
+        require(token.transferFrom(_claimant, this, _fee));
+        claims.push(Claim(_claimant, _amount, _fee, 0, _data, 0, false, false, true));
+        openClaims ++;
+        claimableStake -= (_amount + _fee);
+        // the claim amount and claim fee are locked up in this contract until the arbiter rules
+
+        pauseLockup();
+        ClaimOpened(msg.sender, claims.length - 1);
+    }
+
     /*
     @dev increase the arbiter fee being offered for this claim. Regardless of how the claim is
     ruled, this fee is not returned. The fee cannot be increased while still in the settlement
