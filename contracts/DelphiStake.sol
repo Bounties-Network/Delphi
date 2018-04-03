@@ -25,7 +25,6 @@ contract DelphiStake {
       string data;
       uint ruling;
       bool ruled;
-      bool paid;
       bool settlementFailed;
     }
 
@@ -226,7 +225,7 @@ contract DelphiStake {
         // Add a new claim to the claims array and increment the openClaims counter. Because there
         // is necessarily at least one open claim now, pause any active withdrawal (lockup)
         // countdown.
-        claims.push(Claim(_claimant, _amount, _fee, 0, _data, 0, false, false, false));
+        claims.push(Claim(_claimant, _amount, _fee, 0, _data, 0, false, false));
         openClaims ++;
         pauseLockup();
 
@@ -247,7 +246,7 @@ contract DelphiStake {
     largeEnoughFee(_fee)
     {
         require(token.transferFrom(_claimant, this, _fee));
-        claims.push(Claim(_claimant, _amount, _fee, 0, _data, 0, false, false, true));
+        claims.push(Claim(_claimant, _amount, _fee, 0, _data, 0, false, true));
         openClaims ++;
         claimableStake -= (_amount + _fee);
         // the claim amount and claim fee are locked up in this contract until the arbiter rules
