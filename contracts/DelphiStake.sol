@@ -284,6 +284,7 @@ contract DelphiStake {
         claim.ruling = _ruling;
         if (_ruling == 0){
           require(token.transfer(arbiter, (claim.fee + claim.surplusFee)));
+          require(token.transfer(claim.claimant, (claim.amount + claim.fee)));
         } else if (_ruling == 1){
           claimableStake += (claim.amount + claim.fee);
           require(token.transfer(arbiter, (claim.fee + claim.surplusFee)));
@@ -293,7 +294,10 @@ contract DelphiStake {
           // burns the claim amount in the event of collusion
         } else if (_ruling == 3){
           claimableStake += (claim.amount + claim.fee);
+          require(token.transfer(claim.claimant, (claim.amount + claim.fee)));
           // TODO: send fsurplus to arbiters
+        } else {
+          revert();
         }
         decrementOpenClaims();
 
@@ -309,7 +313,7 @@ contract DelphiStake {
         Claim storage claim = claims[_claimId];
         if (claim.ruling == 0 || claim.ruling == 3){
             claim.paid = true;
-            require(token.transfer(claim.claimant, (claim.amount + claim.fee)));
+
         }
     }
 
