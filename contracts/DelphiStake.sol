@@ -402,6 +402,7 @@ contract DelphiStake {
         if (_ruling == 0){
           // The claim is justified. Transfer to the arbiter their fee.
           require(token.transfer(arbiter, (claim.fee + claim.surplusFee)));
+          require(token.transfer(claim.claimant, (claim.amount + claim.fee)));
         } else if (_ruling == 1){
           // The claim is not justified. Free up the claim amount and fee for future claims, and
           // transfer to the arbiter their fee.
@@ -416,8 +417,10 @@ contract DelphiStake {
         } else if (_ruling == 3){
           // The claim cannot be ruled. Free up the claim amount and fee.
           claimableStake += (claim.amount + claim.fee);
+          require(token.transfer(claim.claimant, (claim.amount + claim.fee)));
           // TODO: send fsurplus to arbiters
-          // TODO: send claim.fee to claimant
+        } else {
+          revert();
         }
 
         // The claim is ruled. Decrement the total number of open claims.
@@ -443,7 +446,7 @@ contract DelphiStake {
             // If the claim was justified, or a fault, set the paid flag for this claim to true
             // and transfer the claim amount and fee to the claimant.
             claim.paid = true;
-            require(token.transfer(claim.claimant, (claim.amount + claim.fee)));
+
         }
     }
 
