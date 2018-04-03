@@ -31,7 +31,6 @@ contract DelphiStake {
       string data;
       uint ruling;
       bool ruled;
-      bool paid;
       bool settlementFailed;
     }
 
@@ -100,10 +99,6 @@ contract DelphiStake {
 
     modifier claimNotRuled(uint _claimId){
         require(!claims[_claimId].ruled);
-        _;
-    }
-    modifier claimUnpaid(uint _claimId){
-        require(!claims[_claimId].paid);
         _;
     }
 
@@ -180,7 +175,7 @@ contract DelphiStake {
     largeEnoughFee(_fee)
     {
         require(token.transferFrom(_claimant, this, _fee));
-        claims.push(Claim(_claimant, _amount, _fee, 0, _data, 0, false, false, false));
+        claims.push(Claim(_claimant, _amount, _fee, 0, _data, 0, false, false));
         openClaims ++;
         claimableStake -= (_amount + _fee);
         // the claim amount and claim fee are locked up in this contract until the arbiter rules
@@ -197,7 +192,7 @@ contract DelphiStake {
     largeEnoughFee(_fee)
     {
         require(token.transferFrom(_claimant, this, _fee));
-        claims.push(Claim(_claimant, _amount, _fee, 0, _data, 0, false, false, true));
+        claims.push(Claim(_claimant, _amount, _fee, 0, _data, 0, false, true));
         openClaims ++;
         claimableStake -= (_amount + _fee);
         // the claim amount and claim fee are locked up in this contract until the arbiter rules
@@ -302,19 +297,6 @@ contract DelphiStake {
         decrementOpenClaims();
 
         ClaimRuled(_claimId);
-    }
-
-    function withdrawClaimAmount(uint _claimId)
-    public
-    validClaimID(_claimId)
-    onlyClaimant(_claimId)
-    claimUnpaid(_claimId)
-    {
-        Claim storage claim = claims[_claimId];
-        if (claim.ruling == 0 || claim.ruling == 3){
-            claim.paid = true;
-
-        }
     }
 
     function increaseStake(uint _value)
