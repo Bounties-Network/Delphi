@@ -12,10 +12,7 @@ contract DelphiStake {
     event SettlementAccepted(address _acceptedBy, uint _claimId, uint _settlementId);
     event SettlementFailed(address _failedBy, uint _claimId);
     event ClaimRuled(uint _claimId);
-    event WithdrawInitiated();
-    event WithdrawalPaused();
-    event WithdrawalResumed();
-    event WithdrawFinalized();
+    event StakeWithdrawn();
 
     struct Claim {
       address claimant;
@@ -46,10 +43,7 @@ contract DelphiStake {
     address public staker;
     address public arbiter;
 
-    uint public lockupPeriod;
-    uint public lockupEnding;
-    uint public lockupRemaining;
-    bool public withdrawInitiated;
+    uint public claimDeadline;
 
     Claim[] public claims;
     uint public openClaims;
@@ -143,6 +137,11 @@ contract DelphiStake {
       _;
     }
 
+    modifier isPastClaimDeadline(){
+      require (now > claimDeadline);
+      _;
+    }
+
     /*
     @dev initializes the DelphiStake contract's storage. Must be invoked before anything else can 
     be done.
@@ -154,9 +153,11 @@ contract DelphiStake {
     withdrawal and finalizing it, during which claims can be made against them
     @param _arbiter the entity which can adjudicate in claims made against this stake
     */
-    function initDelphiStake(uint _value, EIP20 _token, uint _minimumFee, string _data, uint _lockupPeriod, address _arbiter)
+     function initDelphiStake(uint _value, EIP20 _token, uint _minimumFee, string _data, uint _caimDeadline, address _arbiter)
     public
     {
+        require(token == address(0)); // only possible if init hasn't been called before
+        require(_claimDeadline > now);
         // This function can only be called if it hasn't been called before, or if the token was
         // set to 0 when it was called previously.
         require(token == address(0));
@@ -173,8 +174,7 @@ contract DelphiStake {
         token = _token;
         minimumFee = _minimumFee;
         data = _data;
-        lockupPeriod = _lockupPeriod;
-        lockupRemaining = _lockupPeriod;
+        claimDeadline = _claimDeadline;
         arbiter = _arbiter;
         staker = msg.sender;
     }
@@ -251,7 +251,6 @@ contract DelphiStake {
         claimableStake -= (_amount + _fee);
         // the claim amount and claim fee are locked up in this contract until the arbiter rules
 
-        pauseLockup();
         ClaimOpened(msg.sender, claims.length - 1);
     }
 
@@ -349,7 +348,7 @@ contract DelphiStake {
       // Increase the stake's claimable stake by the claim amount and fee, minus the agreed
       // settlement amount. Then decrement the openClaims counter, since this claim is resolved.
       claimableStake += (claim.amount + claim.fee - settlement.amount);
-      decrementOpenClaims();
+      openClaims--;
 
       // Transfer to the claimant the settlement amount, plus the fee they deposited.
       require(token.transfer(claim.claimant, (settlement.amount + claim.fee)));
@@ -421,9 +420,7 @@ contract DelphiStake {
         } else {
           revert();
         }
-
-        // The claim is ruled. Decrement the total number of open claims.
-        decrementOpenClaims();
+        openClaims--;
 
         // Emit an event stating which claim was ruled.
         ClaimRuled(_claimId);
@@ -463,95 +460,24 @@ contract DelphiStake {
         claimableStake += _value;
     }
 
-    /*
-    @dev This is step one of a two-step withdrawal process for a stake owner getting their stake
-    out of the stake contract. Once initiateWithdrawStake is invoked, a countdown begins. When the
-    countdown complete, the stake becomes withdrawable using finalizeWithdrawStake. The countdown
-    becomes paused if a claim is opened during the countdown, and resumes when the claimCounter
-    resets to zero.
-    */
-    function initiateWithdrawStake()
+    function increaseClaimDeadline(uint _newClaimDeadline)
     public
     onlyStaker
-    withdrawalNotInitiated
+    {
+        require(_newClaimDeadline > claimDeadline);
+        claimDeadline = _newClaimDeadline;
+    }
+
+    function withdrawStake()
+    public
+    onlyStaker
+    isPastClaimDeadline
     noOpenClaims
     {
-       // The lockup period ends lockupPediod seconds in the future.
-       lockupEnding = now + lockupPeriod;
-
-       // Right now, there are lockupPeriod seconds remaining in the countdown.
-       lockupRemaining = lockupPeriod;
-
-       // Set the withdraw initiated flag to true, and emit a WithdrawInitiated event.
-       withdrawInitiated = true;
-       WithdrawInitiated();
-    }
-
-    /*
-    @dev Step two of the two-step withdrawal process. If the lockupEnding time is in the past, but
-    not zero, the stake can be withdrawn.
-    */
-    function finalizeWithdrawStake()
-    public
-    onlyStaker
-    lockupElapsed
-    {
-       // Capture the claimable stake amount when the withdraw is initiated, then set claimable
-       // stake to zero.
-       uint oldStake = claimableStake;
-       claimableStake = 0;
-
-       // Transfer the stake to the staker.
-       require(token.transfer(staker, oldStake));
-
-       // Now that the withdrawal is complete, reset all withdrawal/lockup related values to their
-       // default values.
-       withdrawInitiated = false;
-       lockupEnding = 0;
-       lockupRemaining = lockupPeriod;
-
-       // Emit a withdrawFinalized event.
-       WithdrawFinalized();
-    }
-
-    /*
-    @dev Internal function called in openClaim to pause the withdrawal countdown when a new claim
-    is opened.
-    */
-    function pauseLockup()
-    internal
-    {
-        if (lockupEnding != 0){
-          // Capture the remaining lockup time (for when the countdown resumes) as the current
-          // lockup ending time minus the current time. So if there are 15 minutes left when you
-          // get paused, we can later resume the countdown with 15 minutes to go.
-          lockupRemaining = lockupEnding - now;
-          
-          // Pause the active withdrawal by setting lockupEnding to zero.
-          lockupEnding = 0;
-        }
-
-        // Emit a WithdrawalPaused event
-        // TODO: Move this inside the if clause, since otherwise no lockup was actually paused.
-        WithdrawalPaused();
-    }
-
-    /*
-    @dev Internal function called in acceptSettlement and ruleOnClaim. It decrements the openClaims
-    counter and, if the openClaims counter is zero after doing that, resumes and paused withdrawals
-    */
-    function decrementOpenClaims()
-    internal
-    {
-      // Decrement openClaims
-      openClaims--;
-
-      if (openClaims == 0){
-          // If there are now no open claims, set the lockupEnding time now plus the previously
-          // computed lockupRemaining (see pauseLockup) and fire a withdrawalResumed event.
-          lockupEnding = now + lockupRemaining;
-          WithdrawalResumed();
-      }
+        uint oldStake = claimableStake;
+        claimableStake = 0;
+        require(token.transfer(staker, oldStake));
+        StakeWithdrawn();
     }
 
     /*
