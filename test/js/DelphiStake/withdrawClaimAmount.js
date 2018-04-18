@@ -12,4 +12,3 @@ contract('DelphiStake', () => {
     it('should emit a ClaimWithdrawn event');
   });
 });
-

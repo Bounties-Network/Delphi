@@ -37,19 +37,11 @@ contract('DelphiVoting', (accounts) => {
       const ds = await DelphiStake.deployed();
       const token = EIP20.at(await ds.token.call());
 
-      // Set constants
-      const CLAIM_AMOUNT = '10';
-      const FEE_AMOUNT = '5';
-      const VOTE = '1';
-      const SALT = '420';
-
-      // Make a new claim and get its claimId
-      const claimNumber = // should be zero, since this is the first test
-        await utils.makeNewClaim(staker, claimant, CLAIM_AMOUNT, FEE_AMOUNT, 'i love cats');
-      const claimId = utils.getClaimId(ds.address, claimNumber.toString(10));
-
-      // Get the secret hash for the salted vote
-      const secretHash = utils.getSecretHash(VOTE, SALT);
+      const claimAmount = '10';
+      const feeAmount = '10';
+      const vote = '1';
+      const salt = '420';
+      const secretHash = utils.getSecretHash(vote, salt);
 
       // Commit vote
       await utils.as(arbiterAlice, dv.commitVote, ds.address, claimNumber, secretHash);
@@ -114,7 +106,7 @@ contract('DelphiVoting', (accounts) => {
 
         // Set constants
         const CLAIM_AMOUNT = '10';
-        const FEE_AMOUNT = '5';
+        const FEE_AMOUNT = '10';
         const PLURALITY_VOTE = '1';
         const NON_PLURALITY_VOTE = '0';
         const SALT = '420';
@@ -175,9 +167,9 @@ contract('DelphiVoting', (accounts) => {
 
       // Use previous claim, since we have two arbiters who still have not claimed for it
       const CLAIM_NUMBER = '1';
-      const FEE_AMOUNT = new BN('5', 10); // Use previous fee amount
+      const FEE_AMOUNT = new BN('10', 10); // Use previous fee amount
       const PLURALITY_VOTE = '1'; // Use previous plurality vote
-      const SALT = '420'; // Use previous salt 
+      const SALT = '420'; // Use previous salt
       const PLURALITY_ARBITERS_COUNT = new BN('2', 10); // Alice and Bob voted in the plurality
 
       // Capture Alice's starting token balance, claim the fee and get her final balance
