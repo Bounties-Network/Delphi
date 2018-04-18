@@ -142,7 +142,7 @@ contract DelphiStake {
     a stake can be withdrawn by the staker
     @param _arbiter the address which is able to rule on open claims
     */
-    function initDelphiStake(uint _value, EIP20 _token, uint _minimumFee, string _data, uint _caimDeadline, address _arbiter)
+    function initDelphiStake(uint _value, EIP20 _token, uint _minimumFee, string _data, uint _claimDeadline, address _arbiter)
     public
     {
         require(token == address(0)); // only possible if init hasn't been called before
@@ -251,6 +251,9 @@ contract DelphiStake {
         require(token.transferFrom(_claimant, this, _fee));
         claims.push(Claim(_claimant, _amount, _fee, 0, _data, 0, false, true));
         openClaims ++;
+
+        // The claim amount and claim fee are reserved for this particular claim until the arbiter
+        // rules
         claimableStake -= (_amount + _fee);
         // the claim amount and claim fee are locked up in this contract until the arbiter rules
 
@@ -343,15 +346,14 @@ contract DelphiStake {
               !claim.settlementFailed &&
               !claim.ruled);
 
-      // Set this claim's ruled and paid flags to true to prevent further actions (settlements or
+      // Set this claim's ruled flag to true to prevent further actions (settlements or
       // arbitration) being taken against this claim.
       claim.ruled = true;
-      claim.paid = true;
 
       // Increase the stake's claimable stake by the claim amount and fee, minus the agreed
       // settlement amount. Then decrement the openClaims counter, since this claim is resolved.
       claimableStake += (claim.amount + claim.fee - settlement.amount);
-      openClaims--;
+      openClaims --;
 
       // Transfer to the claimant the settlement amount, plus the fee they deposited.
       require(token.transfer(claim.claimant, (settlement.amount + claim.fee)));
@@ -423,6 +425,8 @@ contract DelphiStake {
         } else {
           revert();
         }
+
+        // The claim is ruled. Decrement the total number of open claims.
         openClaims--;
 
         // Emit an event stating which claim was ruled.
