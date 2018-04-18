@@ -91,17 +91,6 @@ contract DelphiStake {
         _;
     }
 
-    modifier claimUnpaid(uint _claimId){
-        require(!claims[_claimId].paid);
-        _;
-    }
-
-    modifier lockupElapsed(){
-        // if lockupEnding is 0, it means the lockup is paused due to outstanding claims
-        require(now >= lockupEnding && lockupEnding != 0);
-        _;
-    }
-
     modifier stakerCanPay(uint _amount, uint _fee){
         require(claimableStake >= (_amount + _fee));
         _;
@@ -122,11 +111,6 @@ contract DelphiStake {
         _;
     }
 
-    modifier withdrawalNotInitiated(){
-        require(!withdrawInitiated);
-        _;
-    }
-
     modifier isWhitelisted(address _claimant){
       require(allowedClaimants[_claimant]);
       _;
@@ -137,23 +121,28 @@ contract DelphiStake {
       _;
     }
 
+    modifier isBeforeClaimDeadline(){
+      require (now <= claimDeadline);
+      _;
+    }
+
     modifier isPastClaimDeadline(){
       require (now > claimDeadline);
       _;
     }
 
     /*
-    @dev initializes the DelphiStake contract's storage. Must be invoked before anything else can 
-    be done.
-    @param _value the number of tokens to stake
-    @param _token the token which this stake is denominated in
-    @param _minimumFee
-    @param _data an arbitrary string, perhaps an IPFS hash, containing any data the staker likes
-    @param _lockupPeriod the duration the staker will have to wait between initializing a
-    withdrawal and finalizing it, during which claims can be made against them
-    @param _arbiter the entity which can adjudicate in claims made against this stake
+    @dev when creating a new Delphi Stake using a proxy contract architecture, a user must
+    initialialize their stake, depositing their tokens
+    @param _value the value of the stake in token units
+    @param _token the address of the token being deposited
+    @param _minimumFee the minimum fee which must be deposited by both parties for each claim
+    @param _data a content hash of the relevant associated data describing the stake
+    @param _claimDeadline the deadline for opening new cliams; the earliest moment that
+    a stake can be withdrawn by the staker
+    @param _arbiter the address which is able to rule on open claims
     */
-     function initDelphiStake(uint _value, EIP20 _token, uint _minimumFee, string _data, uint _caimDeadline, address _arbiter)
+    function initDelphiStake(uint _value, EIP20 _token, uint _minimumFee, string _data, uint _caimDeadline, address _arbiter)
     public
     {
         require(token == address(0)); // only possible if init hasn't been called before
@@ -199,13 +188,11 @@ contract DelphiStake {
     /*
     @dev a whitelisted claimant can use this function to make a claim for remuneration. Once
     opened, an opportunity for pre-arbitration settlement will commence, but claims cannot be
-    unilaterally cancelled. Only whitelisted claimants can open claims, but in doing so they can
-    specify any address to then act as the claimant for the course of the adjudication. Practically,
-    this means that whitelisted claimants can open claims on behalf of others.
+    unilaterally cancelled. Claims can only be opened for whitelisted individuals, however
+    anyone may open a claim on a whitelisted individual's behalf (depositing the necessary fee for them)
     @param _claimant the entity which will act as the claimant in the course of the adjudication.
-    Does not need to be whitelisted.
     @param _amount the size of the claim being made, denominated in the stake's token. Must be less
-    than or equal to the current amount of stake not locked up in other disputes.
+    than or equal to the current amount of stake not locked up in other disputes, minus the fee deposited.
     @param _fee the size of the fee, denominated in the stake's token, to be offered to the arbiter
     as compensation for their service in adjudicating the dispute. If the claimant loses the claim,
     they lose this fee.
@@ -218,6 +205,7 @@ contract DelphiStake {
     stakerCanPay(_amount, _fee)
     isWhitelisted(_claimant)
     largeEnoughFee(_fee)
+    isBeforeClaimDeadline
     {
         // Transfer the fee into the DelphiStake
         require(token.transferFrom(_claimant, this, _fee));
@@ -238,12 +226,27 @@ contract DelphiStake {
         ClaimOpened(msg.sender, claims.length - 1);
     }
 
+    /*
+    @dev a whitelisted claimant can use this function to make a claim for remuneration. Opened claims
+    will proceed directly to full arbitration, when their claims can be ruled upon. Claims can
+    only be opened for whitelisted individuals, however anyone may open a claim on a whitelisted
+    individual's behalf (depositing the necessary fee for them)
+    @param _claimant the entity which will act as the claimant in the course of the adjudication.
+    @param _amount the size of the claim being made, denominated in the stake's token. Must be less
+    than or equal to the current amount of stake not locked up in other disputes, minus the fee deposited.
+    @param _fee the size of the fee, denominated in the stake's token, to be offered to the arbiter
+    as compensation for their service in adjudicating the dispute. If the claimant loses the claim,
+    they lose this fee.
+    @param _data an arbitrary string, perhaps an IPFS hash, containing data substantiating the
+    basis for the claim.
+    */
     function openClaimWithoutSettlement(address _claimant, uint _amount, uint _fee, string _data)
     public
     notStakerOrArbiter
     stakerCanPay(_amount, _fee)
     isWhitelisted(_claimant)
     largeEnoughFee(_fee)
+    isBeforeClaimDeadline
     {
         require(token.transferFrom(_claimant, this, _fee));
         claims.push(Claim(_claimant, _amount, _fee, 0, _data, 0, false, true));
@@ -460,6 +463,10 @@ contract DelphiStake {
         claimableStake += _value;
     }
 
+    /*
+    @dev Increases the deadline for opening claims
+    @param _newClaimDeadline the unix time stamp (in seconds) before which claims may be opened
+    */
     function increaseClaimDeadline(uint _newClaimDeadline)
     public
     onlyStaker
@@ -468,6 +475,10 @@ contract DelphiStake {
         claimDeadline = _newClaimDeadline;
     }
 
+    /*
+    @dev Returns the stake to the staker, if the claim deadline has elapsed and no open claims remain
+    @param _newClaimDeadline the unix time stamp (in seconds) before which claims may be opened
+    */
     function withdrawStake()
     public
     onlyStaker
