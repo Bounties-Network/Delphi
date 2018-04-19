@@ -24,6 +24,7 @@ module.exports = (deployer, network) => {
         .approve((await DelphiStake.deployed()).address, conf.initialStake);
     }
 
-    return ds.initDelphiStake(conf.initialStake, token, conf.minFee, conf.data, conf.deadline, arbiter);
+    return ds.initDelphiStake(conf.initialStake, token, conf.minFee, conf.data,
+      conf.deadline, arbiter);
   });
 };
