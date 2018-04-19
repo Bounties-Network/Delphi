@@ -1,15 +1,7 @@
 /* eslint-env mocha */
-/* global contract artifacts assert */
+/* global contract  */
 
-const DelphiVoting = artifacts.require('DelphiVoting');
-const DelphiStake = artifacts.require('DelphiStake');
-
-const utils = require('../utils.js');
-const fs = require('fs');
-
-const config = JSON.parse(fs.readFileSync('./conf/registryConfig.json'));
-
-contract('DelphiVoting', (accounts) => {
+contract('DelphiVoting', (accounts) => { //eslint-disable-line
   describe('Function: submitRuling', () => {
     it('should allow anyone to submit a ruling (non-voters)');
     it('should revert if the claimId generated from the stake address and claim number doesnt exist');

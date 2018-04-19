@@ -40,7 +40,7 @@ contract('DelphiVoting', (accounts) => {
 
       // Set constants
       const CLAIM_AMOUNT = '10';
-      const FEE_AMOUNT = '5';
+      const FEE_AMOUNT = '10';
       const VOTE = '1';
       const SALT = '420';
 
@@ -48,6 +48,7 @@ contract('DelphiVoting', (accounts) => {
       const claimNumber = // should be zero, since this is the first test
         await utils.makeNewClaim(staker, claimant, CLAIM_AMOUNT, FEE_AMOUNT, 'i love cats');
       const claimId = utils.getClaimId(ds.address, claimNumber.toString(10));
+
       // Get the secret hash for the salted vote
       const secretHash = utils.getSecretHash(VOTE, SALT);
 

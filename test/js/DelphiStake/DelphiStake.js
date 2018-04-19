@@ -64,6 +64,5 @@ contract('DelphiStake', (accounts) => {
     it('should revert when trying to call the initialize function more than once');
     it('should revert when trying to call the initialize function with a deadline that is before now');
     it('should revert when trying to initialize with an arbiter of address(0)');
-
   });
 });
