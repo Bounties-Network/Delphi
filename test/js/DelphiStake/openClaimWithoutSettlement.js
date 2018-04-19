@@ -1,5 +1,5 @@
 /* eslint-env mocha */
-/* global contract artifacts assert web3 */
+/* global contract artifacts assert */
 
 const DelphiStake = artifacts.require('DelphiStake');
 const EIP20 = artifacts.require('EIP20');

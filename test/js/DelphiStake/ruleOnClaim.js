@@ -6,8 +6,6 @@
 const DelphiStake = artifacts.require('DelphiStake');
 const EIP20 = artifacts.require('EIP20');
 
-const BN = require('bignumber.js');
-
 const utils = require('../utils.js');
 
 const conf = utils.getConfig();

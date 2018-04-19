@@ -1,5 +1,5 @@
 /* eslint-env mocha */
-/* global contract artifacts assert web3 */
+/* global contract artifacts assert */
 
 const DelphiStake = artifacts.require('DelphiStake');
 const EIP20 = artifacts.require('EIP20');
@@ -119,7 +119,6 @@ contract('DelphiStake', (accounts) => {
       assert(false, 'expected claim by non-whitelisted individual to fail');
     });
     it('should revert if someone is attempting to open a claim after the deadline');
-    
     it('should revert if _fee is smaller than the minimum', async () => {
       const token = await EIP20.new(1000000, 'Delphi Tokens', 18, 'DELPHI', { from: staker });
       await token.transfer(claimant, 100000, { from: staker });
