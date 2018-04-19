@@ -10,7 +10,7 @@ const BN = require('bignumber.js');
 const conf = utils.getConfig();
 
 contract('DelphiStake', (accounts) => {
-  describe('Function: openClaim', () => {
+  describe('Function: openClaimWithoutSettlement', () => {
     const [staker, claimant, arbiter] = accounts;
 
     it('should not allow the arbiter to open a claim', async () => {
@@ -35,7 +35,7 @@ contract('DelphiStake', (accounts) => {
       await token.approve(ds.address, feeAmount, { from: arbiter });
 
       try {
-        await ds.openClaim(arbiter, claimAmount, feeAmount, '', { from: arbiter });
+        await ds.openClaimWithoutSettlement(arbiter, claimAmount, feeAmount, '', { from: arbiter });
       } catch (err) {
         assert(utils.isEVMRevert(err), err.toString());
 
@@ -71,7 +71,7 @@ contract('DelphiStake', (accounts) => {
       await token.approve(ds.address, feeAmount, { from: staker });
 
       try {
-        await ds.openClaim(staker, claimAmount, feeAmount, '', { from: staker });
+        await ds.openClaimWithoutSettlement(staker, claimAmount, feeAmount, '', { from: staker });
       } catch (err) {
         assert(utils.isEVMRevert(err), err.toString());
 
@@ -105,7 +105,7 @@ contract('DelphiStake', (accounts) => {
       await token.approve(ds.address, feeAmount, { from: claimant });
 
       try {
-        await ds.openClaim(claimant, claimAmount, feeAmount, '', { from: claimant });
+        await ds.openClaimWithoutSettlement(claimant, claimAmount, feeAmount, '', { from: claimant });
       } catch (err) {
         assert(utils.isEVMRevert(err), err.toString());
 
@@ -118,7 +118,9 @@ contract('DelphiStake', (accounts) => {
 
       assert(false, 'expected claim by non-whitelisted individual to fail');
     });
+
     it('should revert if someone is attempting to open a claim after the deadline');
+
     it('should revert if _fee is smaller than the minimum', async () => {
       const token = await EIP20.new(1000000, 'Delphi Tokens', 18, 'DELPHI', { from: staker });
       await token.transfer(claimant, 100000, { from: staker });
@@ -141,7 +143,7 @@ contract('DelphiStake', (accounts) => {
       await token.approve(ds.address, feeAmount, { from: claimant });
 
       try {
-        await ds.openClaim(claimant, claimAmount, feeAmount, '', { from: claimant });
+        await ds.openClaimWithoutSettlement(claimant, claimAmount, feeAmount, '', { from: claimant });
       } catch (err) {
         assert(utils.isEVMRevert(err), err.toString());
 
@@ -177,7 +179,7 @@ contract('DelphiStake', (accounts) => {
       await token.approve(ds.address, feeAmount, { from: claimant });
 
       try {
-        await ds.openClaim(claimant, claimAmount, feeAmount, '', { from: claimant });
+        await ds.openClaimWithoutSettlement(claimant, claimAmount, feeAmount, '', { from: claimant });
       } catch (err) {
         assert(utils.isEVMRevert(err), err.toString());
 
@@ -212,7 +214,7 @@ contract('DelphiStake', (accounts) => {
       await ds.whitelistClaimant(claimant, { from: staker });
 
       try {
-        await ds.openClaim(claimant, claimAmount, feeAmount, '', { from: claimant });
+        await ds.openClaimWithoutSettlement(claimant, claimAmount, feeAmount, '', { from: claimant });
       } catch (err) {
         assert(utils.isEVMRevert(err), err.toString());
 
@@ -248,7 +250,7 @@ contract('DelphiStake', (accounts) => {
 
       await ds.whitelistClaimant(claimant, { from: staker });
 
-      await ds.openClaim(claimant, claimAmount, feeAmount, '', { from: claimant });
+      await ds.openClaimWithoutSettlement(claimant, claimAmount, feeAmount, '', { from: claimant });
 
       const finalClaims = await ds.getNumClaims();
       assert.strictEqual(startingClaims.add(new BN('1', 10)).toString(10),
@@ -279,7 +281,7 @@ contract('DelphiStake', (accounts) => {
 
         const claimId = await ds.getNumClaims();
 
-        await ds.openClaim(claimant, claimAmount, feeAmount, 'newclaim', { from: claimant });
+        await ds.openClaimWithoutSettlement(claimant, claimAmount, feeAmount, 'newclaim', { from: claimant });
 
         const claim = await ds.claims.call(claimId);
 
@@ -297,7 +299,7 @@ contract('DelphiStake', (accounts) => {
 
         assert.strictEqual(claim[6], false, 'initialized ruled bool incorrectly');
 
-        assert.strictEqual(claim[7], false, 'initialized settlementFailed incorrectly');
+        assert.strictEqual(claim[7], true, 'initialized settlementFailed incorrectly');
       });
 
     it('should increment the openClaims.call counter', async () => {
@@ -322,7 +324,7 @@ contract('DelphiStake', (accounts) => {
 
       await ds.whitelistClaimant(claimant, { from: staker });
 
-      await ds.openClaim(claimant, claimAmount, feeAmount, '', { from: claimant });
+      await ds.openClaimWithoutSettlement(claimant, claimAmount, feeAmount, '', { from: claimant });
 
       const finalClaims = await ds.openClaims();
       assert.strictEqual(startingClaims.add(new BN('1', 10)).toString(10),
@@ -352,7 +354,7 @@ contract('DelphiStake', (accounts) => {
 
       const startingStake = await ds.claimableStake.call();
 
-      await ds.openClaim(claimant, claimAmount, feeAmount, '', { from: claimant });
+      await ds.openClaimWithoutSettlement(claimant, claimAmount, feeAmount, '', { from: claimant });
 
       const finalStake = await ds.claimableStake();
       assert.strictEqual(startingStake.sub(claimAmount.add(feeAmount)).toString(10),
@@ -386,13 +388,13 @@ contract('DelphiStake', (accounts) => {
       await ds.whitelistClaimant(claimant, { from: staker });
 
       await token.approve(ds.address, feeAmount, { from: claimant });
-      await ds.openClaim(claimant, claimAmount, feeAmount, 'claim1', { from: claimant });
+      await ds.openClaimWithoutSettlement(claimant, claimAmount, feeAmount, 'claim1', { from: claimant });
 
       await token.approve(ds.address, feeAmount, { from: claimant });
-      await ds.openClaim(claimant, claimAmount, feeAmount, 'claim2', { from: claimant });
+      await ds.openClaimWithoutSettlement(claimant, claimAmount, feeAmount, 'claim2', { from: claimant });
 
       await token.approve(ds.address, feeAmount, { from: claimant });
-      await ds.openClaim(claimant, claimAmount, feeAmount, 'claim3', { from: claimant });
+      await ds.openClaimWithoutSettlement(claimant, claimAmount, feeAmount, 'claim3', { from: claimant });
 
       const claim1 = await ds.claims.call('0');
 
@@ -403,7 +405,7 @@ contract('DelphiStake', (accounts) => {
       assert.strictEqual(claim1[4], 'claim1', 'initialized claim data incorrectly');
       assert.strictEqual(claim1[5].toString(10), '0', 'initialized claim ruling incorrectly');
       assert.strictEqual(claim1[6], false, 'initialized ruled bool incorrectly');
-      assert.strictEqual(claim1[7], false, 'initialized settlementFailed incorrectly');
+      assert.strictEqual(claim1[7], true, 'initialized settlementFailed incorrectly');
 
       const claim2 = await ds.claims.call('1');
 
@@ -414,7 +416,7 @@ contract('DelphiStake', (accounts) => {
       assert.strictEqual(claim2[4], 'claim2', 'initialized claim data incorrectly');
       assert.strictEqual(claim2[5].toString(10), '0', 'initialized claim ruling incorrectly');
       assert.strictEqual(claim2[6], false, 'initialized ruled bool incorrectly');
-      assert.strictEqual(claim2[7], false, 'initialized settlementFailed incorrectly');
+      assert.strictEqual(claim2[7], true, 'initialized settlementFailed incorrectly');
 
       const claim3 = await ds.claims.call('2');
 
@@ -425,7 +427,7 @@ contract('DelphiStake', (accounts) => {
       assert.strictEqual(claim3[4], 'claim3', 'initialized claim data incorrectly');
       assert.strictEqual(claim3[5].toString(10), '0', 'initialized claim ruling incorrectly');
       assert.strictEqual(claim3[6], false, 'initialized ruled bool incorrectly');
-      assert.strictEqual(claim3[7], false, 'initialized settlementFailed incorrectly');
+      assert.strictEqual(claim3[7], true, 'initialized settlementFailed incorrectly');
     });
   });
 });

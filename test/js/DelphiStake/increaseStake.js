@@ -23,8 +23,8 @@ contract('DelphiStake', (accounts) => {
 
       await token.approve(ds.address, conf.initialStake, { from: staker });
 
-      await ds.initDelphiStake(conf.initialStake, token.address, conf.data,
-        conf.lockupPeriod, arbiter, { from: staker });
+      await ds.initDelphiStake(conf.initialStake, token.address, conf.minFee, conf.data,
+        conf.deadline, arbiter, { from: staker });
 
       const incAmount = '1';
 
@@ -55,8 +55,8 @@ contract('DelphiStake', (accounts) => {
 
       await token.approve(ds.address, conf.initialStake, { from: staker });
 
-      await ds.initDelphiStake(conf.initialStake, token.address, conf.data,
-        conf.lockupPeriod, arbiter, { from: staker });
+      await ds.initDelphiStake(conf.initialStake, token.address, conf.minFee, conf.data,
+        conf.deadline, arbiter, { from: staker });
 
       const initialStake = await ds.claimableStake.call();
 
@@ -89,8 +89,8 @@ contract('DelphiStake', (accounts) => {
 
       await token.approve(ds.address, conf.initialStake, { from: staker });
 
-      await ds.initDelphiStake(conf.initialStake, token.address, conf.data,
-        conf.lockupPeriod, arbiter, { from: staker });
+      await ds.initDelphiStake(conf.initialStake, token.address, conf.minFee, conf.data,
+        conf.deadline, arbiter, { from: staker });
 
       const incAmount = '1';
 

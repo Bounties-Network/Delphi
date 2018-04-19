@@ -12,10 +12,10 @@ contract DelphiStake {
     event SettlementAccepted(address _acceptedBy, uint _claimId, uint _settlementId);
     event SettlementFailed(address _failedBy, uint _claimId);
     event ClaimRuled(uint _claimId);
-    event WithdrawInitiated();
-    event WithdrawalPaused();
-    event WithdrawalResumed();
-    event WithdrawFinalized();
+    event ClaimDeadlineIncreased(uint _newClaimDeadline);
+    event StakeWithdrawn();
+    event StakeIncreased(address _increasedBy, uint _value);
+
 
     struct Claim {
       address claimant;
@@ -25,7 +25,6 @@ contract DelphiStake {
       string data;
       uint ruling;
       bool ruled;
-      bool paid;
       bool settlementFailed;
     }
 
@@ -37,6 +36,8 @@ contract DelphiStake {
 
     address public masterCopy; // THIS MUST ALWAYS BE IN THE FIRST STORAGE SLOT
 
+    uint public minimumFee;
+
     uint public claimableStake;
     EIP20 public token;
 
@@ -45,10 +46,7 @@ contract DelphiStake {
     address public staker;
     address public arbiter;
 
-    uint public lockupPeriod;
-    uint public lockupEnding;
-    uint public lockupRemaining;
-    bool public withdrawInitiated;
+    uint public claimDeadline;
 
     Claim[] public claims;
     uint public openClaims;
@@ -86,19 +84,13 @@ contract DelphiStake {
         _;
     }
 
+    modifier largeEnoughFee(uint _newFee){
+        require(_newFee >= minimumFee);
+        _;
+    }
+
     modifier claimNotRuled(uint _claimId){
         require(!claims[_claimId].ruled);
-        _;
-    }
-
-    modifier claimUnpaid(uint _claimId){
-        require(!claims[_claimId].paid);
-        _;
-    }
-
-    modifier lockupElapsed(){
-        // if lockupEnding is 0, it means the lockup is paused due to outstanding claims
-        require(now >= lockupEnding && lockupEnding != 0);
         _;
     }
 
@@ -112,40 +104,52 @@ contract DelphiStake {
         _;
     }
 
+    modifier settlementDidNotFail(uint _claimId){
+        require(!claims[_claimId].settlementFailed);
+        _;
+    }
+
     modifier onlyStakerOrClaimant(uint _claimId){
         require(msg.sender == staker || msg.sender == claims[_claimId].claimant);
         _;
     }
 
-    modifier withdrawalNotInitiated(){
-        require(!withdrawInitiated);
-        _;
+    modifier isWhitelisted(address _claimant){
+      require(allowedClaimants[_claimant]);
+      _;
     }
 
-    modifier isWhitelisted(){
-      require(allowedClaimants[msg.sender]);
+    modifier noOpenClaims(){
+      require(openClaims == 0);
+      _;
+    }
+
+    modifier isBeforeClaimDeadline(){
+      require (now <= claimDeadline);
+      _;
+    }
+
+    modifier isPastClaimDeadline(){
+      require (now > claimDeadline);
       _;
     }
 
     /*
-    @dev initializes the DelphiStake contract's storage. Must be invoked before anything else can 
-    be done.
-    @param _value the number of tokens to stake
-    @param _token the token which this stake is denominated in
-    @param _data an arbitrary string, perhaps an IPFS hash, containing any data the staker likes
-    @param _lockupPeriod the duration the staker will have to wait between initializing a
-    withdrawal and finalizing it, during which claims can be made against them
-    @param _arbiter the entity which can adjudicate in claims made against this stake
+    @dev when creating a new Delphi Stake using a proxy contract architecture, a user must
+    initialialize their stake, depositing their tokens
+    @param _value the value of the stake in token units
+    @param _token the address of the token being deposited
+    @param _minimumFee the minimum fee which must be deposited by both parties for each claim
+    @param _data a content hash of the relevant associated data describing the stake
+    @param _claimDeadline the deadline for opening new cliams; the earliest moment that
+    a stake can be withdrawn by the staker
+    @param _arbiter the address which is able to rule on open claims
     */
-    function initDelphiStake(uint _value, EIP20 _token, string _data, uint _lockupPeriod, address _arbiter)
+    function initDelphiStake(uint _value, EIP20 _token, uint _minimumFee, string _data, uint _claimDeadline, address _arbiter)
     public
     {
-        // This function can only be called if it hasn't been called before, or if the token was
-        // set to 0 when it was called previously.
-        require(token == address(0));
-
-        // Require reasonable inputs
-        require(_lockupPeriod > 0);
+        require(token == address(0)); // only possible if init hasn't been called before
+        require(_claimDeadline > now);
         require(_arbiter != address(0));
 
         // Revert if the specified value to stake cannot be transferred in
@@ -154,9 +158,9 @@ contract DelphiStake {
         // Initialize contract storage.
         claimableStake = _value;
         token = _token;
+        minimumFee = _minimumFee;
         data = _data;
-        lockupPeriod = _lockupPeriod;
-        lockupRemaining = _lockupPeriod;
+        claimDeadline = _claimDeadline;
         arbiter = _arbiter;
         staker = msg.sender;
     }
@@ -181,13 +185,11 @@ contract DelphiStake {
     /*
     @dev a whitelisted claimant can use this function to make a claim for remuneration. Once
     opened, an opportunity for pre-arbitration settlement will commence, but claims cannot be
-    unilaterally cancelled. Only whitelisted claimants can open claims, but in doing so they can
-    specify any address to then act as the claimant for the course of the adjudication. Practically,
-    this means that whitelisted claimants can open claims on behalf of others.
+    unilaterally cancelled. Claims can only be opened for whitelisted individuals, however
+    anyone may open a claim on a whitelisted individual's behalf (depositing the necessary fee for them)
     @param _claimant the entity which will act as the claimant in the course of the adjudication.
-    Does not need to be whitelisted.
     @param _amount the size of the claim being made, denominated in the stake's token. Must be less
-    than or equal to the current amount of stake not locked up in other disputes.
+    than or equal to the current amount of stake not locked up in other disputes, minus the fee deposited.
     @param _fee the size of the fee, denominated in the stake's token, to be offered to the arbiter
     as compensation for their service in adjudicating the dispute. If the claimant loses the claim,
     they lose this fee.
@@ -198,17 +200,45 @@ contract DelphiStake {
     public
     notStakerOrArbiter
     stakerCanPay(_amount, _fee)
-    isWhitelisted
+    isWhitelisted(_claimant)
+    largeEnoughFee(_fee)
+    isBeforeClaimDeadline
+    {
+        require(token.transferFrom(_claimant, this, _fee));
+        claims.push(Claim(_claimant, _amount, _fee, 0, _data, 0, false, false));
+        openClaims ++;
+        claimableStake -= (_amount + _fee);
+        // the claim amount and claim fee are locked up in this contract until the arbiter rules
+
+        ClaimOpened(msg.sender, claims.length - 1);
+    }
+
+    /*
+    @dev a whitelisted claimant can use this function to make a claim for remuneration. Opened claims
+    will proceed directly to full arbitration, when their claims can be ruled upon. Claims can
+    only be opened for whitelisted individuals, however anyone may open a claim on a whitelisted
+    individual's behalf (depositing the necessary fee for them)
+    @param _claimant the entity which will act as the claimant in the course of the adjudication.
+    @param _amount the size of the claim being made, denominated in the stake's token. Must be less
+    than or equal to the current amount of stake not locked up in other disputes, minus the fee deposited.
+    @param _fee the size of the fee, denominated in the stake's token, to be offered to the arbiter
+    as compensation for their service in adjudicating the dispute. If the claimant loses the claim,
+    they lose this fee.
+    @param _data an arbitrary string, perhaps an IPFS hash, containing data substantiating the
+    basis for the claim.
+    */
+    function openClaimWithoutSettlement(address _claimant, uint _amount, uint _fee, string _data)
+    public
+    notStakerOrArbiter
+    stakerCanPay(_amount, _fee)
+    isWhitelisted(_claimant)
+    largeEnoughFee(_fee)
+    isBeforeClaimDeadline
     {
         // Transfer the fee into the DelphiStake
         require(token.transferFrom(_claimant, this, _fee));
-
-        // Add a new claim to the claims array and increment the openClaims counter. Because there
-        // is necessarily at least one open claim now, pause any active withdrawal (lockup)
-        // countdown.
-        claims.push(Claim(_claimant, _amount, _fee, 0, _data, 0, false, false, false));
+        claims.push(Claim(_claimant, _amount, _fee, 0, _data, 0, false, true));
         openClaims ++;
-        pauseLockup();
 
         // The claim amount and claim fee are reserved for this particular claim until the arbiter
         // rules
@@ -253,6 +283,7 @@ contract DelphiStake {
     public
     validClaimID(_claimId)
     onlyStakerOrClaimant(_claimId)
+    settlementDidNotFail(_claimId)
     {
       // Only allow settlements for up to the amount that has been reserved (locked) for this claim
       require((claims[_claimId].amount + claims[_claimId].fee) >= _amount);
@@ -271,7 +302,7 @@ contract DelphiStake {
     }
 
     /*
-    @dev once either party in a claim has proposed a settlement, the opposite party can choose to 
+    @dev once either party in a claim has proposed a settlement, the opposite party can choose to
     accept the settlement. The settlement proposer implicitly accepts, so only the counterparty
     needs to invoke this function.
     @param _claimId the ID of the claim to accept a settlement for
@@ -282,6 +313,7 @@ contract DelphiStake {
     validClaimID(_claimId)
     validSettlementId(_claimId, _settlementId)
     onlyStakerOrClaimant(_claimId)
+    settlementDidNotFail(_claimId)
     {
       Settlement storage settlement = settlements[_claimId][_settlementId];
       Claim storage claim = claims[_claimId];
@@ -303,15 +335,14 @@ contract DelphiStake {
               !claim.settlementFailed &&
               !claim.ruled);
 
-      // Set this claim's ruled and paid flags to true to prevent further actions (settlements or
+      // Set this claim's ruled flag to true to prevent further actions (settlements or
       // arbitration) being taken against this claim.
       claim.ruled = true;
-      claim.paid = true;
 
       // Increase the stake's claimable stake by the claim amount and fee, minus the agreed
       // settlement amount. Then decrement the openClaims counter, since this claim is resolved.
       claimableStake += (claim.amount + claim.fee - settlement.amount);
-      decrementOpenClaims();
+      openClaims --;
 
       // Transfer to the claimant the settlement amount, plus the fee they deposited.
       require(token.transfer(claim.claimant, (settlement.amount + claim.fee)));
@@ -329,6 +360,7 @@ contract DelphiStake {
     public
     validClaimID(_claimId)
     onlyStakerOrClaimant(_claimId)
+    settlementDidNotFail(_claimId)
     {
       // Set the claim's settlementFailed flag to true, preventing further settlement proposals
       // and settlement agreements.
@@ -363,6 +395,7 @@ contract DelphiStake {
         if (_ruling == 0){
           // The claim is justified. Transfer to the arbiter their fee.
           require(token.transfer(arbiter, (claim.fee + claim.surplusFee)));
+          require(token.transfer(claim.claimant, (claim.amount + claim.fee)));
         } else if (_ruling == 1){
           // The claim is not justified. Free up the claim amount and fee for future claims, and
           // transfer to the arbiter their fee.
@@ -377,36 +410,20 @@ contract DelphiStake {
         } else if (_ruling == 3){
           // The claim cannot be ruled. Free up the claim amount and fee.
           claimableStake += (claim.amount + claim.fee);
+          require(token.transfer(claim.claimant, (claim.amount + claim.fee)));
           // TODO: send fsurplus to arbiters
           // TODO: send claim.fee to claimant
+          } else {
+            revert();
         }
 
         // The claim is ruled. Decrement the total number of open claims.
-        decrementOpenClaims();
+        openClaims--;
 
         // Emit an event stating which claim was ruled.
         ClaimRuled(_claimId);
     }
 
-    /*
-    @dev Victorious claimants can invoke withdrawClaimAmount to claim what they are owed.
-    @param _claimId the ID of the claim to take a remuneration for.
-    */
-    function withdrawClaimAmount(uint _claimId)
-    public
-    validClaimID(_claimId)
-    onlyClaimant(_claimId)
-    claimUnpaid(_claimId)
-    {
-        Claim storage claim = claims[_claimId];
-
-        if (claim.ruling == 0 || claim.ruling == 3){
-            // If the claim was justified, or a fault, set the paid flag for this claim to true
-            // and transfer the claim amount and fee to the claimant.
-            claim.paid = true;
-            require(token.transfer(claim.claimant, (claim.amount + claim.fee)));
-        }
-    }
 
     /*
     @dev Increases the stake in this DelphiStake
@@ -420,96 +437,36 @@ contract DelphiStake {
         // claimableStake by _value.
         require(token.transferFrom(msg.sender, this, _value));
         claimableStake += _value;
+        StakeIncreased(msg.sender, _value);
     }
 
     /*
-    @dev This is step one of a two-step withdrawal process for a stake owner getting their stake
-    out of the stake contract. Once initiateWithdrawStake is invoked, a countdown begins. When the
-    countdown complete, the stake becomes withdrawable using finalizeWithdrawStake. The countdown
-    becomes paused if a claim is opened during the countdown, and resumes when the claimCounter
-    resets to zero.
+    @dev Increases the deadline for opening claims
+    @param _newClaimDeadline the unix time stamp (in seconds) before which claims may be opened
     */
-    function initiateWithdrawStake()
+    function increaseClaimDeadline(uint _newClaimDeadline)
     public
     onlyStaker
-    withdrawalNotInitiated
     {
-       // The lockup period ends lockupPediod seconds in the future.
-       lockupEnding = now + lockupPeriod;
-
-       // Right now, there are lockupPeriod seconds remaining in the countdown.
-       lockupRemaining = lockupPeriod;
-
-       // Set the withdraw initiated flag to true, and emit a WithdrawInitiated event.
-       withdrawInitiated = true;
-       WithdrawInitiated();
+        require(_newClaimDeadline > claimDeadline);
+        claimDeadline = _newClaimDeadline;
+        ClaimDeadlineIncreased(_newClaimDeadline);
     }
 
     /*
-    @dev Step two of the two-step withdrawal process. If the lockupEnding time is in the past, but
-    not zero, the stake can be withdrawn.
+    @dev Returns the stake to the staker, if the claim deadline has elapsed and no open claims remain
+    @param _newClaimDeadline the unix time stamp (in seconds) before which claims may be opened
     */
-    function finalizeWithdrawStake()
+    function withdrawStake()
     public
     onlyStaker
-    lockupElapsed
+    isPastClaimDeadline
+    noOpenClaims
     {
-       // Capture the claimable stake amount when the withdraw is initiated, then set claimable
-       // stake to zero.
-       uint oldStake = claimableStake;
-       claimableStake = 0;
-
-       // Transfer the stake to the staker.
-       require(token.transfer(staker, oldStake));
-
-       // Now that the withdrawal is complete, reset all withdrawal/lockup related values to their
-       // default values.
-       withdrawInitiated = false;
-       lockupEnding = 0;
-       lockupRemaining = lockupPeriod;
-
-       // Emit a withdrawFinalized event.
-       WithdrawFinalized();
-    }
-
-    /*
-    @dev Internal function called in openClaim to pause the withdrawal countdown when a new claim
-    is opened.
-    */
-    function pauseLockup()
-    internal
-    {
-        if (lockupEnding != 0){
-          // Capture the remaining lockup time (for when the countdown resumes) as the current
-          // lockup ending time minus the current time. So if there are 15 minutes left when you
-          // get paused, we can later resume the countdown with 15 minutes to go.
-          lockupRemaining = lockupEnding - now;
-          
-          // Pause the active withdrawal by setting lockupEnding to zero.
-          lockupEnding = 0;
-        }
-
-        // Emit a WithdrawalPaused event
-        // TODO: Move this inside the if clause, since otherwise no lockup was actually paused.
-        WithdrawalPaused();
-    }
-
-    /*
-    @dev Internal function called in acceptSettlement and ruleOnClaim. It decrements the openClaims
-    counter and, if the openClaims counter is zero after doing that, resumes and paused withdrawals
-    */
-    function decrementOpenClaims()
-    internal
-    {
-      // Decrement openClaims
-      openClaims--;
-
-      if (openClaims == 0){
-          // If there are now no open claims, set the lockupEnding time now plus the previously
-          // computed lockupRemaining (see pauseLockup) and fire a withdrawalResumed event.
-          lockupEnding = now + lockupRemaining;
-          WithdrawalResumed();
-      }
+        uint oldStake = claimableStake;
+        claimableStake = 0;
+        require(token.transfer(staker, oldStake));
+        StakeWithdrawn();
     }
 
     /*
@@ -527,8 +484,7 @@ contract DelphiStake {
     }
 
     /*
-    @dev Getter function to return the total available fee for any historical claim which has
-    been ruled.
+    @dev Getter function to return the total available fee for any historical claim
     */
     function getTotalFeeForClaim(uint _claimId)
     public
@@ -536,9 +492,8 @@ contract DelphiStake {
     returns (uint)
     {
       Claim storage claim = claims[_claimId];
-      require(claim.ruled); // Only return results for ruled claims
 
-      // THe total available fee is the claim fee, plus any surplus fee provided by either party
+      // The total available fee is the claim fee, plus any surplus fee provided by either party
       return claim.fee + claim.surplusFee;
     }
 

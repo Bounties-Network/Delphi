@@ -22,8 +22,9 @@ const utils = {
     const token = await EIP20.new(1000000, 'Delphi Tokens', 18, 'DELPHI', { from: staker });
     await token.approve(ds.address, delphiConfig.initialStake, { from: staker });
 
-    await ds.initDelphiStake(delphiConfig.initialStake, token.address, delphiConfig.data,
-      delphiConfig.lockupPeriod, arbiter, { from: staker });
+    await ds.initDelphiStake(delphiConfig.initialStake, token.address,
+      delphiConfig.minFee, delphiConfig.data, delphiConfig.deadline,
+      arbiter, { from: staker });
   },
 
   makeNewClaim: async (staker, claimant, amount, fee, data) => {

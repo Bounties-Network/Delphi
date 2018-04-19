@@ -39,7 +39,7 @@ contract('DelphiVoting', (accounts) => {
 
       // Set constants
       const CLAIM_AMOUNT = '10';
-      const FEE_AMOUNT = '5';
+      const FEE_AMOUNT = '10';
       const VOTE = '1';
       const SALT = '420';
 
@@ -50,7 +50,6 @@ contract('DelphiVoting', (accounts) => {
 
       // Get the secret hash for the salted vote
       const secretHash = utils.getSecretHash(VOTE, SALT);
-
       // Commit vote
       await utils.as(arbiterAlice, dv.commitVote, ds.address, claimNumber, secretHash);
 
@@ -114,7 +113,7 @@ contract('DelphiVoting', (accounts) => {
 
         // Set constants
         const CLAIM_AMOUNT = '10';
-        const FEE_AMOUNT = '5';
+        const FEE_AMOUNT = '10';
         const PLURALITY_VOTE = '1';
         const NON_PLURALITY_VOTE = '0';
         const SALT = '420';
@@ -175,9 +174,9 @@ contract('DelphiVoting', (accounts) => {
 
       // Use previous claim, since we have two arbiters who still have not claimed for it
       const CLAIM_NUMBER = '1';
-      const FEE_AMOUNT = new BN('5', 10); // Use previous fee amount
+      const FEE_AMOUNT = new BN('10', 10); // Use previous fee amount
       const PLURALITY_VOTE = '1'; // Use previous plurality vote
-      const SALT = '420'; // Use previous salt 
+      const SALT = '420'; // Use previous salt
       const PLURALITY_ARBITERS_COUNT = new BN('2', 10); // Alice and Bob voted in the plurality
 
       // Capture Alice's starting token balance, claim the fee and get her final balance
@@ -210,6 +209,7 @@ contract('DelphiVoting', (accounts) => {
       // Revisit this test after implementing safemath.
     });
 
+    it('should revert if called by anyone but one of the arbiters');
     it('should not allow an arbiter to claim a fee when they did not commit');
     it('should not allow an arbiter to claim a fee when they committed but did not reveal');
   });

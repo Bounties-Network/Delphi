@@ -2,14 +2,12 @@
 /* global contract */
 
 contract('DelphiStake', () => {
-  describe('Function: finalizeWithdrawStake', () => {
+  describe('Function: withdrawStake', () => {
     it('should revert if called by any entity other than the staker');
-    it('should revert if the lockupEnding time has not passed');
-    it('should revert if there are open claims against the stake');
-    it('should transfer the entire stake amount to the staker');
-    it('should set stake to zero');
-    it('should emit a WithdrawFinalized event');
-    it('should emit a WithdrawPaused event');
-    it('should emit a WithdrawalResumed event');
+    it('should revert if called before the deadline');
+    it('should revert if open claims remain');
+    it('should set claimableStake to zero');
+    it('should transfer the old stake amount to the staker');
+    it('should emit a StakeWithdrawn event');
   });
 });
