@@ -23,7 +23,7 @@ contract('DelphiStake', (accounts) => {
       await token.approve(ds.address, conf.initialStake, { from: staker });
 
       await ds.initDelphiStake(conf.initialStake, token.address, conf.minFee, conf.data,
-        conf.lockupPeriod, arbiter, { from: staker });
+        conf.deadline, arbiter, { from: staker });
 
       const claimAmount = '1';
       const feeAmount = '10';
@@ -59,7 +59,7 @@ contract('DelphiStake', (accounts) => {
       await token.approve(ds.address, conf.initialStake, { from: staker });
 
       await ds.initDelphiStake(conf.initialStake, token.address, conf.minFee, conf.data,
-        conf.lockupPeriod, arbiter, { from: staker });
+        conf.deadline, arbiter, { from: staker });
 
       const claimAmount = '1';
       const feeAmount = '10';
@@ -95,7 +95,7 @@ contract('DelphiStake', (accounts) => {
       await token.approve(ds.address, conf.initialStake, { from: staker });
 
       await ds.initDelphiStake(conf.initialStake, token.address, conf.minFee, conf.data,
-        conf.lockupPeriod, arbiter, { from: staker });
+        conf.deadline, arbiter, { from: staker });
 
       const claimAmount = '1';
       const feeAmount = '10';
@@ -129,7 +129,7 @@ contract('DelphiStake', (accounts) => {
       await token.approve(ds.address, conf.initialStake, { from: staker });
 
       await ds.initDelphiStake('10', token.address, conf.minFee, conf.data,
-        conf.lockupPeriod, arbiter, { from: staker });
+        conf.deadline, arbiter, { from: staker });
 
       const claimAmount = '1';
       const feeAmount = '1';
@@ -165,7 +165,7 @@ contract('DelphiStake', (accounts) => {
       await token.approve(ds.address, conf.initialStake, { from: staker });
 
       await ds.initDelphiStake('0', token.address, conf.minFee, conf.data,
-        conf.lockupPeriod, arbiter, { from: staker });
+        conf.deadline, arbiter, { from: staker });
 
       const claimAmount = '1';
       const feeAmount = '10';
@@ -202,7 +202,7 @@ contract('DelphiStake', (accounts) => {
       await token.transfer(arbiter, 1000, { from: staker });
 
       await ds.initDelphiStake(conf.initialStake, token.address, conf.minFee, conf.data,
-        conf.lockupPeriod, arbiter, { from: staker });
+        conf.deadline, arbiter, { from: staker });
 
       const claimAmount = '1';
       const feeAmount = '10';
@@ -237,7 +237,7 @@ contract('DelphiStake', (accounts) => {
       await token.transfer(arbiter, 1000, { from: staker });
 
       await ds.initDelphiStake(conf.initialStake, token.address, conf.minFee, conf.data,
-        conf.lockupPeriod, arbiter, { from: staker });
+        conf.deadline, arbiter, { from: staker });
 
       const claimAmount = '1';
       const feeAmount = '10';
@@ -268,7 +268,7 @@ contract('DelphiStake', (accounts) => {
         await token.transfer(arbiter, 1000, { from: staker });
 
         await ds.initDelphiStake(conf.initialStake, token.address, conf.minFee, conf.data,
-          conf.lockupPeriod, arbiter, { from: staker });
+          conf.deadline, arbiter, { from: staker });
 
         const claimAmount = '1';
         const feeAmount = '10';
@@ -297,9 +297,7 @@ contract('DelphiStake', (accounts) => {
 
         assert.strictEqual(claim[6], false, 'initialized ruled bool incorrectly');
 
-        assert.strictEqual(claim[7], false, 'initialized paid bool incorrectly');
-
-        assert.strictEqual(claim[8], false, 'initialized settlementFailed incorrectly');
+        assert.strictEqual(claim[7], false, 'initialized settlementFailed incorrectly');
       });
 
     it('should increment the openClaims.call counter', async () => {
@@ -313,7 +311,7 @@ contract('DelphiStake', (accounts) => {
       await token.transfer(arbiter, 1000, { from: staker });
 
       await ds.initDelphiStake(conf.initialStake, token.address, conf.minFee, conf.data,
-        conf.lockupPeriod, arbiter, { from: staker });
+        conf.deadline, arbiter, { from: staker });
 
       const claimAmount = '1';
       const feeAmount = '10';
@@ -343,7 +341,7 @@ contract('DelphiStake', (accounts) => {
       await token.transfer(arbiter, 1000, { from: staker });
 
       await ds.initDelphiStake(conf.initialStake, token.address, conf.minFee, conf.data,
-        conf.lockupPeriod, arbiter, { from: staker });
+        conf.deadline, arbiter, { from: staker });
 
       const claimAmount = new BN('1', 10);
       const feeAmount = new BN('10', 10);
@@ -366,127 +364,6 @@ contract('DelphiStake', (accounts) => {
         'balance does not reflect the originally deposited funds and additional fee');
     });
 
-    it('should not set lockup remaining to lockupEnding - now if no withdrawal was initiated', async () => {
-      const token = await EIP20.new(1000000, 'Delphi Tokens', 18, 'DELPHI', { from: staker });
-      await token.transfer(claimant, 100000, { from: staker });
-      await token.transfer(arbiter, 100000, { from: staker });
-
-      const ds = await DelphiStake.new();
-
-      await token.approve(ds.address, conf.initialStake, { from: staker });
-      await token.transfer(arbiter, 1000, { from: staker });
-
-      await ds.initDelphiStake(conf.initialStake, token.address, conf.minFee, conf.data,
-        conf.lockupPeriod, arbiter, { from: staker });
-
-      const claimAmount = '1';
-      const feeAmount = '10';
-
-      const lockupPeriodog = await ds.lockupPeriod.call();
-      const lockupRemainingog = await ds.lockupRemaining.call();
-      const lockupEndingog = await ds.lockupEnding.call();
-      const withdrawInitiated = await ds.withdrawInitiated.call();
-
-      assert.strictEqual(lockupPeriodog.toString(10), conf.lockupPeriod.toString(10),
-        'lockup period not initialized properly');
-      assert.strictEqual(lockupRemainingog.toString(10), conf.lockupPeriod.toString(10),
-        'lockup remaining not initialized properly');
-      assert.strictEqual(lockupEndingog.toString(10), '0',
-        'lockup ending not initialized properly');
-      assert.strictEqual(withdrawInitiated, false,
-        'contract falsely believes a withdrawal has been initiated');
-
-      await token.approve(ds.address, feeAmount, { from: claimant });
-
-      await ds.whitelistClaimant(claimant, { from: staker });
-
-      await ds.openClaim(claimant, claimAmount, feeAmount, '', { from: claimant });
-
-      const lockupPeriod = await ds.lockupPeriod.call();
-      const lockupEnding = await ds.lockupEnding.call();
-      const lockupRemaining = await ds.lockupRemaining.call();
-
-      assert.strictEqual(lockupPeriod.toString(10), conf.lockupPeriod.toString(10),
-        'lockup period not correct after claim is initiated (before withdrawal was initiated)');
-      assert.strictEqual(lockupRemaining.toString(10), conf.lockupPeriod.toString(10),
-        'lockup remaining not correct after claim is initiated (before withdrawal was initiated)');
-      assert.strictEqual(lockupEnding.toString(10), '0',
-        'lockup ending not correct after claim is initiated (before withdrawal was initiated)');
-    });
-
-    it('should set lockup remaining to lockupEnding - now if withdrawal was initiated', async () => {
-      const token = await EIP20.new(1000000, 'Delphi Tokens', 18, 'DELPHI', { from: staker });
-      await token.transfer(claimant, 100000, { from: staker });
-      await token.transfer(arbiter, 100000, { from: staker });
-
-      const ds = await DelphiStake.new();
-
-      await token.approve(ds.address, conf.initialStake, { from: staker });
-      await token.transfer(arbiter, 1000, { from: staker });
-
-      await ds.initDelphiStake(conf.initialStake, token.address, conf.minFee, conf.data,
-        conf.lockupPeriod, arbiter, { from: staker });
-
-      const claimAmount = '1';
-      const feeAmount = '10';
-
-      const block = await web3.eth.getBlock('latest');
-      const timestamp = block.timestamp;
-
-      await ds.initiateWithdrawStake({ from: staker });
-
-      const lockupEnding = await ds.lockupEnding.call();
-
-      assert.approximately(parseInt(lockupEnding.sub(timestamp), 10),
-        parseInt(conf.lockupPeriod, 10), 5,
-        'lockup ending not correct after withdrawal initiated');
-
-      await token.approve(ds.address, feeAmount, { from: claimant });
-
-      await ds.whitelistClaimant(claimant, { from: staker });
-
-      await ds.openClaim(claimant, claimAmount, feeAmount, '', { from: claimant });
-
-      const newBlock = await web3.eth.getBlock('latest');
-      const newTimestamp = newBlock.timestamp;
-      const newLockupRemaining = await ds.lockupRemaining.call();
-
-      assert.approximately(parseInt(lockupEnding.sub(newTimestamp), 10),
-        parseInt(newLockupRemaining, 10), 5,
-        'lockup remaining not correctly paused after claim opened');
-    });
-
-    it('should set lockupEnding to zero if withdrawal was initiated', async () => {
-      const token = await EIP20.new(1000000, 'Delphi Tokens', 18, 'DELPHI', { from: staker });
-      await token.transfer(claimant, 100000, { from: staker });
-      await token.transfer(arbiter, 100000, { from: staker });
-
-      const ds = await DelphiStake.new();
-
-      await token.approve(ds.address, conf.initialStake, { from: staker });
-      await token.transfer(arbiter, 1000, { from: staker });
-
-      await ds.initDelphiStake(conf.initialStake, token.address, conf.minFee, conf.data,
-        conf.lockupPeriod, arbiter, { from: staker });
-
-      const claimAmount = '1';
-      const feeAmount = '10';
-
-
-      await ds.initiateWithdrawStake({ from: staker });
-
-      await token.approve(ds.address, feeAmount, { from: claimant });
-
-      await ds.whitelistClaimant(claimant, { from: staker });
-
-      await ds.openClaim(claimant, claimAmount, feeAmount, '', { from: claimant });
-
-      const lockupEnding = await ds.lockupEnding.call();
-
-      assert.strictEqual(lockupEnding.toString(10), '0',
-        'lockup ending not correctly paused after claim opened');
-    });
-
     it('should emit a NewClaim event');
     // TODO: add events
 
@@ -501,7 +378,7 @@ contract('DelphiStake', (accounts) => {
       await token.transfer(arbiter, 1000, { from: staker });
 
       await ds.initDelphiStake(conf.initialStake, token.address, conf.minFee, conf.data,
-        conf.lockupPeriod, arbiter, { from: staker });
+        conf.deadline, arbiter, { from: staker });
 
       const claimAmount = '1';
       const feeAmount = '10';
@@ -526,8 +403,7 @@ contract('DelphiStake', (accounts) => {
       assert.strictEqual(claim1[4], 'claim1', 'initialized claim data incorrectly');
       assert.strictEqual(claim1[5].toString(10), '0', 'initialized claim ruling incorrectly');
       assert.strictEqual(claim1[6], false, 'initialized ruled bool incorrectly');
-      assert.strictEqual(claim1[7], false, 'initialized paid bool incorrectly');
-      assert.strictEqual(claim1[8], false, 'initialized settlementFailed incorrectly');
+      assert.strictEqual(claim1[7], false, 'initialized settlementFailed incorrectly');
 
       const claim2 = await ds.claims.call('1');
 
@@ -538,8 +414,7 @@ contract('DelphiStake', (accounts) => {
       assert.strictEqual(claim2[4], 'claim2', 'initialized claim data incorrectly');
       assert.strictEqual(claim2[5].toString(10), '0', 'initialized claim ruling incorrectly');
       assert.strictEqual(claim2[6], false, 'initialized ruled bool incorrectly');
-      assert.strictEqual(claim2[7], false, 'initialized paid bool incorrectly');
-      assert.strictEqual(claim2[8], false, 'initialized settlementFailed incorrectly');
+      assert.strictEqual(claim2[7], false, 'initialized settlementFailed incorrectly');
 
       const claim3 = await ds.claims.call('2');
 
@@ -550,8 +425,7 @@ contract('DelphiStake', (accounts) => {
       assert.strictEqual(claim3[4], 'claim3', 'initialized claim data incorrectly');
       assert.strictEqual(claim3[5].toString(10), '0', 'initialized claim ruling incorrectly');
       assert.strictEqual(claim3[6], false, 'initialized ruled bool incorrectly');
-      assert.strictEqual(claim3[7], false, 'initialized paid bool incorrectly');
-      assert.strictEqual(claim3[8], false, 'initialized settlementFailed incorrectly');
+      assert.strictEqual(claim3[7], false, 'initialized settlementFailed incorrectly');
     });
   });
 });

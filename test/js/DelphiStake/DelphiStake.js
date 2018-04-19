@@ -19,7 +19,7 @@ contract('DelphiStake', (accounts) => {
       await token.approve(ds.address, conf.initialStake, { from: staker });
 
       await ds.initDelphiStake(conf.initialStake, token.address, conf.minFee, conf.data,
-        conf.lockupPeriod, arbiter, { from: staker });
+        conf.deadline, arbiter, { from: staker });
 
       const stake = await ds.claimableStake.call();
       assert.strictEqual(stake.toString(10), conf.initialStake,
@@ -32,13 +32,9 @@ contract('DelphiStake', (accounts) => {
       const data = await ds.data.call();
       assert.strictEqual(data, conf.data, 'the stake data was initialized improperly');
 
-      const lockupPeriod = await ds.lockupPeriod.call();
-      assert.strictEqual(lockupPeriod.toString(10), conf.lockupPeriod,
-        'the lockup period was initialized improperly');
-
-      const lockupRemaining = await ds.lockupRemaining.call();
-      assert.strictEqual(lockupRemaining.toString(10), conf.lockupPeriod,
-        'the lockup remaining was initialized improperly');
+      const deadline = await ds.claimDeadline.call();
+      assert.strictEqual(deadline.toString(10), conf.deadline,
+        'the deadline was initialized improperly');
 
       const storedArbiter = await ds.arbiter.call();
       assert.strictEqual(arbiter, storedArbiter, 'the arbiter was initialized improperly');
@@ -57,7 +53,7 @@ contract('DelphiStake', (accounts) => {
 
       try {
         await ds.initDelphiStake(conf.initialStake, token.address, conf.minFee, conf.data,
-          conf.lockupPeriod, arbiter, { from: staker });
+          conf.deadline, arbiter, { from: staker });
       } catch (err) {
         assert(utils.isEVMRevert(err), err.toString());
 

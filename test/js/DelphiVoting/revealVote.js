@@ -25,7 +25,7 @@ contract('DelphiVoting', (accounts) => {
 
       // Set constants
       const CLAIM_AMOUNT = '10';
-      const FEE_AMOUNT = '5';
+      const FEE_AMOUNT = '10';
       const VOTE = '1';
       const SALT = '420';
       const DATA = 'i love cats';
@@ -93,4 +93,3 @@ contract('DelphiVoting', (accounts) => {
     it('should not allow an arbiter to reveal after the reveal stage has ended');
   });
 });
-
