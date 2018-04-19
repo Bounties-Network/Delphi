@@ -209,6 +209,7 @@ contract('DelphiVoting', (accounts) => {
       // Revisit this test after implementing safemath.
     });
 
+    it('should revert if called by anyone but one of the arbiters');
     it('should not allow an arbiter to claim a fee when they did not commit');
     it('should not allow an arbiter to claim a fee when they committed but did not reveal');
   });
