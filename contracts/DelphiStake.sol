@@ -17,10 +17,7 @@ contract DelphiStake {
     event SettlementAccepted(address _acceptedBy, uint _claimId, uint _settlementId);
     event SettlementFailed(address _failedBy, uint _claimId);
     event ClaimRuled(uint _claimId);
-    event WithdrawInitiated();
-    event WithdrawalPaused();
-    event WithdrawalResumed();
-    event WithdrawFinalized();
+    event StakeWithdrawn();
 
 
     struct Claim {
@@ -31,7 +28,6 @@ contract DelphiStake {
       string data;
       uint ruling;
       bool ruled;
-      bool paid;
       bool settlementFailed;
     }
 
@@ -43,6 +39,8 @@ contract DelphiStake {
 
     address public masterCopy;
 
+    uint public minimumFee;
+
     uint public claimableStake;
     EIP20 public token;
 
@@ -51,11 +49,7 @@ contract DelphiStake {
     address public staker;
     address public arbiter;
 
-    uint public lockupPeriod;
-    uint public lockupEnding;
-    uint public lockupRemaining;
-    bool public withdrawInitiated;
-
+    uint public claimDeadline;
 
     Claim[] public claims;
     uint public openClaims;
@@ -91,12 +85,13 @@ contract DelphiStake {
         _;
     }
 
-    modifier claimNotRuled(uint _claimId){
-        require(!claims[_claimId].ruled);
+    modifier largeEnoughFee(uint _newFee){
+        require(_newFee >= minimumFee);
         _;
     }
-    modifier claimUnpaid(uint _claimId){
-        require(!claims[_claimId].paid);
+
+    modifier claimNotRuled(uint _claimId){
+        require(!claims[_claimId].ruled);
         _;
     }
 
@@ -115,6 +110,11 @@ contract DelphiStake {
         _;
     }
 
+    modifier settlementDidNotFail(uint _claimId){
+        require(!claims[_claimId].settlementFailed);
+        _;
+    }
+
     modifier onlyStakerOrClaimant(uint _claimId){
         require(msg.sender == staker || msg.sender == claims[_claimId].claimant);
         _;
@@ -125,26 +125,35 @@ contract DelphiStake {
         _;
     }
 
-    modifier isWhitelisted(){
-      require(allowedClaimants[msg.sender]);
+    modifier isWhitelisted(address _claimant){
+      require(allowedClaimants[_claimant]);
       _;
     }
 
-    function initDelphiStake(uint _value, EIP20 _token, string _data, uint _lockupPeriod, address _arbiter)
+    modifier noOpenClaims(){
+      require(openClaims == 0);
+      _;
+    }
+
+    modifier isPastClaimDeadline(){
+      require (now > claimDeadline);
+      _;
+    }
+
+    function initDelphiStake(uint _value, EIP20 _token, uint _minimumFee, string _data, uint _caimDeadline, address _arbiter)
     public
     {
         require(token == address(0)); // only possible if init hasn't been called before
-        require(_lockupPeriod > 0);
+        require(_claimDeadline > now);
         require(_arbiter != address(0));
         require(_token.transferFrom(msg.sender, this, _value));
         claimableStake = _value;
         token = _token;
+        minimumFee = _minimumFee;
         data = _data;
-        lockupPeriod = _lockupPeriod;
-        lockupRemaining = _lockupPeriod;
+        claimDeadline = _claimDeadline;
         arbiter = _arbiter;
         staker = msg.sender;
-
     }
 
     function whitelistClaimant(address _claimant)
@@ -159,15 +168,31 @@ contract DelphiStake {
     public
     notStakerOrArbiter
     stakerCanPay(_amount, _fee)
-    isWhitelisted
+    isWhitelisted(_claimant)
+    largeEnoughFee(_fee)
     {
         require(token.transferFrom(_claimant, this, _fee));
-        claims.push(Claim(_claimant, _amount, _fee, 0, _data, 0, false, false, false));
+        claims.push(Claim(_claimant, _amount, _fee, 0, _data, 0, false, false));
         openClaims ++;
         claimableStake -= (_amount + _fee);
         // the claim amount and claim fee are locked up in this contract until the arbiter rules
 
-        pauseLockup();
+        ClaimOpened(msg.sender, claims.length - 1);
+    }
+
+    function openClaimWithoutSettlement(address _claimant, uint _amount, uint _fee, string _data)
+    public
+    notStakerOrArbiter
+    stakerCanPay(_amount, _fee)
+    isWhitelisted(_claimant)
+    largeEnoughFee(_fee)
+    {
+        require(token.transferFrom(_claimant, this, _fee));
+        claims.push(Claim(_claimant, _amount, _fee, 0, _data, 0, false, true));
+        openClaims ++;
+        claimableStake -= (_amount + _fee);
+        // the claim amount and claim fee are locked up in this contract until the arbiter rules
+
         ClaimOpened(msg.sender, claims.length - 1);
     }
 
@@ -186,6 +211,7 @@ contract DelphiStake {
     public
     validClaimID(_claimId)
     onlyStakerOrClaimant(_claimId)
+    settlementDidNotFail(_claimId)
     {
       require((claims[_claimId].amount + claims[_claimId].fee) >= _amount);
       // only allows settlements for up to the amount that's already been staked by the staker as pertaining to this case
@@ -203,6 +229,7 @@ contract DelphiStake {
     validClaimID(_claimId)
     validSettlementId(_claimId, _settlementId)
     onlyStakerOrClaimant(_claimId)
+    settlementDidNotFail(_claimId)
     {
       Settlement storage settlement = settlements[_claimId][_settlementId];
       Claim storage claim = claims[_claimId];
@@ -221,7 +248,7 @@ contract DelphiStake {
       claim.paid = true;
       require(token.transfer(claim.claimant, (settlement.amount + claim.fee)));
       claimableStake += (claim.amount + claim.fee - settlement.amount);
-      decrementOpenClaims();
+      openClaims--;
 
       SettlementAccepted(msg.sender, _claimId, _settlementId);
     }
@@ -247,6 +274,7 @@ contract DelphiStake {
         claim.ruling = _ruling;
         if (_ruling == 0){
           require(token.transfer(arbiter, (claim.fee + claim.surplusFee)));
+          require(token.transfer(claim.claimant, (claim.amount + claim.fee)));
         } else if (_ruling == 1){
           claimableStake += (claim.amount + claim.fee);
           require(token.transfer(arbiter, (claim.fee + claim.surplusFee)));
@@ -256,24 +284,14 @@ contract DelphiStake {
           // burns the claim amount in the event of collusion
         } else if (_ruling == 3){
           claimableStake += (claim.amount + claim.fee);
+          require(token.transfer(claim.claimant, (claim.amount + claim.fee)));
           // TODO: send fsurplus to arbiters
+        } else {
+          revert();
         }
-        decrementOpenClaims();
+        openClaims--;
 
         ClaimRuled(_claimId);
-    }
-
-    function withdrawClaimAmount(uint _claimId)
-    public
-    validClaimID(_claimId)
-    onlyClaimant(_claimId)
-    claimUnpaid(_claimId)
-    {
-        Claim storage claim = claims[_claimId];
-        if (claim.ruling == 0 || claim.ruling == 3){
-            claim.paid = true;
-            require(token.transfer(claim.claimant, (claim.amount + claim.fee)));
-        }
     }
 
     function increaseStake(uint _value)
@@ -284,49 +302,24 @@ contract DelphiStake {
         claimableStake += _value;
     }
 
-    function initiateWithdrawStake()
+    function increaseClaimDeadline(uint _newClaimDeadline)
     public
     onlyStaker
-    withdrawalNotInitiated
     {
-       lockupEnding = now + lockupPeriod;
-       lockupRemaining = lockupPeriod;
-       withdrawInitiated = true;
-       WithdrawInitiated();
+        require(_newClaimDeadline > claimDeadline);
+        claimDeadline = _newClaimDeadline;
     }
 
-    function finalizeWithdrawStake()
+    function withdrawStake()
     public
     onlyStaker
-    lockupElapsed
+    isPastClaimDeadline
+    noOpenClaims
     {
-       uint oldStake = claimableStake;
-       claimableStake = 0;
-       require(token.transfer(staker, oldStake));
-       withdrawInitiated = false;
-       lockupEnding = 0;
-       lockupRemaining = lockupPeriod;
-       WithdrawFinalized();
-    }
-
-    function pauseLockup()
-    internal
-    {
-        if (lockupEnding != 0){
-          lockupRemaining = lockupEnding - now;
-          lockupEnding = 0;
-        }
-        WithdrawalPaused();
-    }
-
-    function decrementOpenClaims()
-    internal
-    {
-      openClaims--;
-      if (openClaims == 0){
-          lockupEnding = now + lockupRemaining;
-          WithdrawalResumed();
-      }
+        uint oldStake = claimableStake;
+        claimableStake = 0;
+        require(token.transfer(staker, oldStake));
+        StakeWithdrawn();
     }
 
     function getNumClaims()
