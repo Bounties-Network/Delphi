@@ -12,7 +12,10 @@ contract DelphiStake {
     event SettlementAccepted(address _acceptedBy, uint _claimId, uint _settlementId);
     event SettlementFailed(address _failedBy, uint _claimId);
     event ClaimRuled(uint _claimId);
+    event ClaimDeadlineIncreased(uint _newClaimDeadline);
     event StakeWithdrawn();
+    event StakeIncreased(address _increasedBy, uint _value);
+
 
     struct Claim {
       address claimant;
@@ -371,6 +374,7 @@ contract DelphiStake {
     public
     validClaimID(_claimId)
     onlyStakerOrClaimant(_claimId)
+    settlementDidNotFail(_claimId)
     {
       // Set the claim's settlementFailed flag to true, preventing further settlement proposals
       // and settlement agreements.
@@ -465,6 +469,7 @@ contract DelphiStake {
         // claimableStake by _value.
         require(token.transferFrom(msg.sender, this, _value));
         claimableStake += _value;
+        StakeIncreased(msg.sender, _value);
     }
 
     /*
@@ -477,6 +482,7 @@ contract DelphiStake {
     {
         require(_newClaimDeadline > claimDeadline);
         claimDeadline = _newClaimDeadline;
+        ClaimDeadlineIncreased(_newClaimDeadline);
     }
 
     /*
@@ -510,8 +516,7 @@ contract DelphiStake {
     }
 
     /*
-    @dev Getter function to return the total available fee for any historical claim which has
-    been ruled.
+    @dev Getter function to return the total available fee for any historical claim
     */
     function getTotalFeeForClaim(uint _claimId)
     public
@@ -519,9 +524,8 @@ contract DelphiStake {
     returns (uint)
     {
       Claim storage claim = claims[_claimId];
-      require(claim.ruled); // Only return results for ruled claims
 
-      // THe total available fee is the claim fee, plus any surplus fee provided by either party
+      // The total available fee is the claim fee, plus any surplus fee provided by either party
       return claim.fee + claim.surplusFee;
     }
 

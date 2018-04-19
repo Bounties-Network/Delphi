@@ -61,5 +61,9 @@ contract('DelphiStake', (accounts) => {
       }
       assert(false, 'did not revert after trying to init the stake with an incorrect amount of tokens');
     });
+    it('should revert when trying to call the initialize function more than once');
+    it('should revert when trying to call the initialize function with a deadline that is before now');
+    it('should revert when trying to initialize with an arbiter of address(0)');
+
   });
 });

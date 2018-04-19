@@ -61,6 +61,9 @@ contract('DelphiStake', (accounts) => {
 
       assert(false, 'A non-arbiter was able to rule on the claim');
     });
+    it('should revert if called on an out-of-bounds claimId');
+
+    it('should revert if called on an out-of-bounds _ruling');
 
     it('should revert if settlement never failed', async () => {
       const token = await EIP20.new(1000000, 'Delphi Tokens', 18, 'DELPHI', { from: staker });
@@ -241,42 +244,10 @@ contract('DelphiStake', (accounts) => {
         'stake incorrectly changed after ruling');
     });
 
-    it('should transfer the fee to the arbiter', async () => {
-      const token = await EIP20.new(1000000, 'Delphi Tokens', 18, 'DELPHI', { from: staker });
-      await token.transfer(claimant, 100000, { from: staker });
-      await token.transfer(arbiter, 100000, { from: staker });
-
-      const ds = await DelphiStake.new();
-
-      await token.approve(ds.address, conf.initialStake, { from: staker });
-      await token.transfer(arbiter, 1000, { from: staker });
-
-      await ds.initDelphiStake(conf.initialStake, token.address, conf.minFee, conf.data,
-        conf.lockupPeriod, arbiter, { from: staker });
-
-      const claimAmount = '1';
-      const feeAmount = '10';
-      const ruling = '1';
-
-      await token.approve(ds.address, feeAmount, { from: claimant });
-
-      await ds.whitelistClaimant(claimant, { from: staker });
-
-      const claimId = await ds.getNumClaims();
-
-      await ds.openClaim(claimant, claimAmount, feeAmount, '', { from: claimant });
-
-      await ds.settlementFailed(claimId, { from: claimant });
-
-      const balanceBeforeRuling = await token.balanceOf(arbiter);
-
-      await ds.ruleOnClaim(claimId, ruling, { from: arbiter });
-
-      const balanceAfterRuling = await token.balanceOf(arbiter);
-
-      assert.strictEqual(balanceBeforeRuling.add(feeAmount).toString(10),
-        balanceAfterRuling.toString(10), 'fee not paid to the arbiter');
-    });
+    it('should transfer the fee and surplus to the arbiter and the claim amount + fee to the claimant if the ruling is 0');
+    it('should transfer the fee and surplus to the arbiter and return the claim amount + fee to the stakers stake if the ruling is 1');
+    it('should transfer 2 times the fee plus the surplus to the arbiter and should burn the claim amount if the ruling is 2');
+    it('should transfer the fee deposit back to the claimant, transfer the fee surplus to the arbiter, and return the claim amount and fee to the stakers stake');
 
     it('should decrement openClaims', async () => {
       const claimAmount = '1';
