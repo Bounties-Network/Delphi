@@ -19,7 +19,45 @@ contract('DelphiVoting', (accounts) => {
         config.paramDefaults.minDeposit, arbiter);
     });
 
-    it('should reveal an arbiter\'s vote and update the vote tally', async () => {
+    it('should reveal an arbiter\'s vote and update the vote tally for a vote of 0', async () => {
+      const dv = await DelphiVoting.deployed();
+      const ds = await DelphiStake.deployed();
+
+      // Set constants
+      const CLAIM_AMOUNT = '10';
+      const FEE_AMOUNT = '10';
+      const VOTE = '0';
+      const SALT = '420';
+      const DATA = 'i love cats';
+
+      // Open a new claim on the DS and generate a claim ID for it
+      const claimNumber = // should be zero
+        await utils.makeNewClaim(staker, claimant, CLAIM_AMOUNT, FEE_AMOUNT, DATA);
+      const claimId = utils.getClaimId(ds.address, claimNumber.toString(10));
+
+      // Generate a secret hash and commit it as a vote
+      const secretHash = utils.getSecretHash(VOTE, SALT);
+      await utils.as(arbiter, dv.commitVote, ds.address, claimNumber, secretHash);
+
+      // Increase time to get to the reveal phase
+      await utils.increaseTime(config.paramDefaults.commitStageLength + 1);
+
+      // Capture the initial tally for the vote option we committed, before revealing. It should
+      // be zero.
+      const initialTally = (await dv.revealedVotesForOption.call(claimId, VOTE));
+      assert.strictEqual(initialTally.toString(10), '0',
+        'the initial vote tally was not as-expected');
+
+      // Reveal the arbiter's vote
+      await utils.as(arbiter, dv.revealVote, claimId, VOTE, SALT);
+
+      // The final tally for the option we revealed for should be one.
+      const finalTally = (await dv.revealedVotesForOption.call(claimId, VOTE));
+      assert.strictEqual(finalTally.toString(10), '1',
+        'the final vote tally was not as-expected');
+    });
+
+    it('should reveal an arbiter\'s vote and update the vote tally for a vote of 1', async () => {
       const dv = await DelphiVoting.deployed();
       const ds = await DelphiStake.deployed();
 
@@ -27,6 +65,82 @@ contract('DelphiVoting', (accounts) => {
       const CLAIM_AMOUNT = '10';
       const FEE_AMOUNT = '10';
       const VOTE = '1';
+      const SALT = '420';
+      const DATA = 'i love cats';
+
+      // Open a new claim on the DS and generate a claim ID for it
+      const claimNumber = // should be zero
+        await utils.makeNewClaim(staker, claimant, CLAIM_AMOUNT, FEE_AMOUNT, DATA);
+      const claimId = utils.getClaimId(ds.address, claimNumber.toString(10));
+
+      // Generate a secret hash and commit it as a vote
+      const secretHash = utils.getSecretHash(VOTE, SALT);
+      await utils.as(arbiter, dv.commitVote, ds.address, claimNumber, secretHash);
+
+      // Increase time to get to the reveal phase
+      await utils.increaseTime(config.paramDefaults.commitStageLength + 1);
+
+      // Capture the initial tally for the vote option we committed, before revealing. It should
+      // be zero.
+      const initialTally = (await dv.revealedVotesForOption.call(claimId, VOTE));
+      assert.strictEqual(initialTally.toString(10), '0',
+        'the initial vote tally was not as-expected');
+
+      // Reveal the arbiter's vote
+      await utils.as(arbiter, dv.revealVote, claimId, VOTE, SALT);
+
+      // The final tally for the option we revealed for should be one.
+      const finalTally = (await dv.revealedVotesForOption.call(claimId, VOTE));
+      assert.strictEqual(finalTally.toString(10), '1',
+        'the final vote tally was not as-expected');
+    });
+
+    it('should reveal an arbiter\'s vote and update the vote tally for a vote of 2', async () => {
+      const dv = await DelphiVoting.deployed();
+      const ds = await DelphiStake.deployed();
+
+      // Set constants
+      const CLAIM_AMOUNT = '10';
+      const FEE_AMOUNT = '10';
+      const VOTE = '2';
+      const SALT = '420';
+      const DATA = 'i love cats';
+
+      // Open a new claim on the DS and generate a claim ID for it
+      const claimNumber = // should be zero
+        await utils.makeNewClaim(staker, claimant, CLAIM_AMOUNT, FEE_AMOUNT, DATA);
+      const claimId = utils.getClaimId(ds.address, claimNumber.toString(10));
+
+      // Generate a secret hash and commit it as a vote
+      const secretHash = utils.getSecretHash(VOTE, SALT);
+      await utils.as(arbiter, dv.commitVote, ds.address, claimNumber, secretHash);
+
+      // Increase time to get to the reveal phase
+      await utils.increaseTime(config.paramDefaults.commitStageLength + 1);
+
+      // Capture the initial tally for the vote option we committed, before revealing. It should
+      // be zero.
+      const initialTally = (await dv.revealedVotesForOption.call(claimId, VOTE));
+      assert.strictEqual(initialTally.toString(10), '0',
+        'the initial vote tally was not as-expected');
+
+      // Reveal the arbiter's vote
+      await utils.as(arbiter, dv.revealVote, claimId, VOTE, SALT);
+
+      // The final tally for the option we revealed for should be one.
+      const finalTally = (await dv.revealedVotesForOption.call(claimId, VOTE));
+      assert.strictEqual(finalTally.toString(10), '1',
+        'the final vote tally was not as-expected');
+    });
+
+    it('should reveal an arbiter\'s vote and update the vote tally for a vote of 3', async () => {
+      const dv = await DelphiVoting.deployed();
+      const ds = await DelphiStake.deployed();
+
+      // Set constants
+      const CLAIM_AMOUNT = '10';
+      const FEE_AMOUNT = '10';
+      const VOTE = '3';
       const SALT = '420';
       const DATA = 'i love cats';
 
@@ -91,5 +205,6 @@ contract('DelphiVoting', (accounts) => {
 
     it('should not allow an arbiter to reveal before the reveal stage has begun');
     it('should not allow an arbiter to reveal after the reveal stage has ended');
+    it('should set hasRevealed to true for the msg.sender');
   });
 });
