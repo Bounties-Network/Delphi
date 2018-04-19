@@ -23,7 +23,7 @@ const utils = {
     await token.approve(ds.address, delphiConfig.initialStake, { from: staker });
 
     await ds.initDelphiStake(delphiConfig.initialStake, token.address, delphiConfig.minFee, delphiConfig.data,
-      delphiConfig.lockupPeriod, arbiter, { from: staker });
+      delphiConfig.deadline, arbiter, { from: staker });
   },
 
   makeNewClaim: async (staker, claimant, amount, fee, data) => {
