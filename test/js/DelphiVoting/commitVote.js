@@ -25,7 +25,7 @@ contract('DelphiVoting', (accounts) => {
 
       // Set constants
       const CLAIM_AMOUNT = '10';
-      const FEE_AMOUNT = '5';
+      const FEE_AMOUNT = '10';
       const VOTE = '1';
       const SALT = '420';
 
@@ -129,4 +129,3 @@ contract('DelphiVoting', (accounts) => {
     it('should not allow an arbiter to commit a secret hash of 0');
   });
 });
-

@@ -37,12 +37,19 @@ contract('DelphiVoting', (accounts) => {
       const ds = await DelphiStake.deployed();
       const token = EIP20.at(await ds.token.call());
 
-      const claimAmount = '10';
-      const feeAmount = '10';
-      const vote = '1';
-      const salt = '420';
-      const secretHash = utils.getSecretHash(vote, salt);
+      // Set constants
+     const CLAIM_AMOUNT = '10';
+     const FEE_AMOUNT = '10';
+     const VOTE = '1';
+     const SALT = '420';
 
+     // Make a new claim and get its claimId
+     const claimNumber = // should be zero, since this is the first test
+       await utils.makeNewClaim(staker, claimant, CLAIM_AMOUNT, FEE_AMOUNT, 'i love cats');
+     const claimId = utils.getClaimId(ds.address, claimNumber.toString(10));
+
+     // Get the secret hash for the salted vote
+     const secretHash = utils.getSecretHash(VOTE, SALT);
       // Commit vote
       await utils.as(arbiterAlice, dv.commitVote, ds.address, claimNumber, secretHash);
 
