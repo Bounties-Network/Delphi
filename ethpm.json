@@ -1,0 +1,27 @@
+{
+  "package_name": "Delphi",
+  "version": "0.0.1",
+  "description": "",
+  "authors": [
+    "Mike Goldin",
+    "Isaac Kang",
+    "Terry Li",
+    "Irene Lin",
+    "Cem Ozer",
+    "Aspyn Palatnick",
+    "Yorke Rhodes",
+    "Mira Zeitlin"
+  ],
+  "keywords": [
+    "consensys",
+    "plcr",
+    "tokens",
+    "tcr"
+  ],
+  "dependencies": {
+    "tokens": "1.0.0",
+    "dll": "1.0.3",
+    "attrstore": "1.0.0"
+  },
+  "license": "Apache 2.0"
+}
