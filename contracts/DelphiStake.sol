@@ -150,12 +150,12 @@ contract DelphiStake {
     {
         require(token == address(0)); // only possible if init hasn't been called before
         require(_claimDeadline > now);
+
         // This function can only be called if it hasn't been called before, or if the token was
         // set to 0 when it was called previously.
         require(token == address(0));
 
         // Require reasonable inputs
-        require(_lockupPeriod > 0);
         require(_arbiter != address(0));
 
         // Revert if the specified value to stake cannot be transferred in
@@ -218,7 +218,6 @@ contract DelphiStake {
         // countdown.
         claims.push(Claim(_claimant, _amount, _fee, 0, _data, 0, false, false));
         openClaims ++;
-        pauseLockup();
 
         // The claim amount and claim fee are reserved for this particular claim until the arbiter
         // rules
@@ -435,26 +434,6 @@ contract DelphiStake {
 
         // Emit an event stating which claim was ruled.
         ClaimRuled(_claimId);
-    }
-
-    /*
-    @dev Victorious claimants can invoke withdrawClaimAmount to claim what they are owed.
-    @param _claimId the ID of the claim to take a remuneration for.
-    */
-    function withdrawClaimAmount(uint _claimId)
-    public
-    validClaimID(_claimId)
-    onlyClaimant(_claimId)
-    claimUnpaid(_claimId)
-    {
-        Claim storage claim = claims[_claimId];
-
-        if (claim.ruling == 0 || claim.ruling == 3){
-            // If the claim was justified, or a fault, set the paid flag for this claim to true
-            // and transfer the claim amount and fee to the claimant.
-            claim.paid = true;
-
-        }
     }
 
     /*
