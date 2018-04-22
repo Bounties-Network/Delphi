@@ -17,7 +17,6 @@ contract('DelphiVoting', (accounts) => {
 
     before(async () => {
       const ds = await DelphiStake.deployed();
-      await utils.initDelphiStake(staker, dv.address);
       const token = EIP20.at(await ds.token.call());
 
       // The claimant will need tokens to fund fees when they make claims. The zero account
@@ -115,7 +114,7 @@ contract('DelphiVoting', (accounts) => {
 
         // Set constants
         const CLAIM_AMOUNT = '10';
-        const FEE_AMOUNT = '5';
+        const FEE_AMOUNT = '10';
         const PLURALITY_VOTE = '1';
         const NON_PLURALITY_VOTE = '0';
         const SALT = '420';
@@ -176,7 +175,7 @@ contract('DelphiVoting', (accounts) => {
 
       // Use previous claim, since we have two arbiters who still have not claimed for it
       const CLAIM_NUMBER = '1';
-      const FEE_AMOUNT = new BN('5', 10); // Use previous fee amount
+      const FEE_AMOUNT = new BN('10', 10); // Use previous fee amount
       const PLURALITY_VOTE = '1'; // Use previous plurality vote
       const SALT = '420'; // Use previous salt 
       const PLURALITY_ARBITERS_COUNT = new BN('2', 10); // Alice and Bob voted in the plurality
