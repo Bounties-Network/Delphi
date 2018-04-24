@@ -34,7 +34,7 @@ module.exports = (deployer, network, accounts) => {
     );
   })
     .then(async () => {
-      if (network === 'test' || network === 'development') {
+      if (network === 'test' || network === 'coverage') {
         await approvePLCRFor(accounts);
       }
     }).catch((err) => { throw err; });

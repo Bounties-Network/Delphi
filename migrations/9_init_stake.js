@@ -16,7 +16,7 @@ module.exports = (deployer, network, accounts) => {
 
     // If we are testing, using whatever token and DV instances were deployed by this migrator,
     // and approve the DS instance to transfer from the token.
-    if (network === 'test' || network === 'development') {
+    if (network === 'test' || network === 'coverage') {
       arbiter = (await DelphiVoting.deployed()).address;
       token = (await Token.deployed()).address;
 
@@ -24,10 +24,6 @@ module.exports = (deployer, network, accounts) => {
         .approve(ds.address, conf.initialStake);
 
     }
-    var balance = await (await Token.at(token)).balanceOf(accounts[0]);
-    console.log("balance", balance.toString(10));
-    console.log("about to Init", conf.initialStake, token, conf.minFee, conf.data,
-      conf.deadline, arbiter);
     return ds.initDelphiStake(conf.initialStake, token, conf.minFee, conf.data,
       conf.deadline, arbiter, {from: accounts[0]});
   });
