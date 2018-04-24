@@ -7,4 +7,3 @@ const Parameterizer = artifacts.require('Parameterizer.sol');
 module.exports = (deployer) => {
   deployer.deploy(DelphiVoting, Registry.address, Parameterizer.address);
 };
-
