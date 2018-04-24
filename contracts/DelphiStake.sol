@@ -1,4 +1,4 @@
-pragma solidity ^0.4.18;
+pragma solidity 0.4.23;
 
 import "tokens/eip20/EIP20.sol";
 
@@ -315,7 +315,7 @@ contract DelphiStake {
     }
 
     /*
-    @dev once either party in a claim has proposed a settlement, the opposite party can choose to 
+    @dev once either party in a claim has proposed a settlement, the opposite party can choose to
     accept the settlement. The settlement proposer implicitly accepts, so only the counterparty
     needs to invoke this function.
     @param _claimId the ID of the claim to accept a settlement for
