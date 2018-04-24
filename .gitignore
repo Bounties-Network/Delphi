@@ -3,5 +3,6 @@ build/*
 secrets.json
 *.swp
 /coverage/
+coverage.json
 installed_contracts/
 
