@@ -20,10 +20,7 @@ contract('DelphiVoting', (accounts) => {
       const token = EIP20.at(await ds.token.call());
 
       // The claimant will need tokens to fund fees when they make claims. The zero account
-      // has lots of tokens because it deployed the token contract.
-
-      var balance = await token.balanceOf(accounts[0]);
-      console.log("balance", balance.toString(10));
+      // has lots of tokens because it deployed the token contract
 
       await utils.as(accounts[0], token.transfer, claimant, '1000');
       await utils.as(accounts[0], token.transfer, arbiterAlice, '1000');
@@ -31,15 +28,12 @@ contract('DelphiVoting', (accounts) => {
       await utils.as(accounts[0], token.transfer, arbiterCharlie, '1000');
 
       // Add arbiter actors to the TCR
-      console.log("new accounts", accounts);
       await utils.addToWhitelist(utils.getArbiterListingId(arbiterAlice),
         config.paramDefaults.minDeposit, arbiterAlice);
       await utils.addToWhitelist(utils.getArbiterListingId(arbiterBob),
         config.paramDefaults.minDeposit, arbiterBob);
       await utils.addToWhitelist(utils.getArbiterListingId(arbiterCharlie),
         config.paramDefaults.minDeposit, arbiterCharlie);
-        console.log("transferred");
-
     });
 
     it('should allow an arbiter to claim a fee', async () => {
