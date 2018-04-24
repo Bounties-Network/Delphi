@@ -1,4 +1,4 @@
-pragma solidity ^0.4.18;
+pragma solidity 0.4.23;
 
 import "./deps/Registry.sol";
 import "./deps/Parameterizer.sol";
@@ -12,7 +12,7 @@ contract DelphiVoting {
 
   struct Claim {
     uint commitEndTime;
-    uint revealEndTime; 
+    uint revealEndTime;
     VoteOptions result;
     mapping(uint => uint) tallies;
     mapping(address => bytes32) commits;
@@ -31,7 +31,7 @@ contract DelphiVoting {
   }
 
   function DelphiVoting(address _arbiterSet, address _parameterizer) public {
-    arbiterSet = Registry(_arbiterSet); 
+    arbiterSet = Registry(_arbiterSet);
     parameterizer = Parameterizer(_parameterizer);
   }
 
@@ -82,7 +82,7 @@ contract DelphiVoting {
     Claim storage claim = claims[_claimId];
 
     // Do not allow revealing while the reveal period is not active
-    require(revealPeriodActive(_claimId)); 
+    require(revealPeriodActive(_claimId));
     // Do not allow a voter to reveal more than once
     require(!claim.hasRevealed[msg.sender]);
     // Require the provided vote is consistent with the original commit
@@ -95,7 +95,7 @@ contract DelphiVoting {
     else if(vote == VoteOptions.NotJustified) {
       claim.tallies[uint(VoteOptions.NotJustified)] += 1;
     }
-    else if(vote == VoteOptions.Collusive) { 
+    else if(vote == VoteOptions.Collusive) {
       claim.tallies[uint(VoteOptions.Collusive)] += 1;
     }
     else if(vote == VoteOptions.Fault) {
@@ -119,7 +119,7 @@ contract DelphiVoting {
     // Do not allow submissions for claims which nobody has voted in
     require(claimExists(claimId));
     // Do not allow submissions where either the commit or reveal periods have not ended
-    require(!commitPeriodActive(claimId) && !revealPeriodActive(claimId)); 
+    require(!commitPeriodActive(claimId) && !revealPeriodActive(claimId));
 
     // Tally the votes and set the result
     tallyVotes(claim);
@@ -148,7 +148,7 @@ contract DelphiVoting {
     require(keccak256(_vote, _salt) == claim.commits[msg.sender]);
     // Require the vote cast was in the plurality
     require(VoteOptions(_vote) == claim.result);
-    
+
     // Get the total fee for the claim, compute what this arbiter's share is and transfer it
     uint totalFee = ds.getTotalFeeForClaim(_claimNumber);
     uint arbiterFee = totalFee/claim.tallies[uint(claim.result)]; // TODO: safemath
@@ -276,4 +276,3 @@ contract DelphiVoting {
     // if(_claim.result = VoteOptions.Fault), the result is already fault, so don't bother checking
   }
 }
-

@@ -2,5 +2,6 @@ node_modules/*
 build/*
 secrets.json
 *.swp
+/coverage/
 installed_contracts/
 
