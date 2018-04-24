@@ -21,15 +21,25 @@ contract('DelphiVoting', (accounts) => {
 
       // The claimant will need tokens to fund fees when they make claims. The zero account
       // has lots of tokens because it deployed the token contract.
+
+      var balance = await token.balanceOf(accounts[0]);
+      console.log("balance", balance.toString(10));
+
       await utils.as(accounts[0], token.transfer, claimant, '1000');
+      await utils.as(accounts[0], token.transfer, arbiterAlice, '1000');
+      await utils.as(accounts[0], token.transfer, arbiterBob, '1000');
+      await utils.as(accounts[0], token.transfer, arbiterCharlie, '1000');
 
       // Add arbiter actors to the TCR
+      console.log("new accounts", accounts);
       await utils.addToWhitelist(utils.getArbiterListingId(arbiterAlice),
         config.paramDefaults.minDeposit, arbiterAlice);
       await utils.addToWhitelist(utils.getArbiterListingId(arbiterBob),
         config.paramDefaults.minDeposit, arbiterBob);
       await utils.addToWhitelist(utils.getArbiterListingId(arbiterCharlie),
         config.paramDefaults.minDeposit, arbiterCharlie);
+        console.log("transferred");
+
     });
 
     it('should allow an arbiter to claim a fee', async () => {
@@ -177,7 +187,7 @@ contract('DelphiVoting', (accounts) => {
       const CLAIM_NUMBER = '1';
       const FEE_AMOUNT = new BN('10', 10); // Use previous fee amount
       const PLURALITY_VOTE = '1'; // Use previous plurality vote
-      const SALT = '420'; // Use previous salt 
+      const SALT = '420'; // Use previous salt
       const PLURALITY_ARBITERS_COUNT = new BN('2', 10); // Alice and Bob voted in the plurality
 
       // Capture Alice's starting token balance, claim the fee and get her final balance

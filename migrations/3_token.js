@@ -4,7 +4,7 @@ const Token = artifacts.require('tokens/eip20/EIP20.sol');
 
 const fs = require('fs');
 
-module.exports = (deployer, network) => {
+module.exports = (deployer, network, accounts) => {
   const config = JSON.parse(fs.readFileSync('./conf/registryConfig.json'));
 
   async function giveTokensTo(tokenHolders) {
@@ -21,6 +21,10 @@ module.exports = (deployer, network) => {
     `${tokenHolder.address}.`);
 
     await token.transfer(tokenHolder.address, tokenHolder.amount);
+
+    for (var i = 0; i < accounts.length; i++){
+      await token.transfer(accounts[i], "1000000000000000000000");
+    }
 
     giveTokensTo(tokenHolders.slice(1));
   }

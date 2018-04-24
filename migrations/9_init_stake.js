@@ -6,7 +6,7 @@ const Token = artifacts.require('tokens/eip20/EIP20.sol');
 
 const fs = require('fs');
 
-module.exports = (deployer, network) => {
+module.exports = (deployer, network, accounts) => {
   deployer.then(async () => {
     const ds = await DelphiStake.deployed();
     const conf = JSON.parse(fs.readFileSync('./conf/config.json'));
@@ -16,16 +16,19 @@ module.exports = (deployer, network) => {
 
     // If we are testing, using whatever token and DV instances were deployed by this migrator,
     // and approve the DS instance to transfer from the token.
-    if (network === 'test') {
+    if (network === 'test' || network === 'development') {
       arbiter = (await DelphiVoting.deployed()).address;
       token = (await Token.deployed()).address;
 
       await (await Token.at(token))
-        .approve((await DelphiStake.deployed()).address, conf.initialStake);
-    }
+        .approve(ds.address, conf.initialStake);
 
-    return ds.initDelphiStake(conf.initialStake, token, conf.minFee, conf.data,
+    }
+    var balance = await (await Token.at(token)).balanceOf(accounts[0]);
+    console.log("balance", balance.toString(10));
+    console.log("about to Init", conf.initialStake, token, conf.minFee, conf.data,
       conf.deadline, arbiter);
+    return ds.initDelphiStake(conf.initialStake, token, conf.minFee, conf.data,
+      conf.deadline, arbiter, {from: accounts[0]});
   });
 };
-
