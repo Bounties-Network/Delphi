@@ -148,7 +148,6 @@ contract DelphiStake {
     function initDelphiStake(uint _value, EIP20 _token, uint _minimumFee, string _data, uint _claimDeadline, address _arbiter)
     public
     {
-        require(token == address(0)); // only possible if init hasn't been called before
         require(_claimDeadline > now);
 
         // This function can only be called if it hasn't been called before, or if the token was
