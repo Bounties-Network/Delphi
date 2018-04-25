@@ -70,7 +70,7 @@ contract DelphiStake {
     }
 
     modifier notStakerOrArbiter(){
-        require(msg.sender!= staker && msg.sender!= arbiter);
+        require(msg.sender != staker && msg.sender != arbiter);
         _;
     }
 
