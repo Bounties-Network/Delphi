@@ -1,6 +1,7 @@
 /* eslint-env mocha */
 /* global contract artifacts assert  */
 
+
 const DelphiStake = artifacts.require('DelphiStake');
 const EIP20 = artifacts.require('EIP20');
 
@@ -61,8 +62,38 @@ contract('DelphiStake', (accounts) => {
       }
       assert(false, 'did not revert after trying to init the stake with an incorrect amount of tokens');
     });
-    it('should revert when trying to call the initialize function more than once');
-    it('should revert when trying to call the initialize function with a deadline that is before now');
-    it('should revert when trying to initialize with an arbiter of address(0)');
+
+    it('should revert when trying to call the initialize function more than once', async () => {
+      const token = await EIP20.new(1000000, 'Delphi Tokens', 18, 'DELPHI', { from: staker });
+
+      const ds = await DelphiStake.new();
+
+      await token.approve(ds.address, conf.initialStake, { from: staker });
+
+      await ds.initDelphiStake(conf.initialStake, token.address, conf.minFee, conf.data,
+        conf.deadline, arbiter, { from: staker });
+      await assertRevert(ds.initDelphiStake(conf.initialStake, token.address, conf.minFee,
+        conf.data, conf.deadline, arbiter, { from: staker }));
+    });
+    it('should revert when trying to call the initialize function with a deadline that is before now', async () => {
+      const token = await EIP20.new(1000000, 'Delphi Tokens', 18, 'DELPHI', { from: staker });
+
+      const ds = await DelphiStake.new();
+
+      await token.approve(ds.address, conf.initialStake, { from: staker });
+
+      await assertRevert(ds.initDelphiStake(conf.initialStake, token.address, conf.minFee,
+        conf.data, '1', arbiter, { from: staker }));
+    });
+    it('should revert when trying to initialize with an arbiter of address(0)', async () => {
+      const token = await EIP20.new(1000000, 'Delphi Tokens', 18, 'DELPHI', { from: staker });
+
+      const ds = await DelphiStake.new();
+
+      await token.approve(ds.address, conf.initialStake, { from: staker });
+
+      await assertRevert(ds.initDelphiStake(conf.initialStake, token.address, conf.minFee,
+        conf.data, conf.deadline, '0x0', { from: staker }));
+    });
   });
 });
