@@ -12,7 +12,7 @@ contract DelphiStake {
     event SettlementAccepted(address _acceptedBy, uint _claimId, uint _settlementId);
     event SettlementFailed(address _failedBy, uint _claimId);
     event ClaimRuled(uint _claimId);
-    event ClaimDeadlineIncreased(uint _newClaimDeadline);
+    event ReleaseTimeIncreased(uint _stakeReleaseTime);
     event StakeWithdrawn();
     event StakeIncreased(address _increasedBy, uint _value);
 
@@ -46,13 +46,13 @@ contract DelphiStake {
     address public staker;
     address public arbiter;
 
-    uint public claimDeadline;
+    uint public stakeReleaseTime;
 
     Claim[] public claims;
     uint public openClaims;
     mapping(uint => Settlement[]) public settlements;
 
-    mapping(address => bool) public allowedClaimants;
+    mapping(address => uint) public whitelistedDeadlines;
 
     modifier onlyStaker(){
         require(msg.sender == staker);
@@ -114,8 +114,8 @@ contract DelphiStake {
         _;
     }
 
-    modifier isWhitelisted(address _claimant){
-      require(allowedClaimants[_claimant]);
+    modifier canOpenClaim(address _claimant){
+      require(whitelistedDeadlines[_claimant] >= now);
       _;
     }
 
@@ -124,13 +124,8 @@ contract DelphiStake {
       _;
     }
 
-    modifier isBeforeClaimDeadline(){
-      require (now <= claimDeadline);
-      _;
-    }
-
-    modifier isPastClaimDeadline(){
-      require (now > claimDeadline);
+    modifier stakeIsReleased(){
+      require (now > stakeReleaseTime);
       _;
     }
 
@@ -145,10 +140,10 @@ contract DelphiStake {
     a stake can be withdrawn by the staker
     @param _arbiter the address which is able to rule on open claims
     */
-    function initDelphiStake(uint _value, EIP20 _token, uint _minimumFee, string _data, uint _claimDeadline, address _arbiter)
+    function initDelphiStake(uint _value, EIP20 _token, uint _minimumFee, string _data, uint _stakeReleaseTime, address _arbiter)
     public
     {
-        require(_claimDeadline > now);
+        require(_stakeReleaseTime > now);
 
         // This function can only be called if it hasn't been called before, or if the token was
         // set to 0 when it was called previously.
@@ -165,7 +160,7 @@ contract DelphiStake {
         token = _token;
         minimumFee = _minimumFee;
         data = _data;
-        claimDeadline = _claimDeadline;
+        stakeReleaseTime = _stakeReleaseTime;
         arbiter = _arbiter;
         staker = msg.sender;
     }
@@ -175,13 +170,14 @@ contract DelphiStake {
     "whitelisted for claims" such that a clear path exists for the adjudication of disputes should
     one arise in the course of events.
     @param _claimant an address which, once whitelisted, can make claims against this stake
+    @param _deadline the timestamp before which the whitelisted individual may open a claim
     */
-    function whitelistClaimant(address _claimant)
+    function whitelistClaimant(address _claimant, uint _deadline)
     public
     onlyStaker
     {
-      // Whitelist the claimant by setting their entry in the allowedClaimants mapping to true
-      allowedClaimants[_claimant] = true;
+      // Whitelist the claimant by setting their entry in the whitelistedDeadlines mapping to their deadline
+      whitelistedDeadlines[_claimant] = _deadline;
 
       // Emit an event noting that this claimant was whitelisted
       ClaimantWhitelisted(_claimant);
@@ -205,9 +201,8 @@ contract DelphiStake {
     public
     notStakerOrArbiter
     stakerCanPay(_amount, _fee)
-    isWhitelisted(_claimant)
+    canOpenClaim(_claimant)
     largeEnoughFee(_fee)
-    isBeforeClaimDeadline
     {
         // Transfer the fee into the DelphiStake
         require(token.transferFrom(_claimant, this, _fee));
@@ -245,9 +240,8 @@ contract DelphiStake {
     public
     notStakerOrArbiter
     stakerCanPay(_amount, _fee)
-    isWhitelisted(_claimant)
+    canOpenClaim(_claimant)
     largeEnoughFee(_fee)
-    isBeforeClaimDeadline
     {
         require(token.transferFrom(_claimant, this, _fee));
         claims.push(Claim(_claimant, _amount, _fee, 0, _data, 0, false, true));
@@ -454,13 +448,13 @@ contract DelphiStake {
     @dev Increases the deadline for opening claims
     @param _newClaimDeadline the unix time stamp (in seconds) before which claims may be opened
     */
-    function increaseClaimDeadline(uint _newClaimDeadline)
+    function extendStakeReleaseTime(uint _stakeReleaseTime)
     public
     onlyStaker
     {
-        require(_newClaimDeadline > claimDeadline);
-        claimDeadline = _newClaimDeadline;
-        ClaimDeadlineIncreased(_newClaimDeadline);
+        require(_stakeReleaseTime > stakeReleaseTime);
+        stakeReleaseTime = _stakeReleaseTime;
+        ReleaseTimeIncreased(_stakeReleaseTime);
     }
 
     /*
@@ -470,7 +464,7 @@ contract DelphiStake {
     function withdrawStake()
     public
     onlyStaker
-    isPastClaimDeadline
+    stakeIsReleased
     noOpenClaims
     {
         uint oldStake = claimableStake;

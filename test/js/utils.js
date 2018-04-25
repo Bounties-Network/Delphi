@@ -31,7 +31,7 @@ const utils = {
     const ds = await DelphiStake.deployed();
     const token = EIP20.at(await ds.token.call());
 
-    await utils.as(staker, ds.whitelistClaimant, claimant);
+    await utils.as(staker, ds.whitelistClaimant, claimant, delphiConfig.deadline);
 
     await utils.as(claimant, token.approve, ds.address, new BN(amount, 10).plus(new BN(fee, 10)));
     await utils.as(claimant, ds.openClaim, claimant, amount, fee, data);

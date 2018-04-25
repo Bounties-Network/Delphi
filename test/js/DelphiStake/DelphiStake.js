@@ -32,7 +32,7 @@ contract('DelphiStake', (accounts) => {
       const data = await ds.data.call();
       assert.strictEqual(data, conf.data, 'the stake data was initialized improperly');
 
-      const deadline = await ds.claimDeadline.call();
+      const deadline = await ds.stakeReleaseTime.call();
       assert.strictEqual(deadline.toString(10), conf.deadline,
         'the deadline was initialized improperly');
 
