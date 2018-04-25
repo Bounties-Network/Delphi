@@ -23,9 +23,6 @@ contract('DelphiVoting', (accounts) => {
       // has lots of tokens because it deployed the token contract
 
       await utils.as(accounts[0], token.transfer, claimant, '1000');
-      await utils.as(accounts[0], token.transfer, arbiterAlice, '1000');
-      await utils.as(accounts[0], token.transfer, arbiterBob, '1000');
-      await utils.as(accounts[0], token.transfer, arbiterCharlie, '1000');
 
       // Add arbiter actors to the TCR
       await utils.addToWhitelist(utils.getArbiterListingId(arbiterAlice),

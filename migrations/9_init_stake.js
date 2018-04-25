@@ -25,6 +25,6 @@ module.exports = (deployer, network, accounts) => {
 
     }
     return ds.initDelphiStake(conf.initialStake, token, conf.minFee, conf.data,
-      conf.deadline, arbiter, {from: accounts[0]});
+      conf.deadline, arbiter);
   });
 };
