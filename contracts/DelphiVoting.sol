@@ -1,4 +1,4 @@
-pragma solidity 0.4.23;
+pragma solidity ^0.4.18;
 
 import "./deps/Registry.sol";
 import "./deps/Parameterizer.sol";
