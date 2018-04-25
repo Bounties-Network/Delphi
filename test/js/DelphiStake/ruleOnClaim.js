@@ -42,7 +42,7 @@ contract('DelphiStake', (accounts) => {
 
       await token.approve(ds.address, feeAmount, { from: claimant });
 
-      await ds.whitelistClaimant(claimant, { from: staker });
+      await ds.whitelistClaimant(claimant, conf.deadline, { from: staker });
 
       const claimId = await ds.getNumClaims();
 
@@ -70,7 +70,7 @@ contract('DelphiStake', (accounts) => {
 
       await token.approve(ds.address, feeAmount, { from: claimant });
 
-      await ds.whitelistClaimant(claimant, { from: staker });
+      await ds.whitelistClaimant(claimant, conf.deadline, { from: staker });
 
       const claimId = await ds.getNumClaims();
 
@@ -92,7 +92,7 @@ contract('DelphiStake', (accounts) => {
 
       await token.approve(ds.address, feeAmount, { from: claimant });
 
-      await ds.whitelistClaimant(claimant, { from: staker });
+      await ds.whitelistClaimant(claimant, conf.deadline, { from: staker });
 
       const claimId = await ds.getNumClaims();
 
@@ -119,7 +119,7 @@ contract('DelphiStake', (accounts) => {
 
       await token.approve(ds.address, feeAmount, { from: claimant });
 
-      await ds.whitelistClaimant(claimant, { from: staker });
+      await ds.whitelistClaimant(claimant, conf.deadline, { from: staker });
 
       const claimId = await ds.getNumClaims();
 
@@ -141,7 +141,7 @@ contract('DelphiStake', (accounts) => {
 
       await token.approve(ds.address, feeAmount, { from: claimant });
 
-      await ds.whitelistClaimant(claimant, { from: staker });
+      await ds.whitelistClaimant(claimant, conf.deadline, { from: staker });
 
       const claimId = await ds.getNumClaims();
 
@@ -163,7 +163,7 @@ contract('DelphiStake', (accounts) => {
 
       await token.approve(ds.address, feeAmount, { from: claimant });
 
-      await ds.whitelistClaimant(claimant, { from: staker });
+      await ds.whitelistClaimant(claimant, conf.deadline, { from: staker });
 
       const claimId = await ds.getNumClaims();
 
@@ -193,7 +193,7 @@ contract('DelphiStake', (accounts) => {
       const ruling = '1';
 
       // Open a new claim
-      await ds.whitelistClaimant(claimant, { from: staker });
+      await ds.whitelistClaimant(claimant, conf.deadline, { from: staker });
       await token.approve(ds.address, feeAmount, { from: claimant });
       const { logs } = await ds.openClaim(claimant, claimAmount, feeAmount, '', { from: claimant });
       const claimId = utils.getLog(logs, 'ClaimOpened').args._claimId; // eslint-disable-line
@@ -217,7 +217,7 @@ contract('DelphiStake', (accounts) => {
       const ruling = '1';
 
       // Open a new claim
-      await ds.whitelistClaimant(claimant, { from: staker });
+      await ds.whitelistClaimant(claimant, conf.deadline, { from: staker });
       await token.approve(ds.address, feeAmount, { from: claimant });
       const openClaimLogs
         = (await ds.openClaim(claimant, claimAmount, feeAmount, '', { from: claimant })).logs;

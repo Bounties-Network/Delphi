@@ -30,7 +30,7 @@ contract('DelphiStake', (accounts) => {
 
       const startingClaims = await ds.getNumClaims.call();
 
-      await ds.whitelistClaimant(arbiter, { from: staker });
+      await ds.whitelistClaimant(arbiter, conf.deadline, { from: staker });
 
       await token.approve(ds.address, feeAmount, { from: arbiter });
 
@@ -66,7 +66,7 @@ contract('DelphiStake', (accounts) => {
 
       const startingClaims = await ds.getNumClaims.call();
 
-      await ds.whitelistClaimant(staker, { from: staker });
+      await ds.whitelistClaimant(staker, conf.deadline, { from: staker });
 
       await token.approve(ds.address, feeAmount, { from: staker });
 
@@ -136,7 +136,7 @@ contract('DelphiStake', (accounts) => {
 
       const startingClaims = await ds.getNumClaims.call();
 
-      await ds.whitelistClaimant(claimant, { from: staker });
+      await ds.whitelistClaimant(claimant, conf.deadline, { from: staker });
 
       await token.approve(ds.address, feeAmount, { from: claimant });
 
@@ -172,7 +172,7 @@ contract('DelphiStake', (accounts) => {
 
       const startingClaims = await ds.getNumClaims.call();
 
-      await ds.whitelistClaimant(claimant, { from: staker });
+      await ds.whitelistClaimant(claimant, conf.deadline, { from: staker });
 
       await token.approve(ds.address, feeAmount, { from: claimant });
 
@@ -209,7 +209,7 @@ contract('DelphiStake', (accounts) => {
 
       const startingClaims = await ds.openClaims.call();
 
-      await ds.whitelistClaimant(claimant, { from: staker });
+      await ds.whitelistClaimant(claimant, conf.deadline, { from: staker });
 
       try {
         await ds.openClaim(claimant, claimAmount, feeAmount, '', { from: claimant });
@@ -246,7 +246,7 @@ contract('DelphiStake', (accounts) => {
 
       await token.approve(ds.address, feeAmount, { from: claimant });
 
-      await ds.whitelistClaimant(claimant, { from: staker });
+      await ds.whitelistClaimant(claimant, conf.deadline, { from: staker });
 
       await ds.openClaim(claimant, claimAmount, feeAmount, '', { from: claimant });
 
@@ -275,7 +275,7 @@ contract('DelphiStake', (accounts) => {
 
         await token.approve(ds.address, feeAmount, { from: claimant });
 
-        await ds.whitelistClaimant(claimant, { from: staker });
+        await ds.whitelistClaimant(claimant, conf.deadline, { from: staker });
 
         const claimId = await ds.getNumClaims();
 
@@ -320,7 +320,7 @@ contract('DelphiStake', (accounts) => {
 
       await token.approve(ds.address, feeAmount, { from: claimant });
 
-      await ds.whitelistClaimant(claimant, { from: staker });
+      await ds.whitelistClaimant(claimant, conf.deadline, { from: staker });
 
       await ds.openClaim(claimant, claimAmount, feeAmount, '', { from: claimant });
 
@@ -348,7 +348,7 @@ contract('DelphiStake', (accounts) => {
 
       await token.approve(ds.address, feeAmount, { from: claimant });
 
-      await ds.whitelistClaimant(claimant, { from: staker });
+      await ds.whitelistClaimant(claimant, conf.deadline, { from: staker });
 
       const startingStake = await ds.claimableStake.call();
 
@@ -383,7 +383,7 @@ contract('DelphiStake', (accounts) => {
       const claimAmount = '1';
       const feeAmount = '10';
 
-      await ds.whitelistClaimant(claimant, { from: staker });
+      await ds.whitelistClaimant(claimant, conf.deadline, { from: staker });
 
       await token.approve(ds.address, feeAmount, { from: claimant });
       await ds.openClaim(claimant, claimAmount, feeAmount, 'claim1', { from: claimant });
