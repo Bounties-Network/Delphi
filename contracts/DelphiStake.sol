@@ -176,6 +176,9 @@ contract DelphiStake {
     public
     onlyStaker
     {
+      // the new deadline should be greater than the existing one
+      require(_deadline >= whitelistedDeadlines[_claimant]);
+
       // Whitelist the claimant by setting their entry in the whitelistedDeadlines mapping to their deadline
       whitelistedDeadlines[_claimant] = _deadline;
 
