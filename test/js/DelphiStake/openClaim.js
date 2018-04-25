@@ -84,6 +84,8 @@ contract('DelphiStake', (accounts) => {
 
       assert(false, 'expected claim by staker to fail');
     });
+    
+    it('should not allow a whitelisted individual to open a claim after their deadline');
 
     it('should not allow a non-whitelisted individual to open a claim', async () => {
       const token = await EIP20.new(1000000, 'Delphi Tokens', 18, 'DELPHI', { from: staker });
