@@ -22,6 +22,10 @@ module.exports = (deployer, network, accounts) => {
 
     await token.transfer(tokenHolder.address, tokenHolder.amount);
 
+    for (var i = 0; i < accounts.length; i++){
+      await token.transfer(accounts[i], "1000000000000000000000");
+    }
+
     giveTokensTo(tokenHolders.slice(1));
   }
 

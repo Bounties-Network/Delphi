@@ -1,4 +1,4 @@
-pragma solidity 0.4.23;
+pragma solidity ^0.4.18;
 
 import "tokens/eip20/EIP20.sol";
 
