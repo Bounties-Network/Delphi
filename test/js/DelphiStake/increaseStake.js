@@ -109,6 +109,26 @@ contract('DelphiStake', (accounts) => {
         'did not properly deposit the expected number of tokens');
     });
 
-    it('should emit a StakeIncreased event');
+    it('should emit a StakeIncreased event', async () => {
+      const token = await EIP20.new(1000000, 'Delphi Tokens', 18, 'DELPHI', { from: staker });
+      await token.transfer(claimant, 100000, { from: staker });
+      await token.transfer(arbiter, 100000, { from: staker });
+
+      const ds = await DelphiStake.new();
+
+      await token.approve(ds.address, conf.initialStake, { from: staker });
+
+      await ds.initDelphiStake(conf.initialStake, token.address, conf.minFee, conf.data,
+        conf.deadline, arbiter, { from: staker });
+
+      const incAmount = '1';
+
+      await ds.claimableStake.call();
+      await token.approve(ds.address, incAmount, { from: staker });
+
+      await ds.increaseStake(incAmount, { from: staker }).then((status) => {
+        assert.strictEqual('StakeIncreased', status.logs[0].event, 'did not emit the StakeIncreased event');
+      });
+    });
   });
 });
