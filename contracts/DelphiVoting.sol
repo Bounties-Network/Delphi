@@ -1,7 +1,7 @@
 pragma solidity ^0.4.18;
 
-import "./deps/Registry.sol";
-import "./deps/Parameterizer.sol";
+import "tcr/Registry.sol";
+import "tcr/Parameterizer.sol";
 import "./DelphiStake.sol";
 
 contract DelphiVoting {
