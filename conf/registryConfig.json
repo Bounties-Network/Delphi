@@ -13,26 +13,26 @@
     "voteQuorum": 50,
     "pVoteQuorum": 50
 	},
+  "name": "The TestChain Registry",
   "token": {
     "address": "0x337cDDa6D41A327c5ad456166CCB781a9722AFf9",
     "deployToken": true,
     "decimals": "18",
     "name": "TestCoin",
     "symbol": "TEST",
-    "supply": "10000000000000000000000000000",
+    "supply": "1000000000000000000000000000",
     "tokenHolders": [
       { "address": "0x627306090abaB3A6e1400e9345bC60c78a8BEf57",
-        "amount": "400000000000000000000000000" },
+        "amount": "200000000000000000000000000" },
       { "address": "0xf17f52151EbEF6C7334FAD080c5704D77216b732",
-        "amount": "100000000000000000000000000" },
+        "amount": "200000000000000000000000000" },
       { "address": "0xC5fdf4076b8F3A5357c5E395ab970B5B54098Fef",
-        "amount": "100000000000000000000000000" },
+        "amount": "200000000000000000000000000" },
       { "address": "0x821aEa9a577a9b44299B9c15c88cf3087F3b5544",
-        "amount": "100000000000000000000000000" },
+        "amount": "200000000000000000000000000" },
       { "address": "0x0d1d4e623D10F9FBA5Db95830F7d3839406C6AF2",
-        "amount": "100000000000000000000000000" },
-      { "address": "0x2932b7A2355D6fecc4b5c0B6BD44cC31df247a2e",
-        "amount": "100000000000000000000000000" }
+        "amount": "200000000000000000000000000" }
     ]
   }
 }
+

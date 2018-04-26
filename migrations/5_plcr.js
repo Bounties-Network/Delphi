@@ -1,9 +1,9 @@
 /* global artifacts */
 
-const Token = artifacts.require('EIP20.sol');
+const Token = artifacts.require('tokens/eip20/EIP20.sol');
 const DLL = artifacts.require('dll/DLL.sol');
 const AttributeStore = artifacts.require('attrstore/AttributeStore.sol');
-const PLCRVoting = artifacts.require('PLCRVoting.sol');
+const PLCRVoting = artifacts.require('tcr/PLCRVoting.sol');
 
 const fs = require('fs');
 
