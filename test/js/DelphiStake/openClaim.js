@@ -84,7 +84,7 @@ contract('DelphiStake', (accounts) => {
 
       assert(false, 'expected claim by staker to fail');
     });
-    
+
     it('should not allow a whitelisted individual to open a claim after their deadline');
 
     it('should not allow a non-whitelisted individual to open a claim', async () => {

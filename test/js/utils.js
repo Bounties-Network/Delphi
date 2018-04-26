@@ -45,7 +45,6 @@ const utils = {
 
   addToWhitelist: async (listingHash, deposit, actor) => {
     const registry = await Registry.deployed();
-    const token = EIP20.at(await registry.token.call());
 
     await utils.as(actor, registry.apply, listingHash, deposit, '');
     await utils.increaseTime(config.paramDefaults.applyStageLength + 1);

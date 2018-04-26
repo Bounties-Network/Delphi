@@ -6,7 +6,7 @@ const Token = artifacts.require('tokens/eip20/EIP20.sol');
 
 const fs = require('fs');
 
-module.exports = (deployer, network, accounts) => {
+module.exports = (deployer, network) => {
   deployer.then(async () => {
     const ds = await DelphiStake.deployed();
     const conf = JSON.parse(fs.readFileSync('./conf/config.json'));
@@ -22,7 +22,6 @@ module.exports = (deployer, network, accounts) => {
 
       await (await Token.at(token))
         .approve(ds.address, conf.initialStake);
-
     }
     return ds.initDelphiStake(conf.initialStake, token, conf.minFee, conf.data,
       conf.deadline, arbiter);
