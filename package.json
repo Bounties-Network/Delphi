@@ -16,9 +16,8 @@
     "bignumber.js": "4.0.4",
     "ethereumjs-abi": "0.6.5",
     "ethjs-provider-http": "0.1.6",
-    "ethjs-rpc": "0.1.5",
-    "solc": "^0.4.21",
-    "truffle": "^4.1.7",
+    "ethjs-rpc": "0.1.9",
+    "truffle": "4.1.7",
     "truffle-hdwallet-provider": "0.0.3"
   },
   "devDependencies": {
