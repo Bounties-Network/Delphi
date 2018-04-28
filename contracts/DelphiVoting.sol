@@ -142,6 +142,8 @@ contract DelphiVoting {
     EIP20 token = ds.token();
     Claim storage claim = claims[keccak256(_stake, _claimNumber)]; // Grabbing a pointer
 
+    // The ruling needs to have been submitted before an arbiter can claim their reward
+    require(claimIsRuled(_stake, _claimNumber));
     // Do not allow arbiters to claim rewards for a claim more than once
     require(!claim.claimedReward[msg.sender]);
     // Check that the arbiter actually committed the vote they say they did
@@ -217,6 +219,25 @@ contract DelphiVoting {
   */
   function revealedVotesForOption(bytes32 _claimId, uint _option) public view returns (uint) {
     return claims[_claimId].tallies[_option];
+  }
+
+  /*
+  @dev utility function for determining whether a claim has been ruled. Used by claimFee to 
+  determine whether fees should be disbured.
+  @param _stake the DelphiStake whose storage is to be inspected.
+  @param _claimNumber the unique claim number we are determining if a ruling has been submitted
+  for
+  @return bool True if a ruling has been submitted for the claim, false otherwise
+  */
+  function claimIsRuled(address _stake, uint _claimNumber) public view returns (bool) {
+    DelphiStake ds = DelphiStake(_stake);
+    bool ruled;
+    bool settlementFailed;
+
+    // Tuple destructuring. settlementFailed is a throwaway value, but is needed by the compiler.
+    (, ruled, settlementFailed) = ds.claims(_claimNumber);
+
+    return ruled;
   }
 
   /**
