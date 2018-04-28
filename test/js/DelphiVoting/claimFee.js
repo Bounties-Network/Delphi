@@ -21,13 +21,10 @@ contract('DelphiVoting', (accounts) => {
 
       // The claimant will need tokens to fund fees when they make claims. The zero account
       // has lots of tokens because it deployed the token contract
-
       await utils.as(accounts[0], token.transfer, claimant, '1000');
-
       await utils.as(accounts[0], token.transfer, arbiterAlice, '1000');
       await utils.as(accounts[0], token.transfer, arbiterBob, '1000');
       await utils.as(accounts[0], token.transfer, arbiterCharlie, '1000');
-
 
       // Add arbiter actors to the TCR
       await utils.addToWhitelist(utils.getArbiterListingId(arbiterAlice),
@@ -219,5 +216,67 @@ contract('DelphiVoting', (accounts) => {
     it('should revert if called by anyone but one of the arbiters');
     it('should not allow an arbiter to claim a fee when they did not commit');
     it('should not allow an arbiter to claim a fee when they committed but did not reveal');
+    it('should not allow an arbiter to claim a fee for a claim where they committed and ' +
+      'revealed, but for which a ruling has not been submitted', async () => {
+      const dv = await DelphiVoting.deployed();
+      const ds = await DelphiStake.deployed();
+      const token = EIP20.at(await ds.token.call());
+
+      // Set constants
+      const CLAIM_AMOUNT = '10';
+      const FEE_AMOUNT = '10';
+      const PLURALITY_VOTE = '0';
+      const SALT = '420';
+
+      // Compute a secret hash to submit
+      const secretHash = utils.getSecretHash(PLURALITY_VOTE, SALT);
+
+      // Make a new claim and compute its claim ID.
+      const claimNumber = // should be two, since we have already made two claims
+        await utils.makeNewClaim(staker, claimant, CLAIM_AMOUNT, FEE_AMOUNT, 'i love cats');
+      const claimId = utils.getClaimId(ds.address, claimNumber.toString(10));
+
+      // Arbiter commits vote.
+      await utils.as(arbiterAlice, dv.commitVote, ds.address, claimNumber, secretHash);
+
+      // Increase time to get to the reveal phase
+      await utils.increaseTime(config.paramDefaults.commitStageLength + 1);
+
+      // Arbiter reveals votes
+      await utils.as(arbiterAlice, dv.revealVote, claimId, PLURALITY_VOTE, SALT);
+
+      // Increase time to finish the reveal phase so we can submit the ruling
+      await utils.increaseTime(config.paramDefaults.revealStageLength);
+
+      // Capture Alice's starting token balance, claim the fee and get her final balance
+      const startingBalanceAlice = await token.balanceOf(arbiterAlice);
+
+      // Give the DelphiVoting contract a balance prematurely so that it can trasfer tokens
+      // to the early-claimer
+      await utils.as(staker, token.transfer, dv.address, FEE_AMOUNT);
+
+      // Alice attempts to claim a fee, though the ruling has not been submitted yet. This
+      // should fail!
+      try {
+        await utils.as(arbiterAlice, dv.claimFee, DelphiStake.address, claimNumber,
+          PLURALITY_VOTE, SALT);
+      } catch (err) {
+        assert(utils.isEVMRevert(err), err.toString());
+
+        const finalBalanceAlice = await token.balanceOf(arbiterAlice);
+        assert.strictEqual(finalBalanceAlice.toString(10), startingBalanceAlice.toString(10),
+          'Alice was able to claim a reward before submitting a ruling');
+      }
+
+      // Submit ruling. Now Alice should be able to claim her due.
+      await utils.as(arbiterAlice, dv.submitRuling, DelphiStake.address, claimNumber);
+      await utils.as(arbiterAlice, dv.claimFee, DelphiStake.address, claimNumber,
+        PLURALITY_VOTE, SALT);
+
+      const finalBalanceAlice = await token.balanceOf(arbiterAlice);
+      const expectedFinalBalanceAlice = startingBalanceAlice.plus(FEE_AMOUNT);
+      assert.strictEqual(finalBalanceAlice.toString(10), expectedFinalBalanceAlice.toString(10),
+        'After submitting the ruling, Alice still was unable to claim her fee');
+    });
   });
 });
