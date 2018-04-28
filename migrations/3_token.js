@@ -5,7 +5,7 @@ const Token = artifacts.require('tokens/eip20/EIP20.sol');
 const fs = require('fs');
 
 module.exports = (deployer, network) => {
-  const config = JSON.parse(fs.readFileSync('./conf/registryConfig.json'));
+  const config = JSON.parse(fs.readFileSync('./conf/tcrConfig.json'));
 
   async function giveTokensTo(tokenHolders) {
     if (tokenHolders.length === 0) { return; }
