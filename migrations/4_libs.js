@@ -7,3 +7,4 @@ module.exports = (deployer) => {
   deployer.deploy(DLL);
   deployer.deploy(AttributeStore);
 };
+
