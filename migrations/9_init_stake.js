@@ -27,3 +27,4 @@ module.exports = (deployer, network) => {
       conf.deadline, arbiter);
   });
 };
+

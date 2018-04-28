@@ -37,3 +37,4 @@ module.exports = (deployer, network) => {
       `${config.token.address} on network ${network}.`);
   }
 };
+

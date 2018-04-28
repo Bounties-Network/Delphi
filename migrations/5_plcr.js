@@ -39,3 +39,4 @@ module.exports = (deployer, network, accounts) => {
       }
     }).catch((err) => { throw err; });
 };
+
