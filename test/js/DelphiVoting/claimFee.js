@@ -9,7 +9,7 @@ const utils = require('../utils.js');
 const fs = require('fs');
 const BN = require('bignumber.js');
 
-const config = JSON.parse(fs.readFileSync('./conf/registryConfig.json'));
+const config = JSON.parse(fs.readFileSync('./conf/tcrConfig.json'));
 
 contract('DelphiVoting', (accounts) => {
   describe('Function: claimFee', () => {

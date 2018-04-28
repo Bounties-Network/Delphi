@@ -12,8 +12,8 @@ const BN = require('bignumber.js');
 
 const ethRPC = new EthRPC(new HttpProvider('http://localhost:7545'));
 
-const config = JSON.parse(fs.readFileSync('./conf/registryConfig.json'));
-const delphiConfig = JSON.parse(fs.readFileSync('./conf/config.json'));
+const config = JSON.parse(fs.readFileSync('./conf/tcrConfig.json'));
+const delphiConfig = JSON.parse(fs.readFileSync('./conf/dsConfig.json'));
 
 const utils = {
 
@@ -110,7 +110,7 @@ const utils = {
     err.toString().includes('revert')
   ),
 
-  getConfig: () => JSON.parse(fs.readFileSync('conf/config.json')),
+  getConfig: () => JSON.parse(fs.readFileSync('conf/dsConfig.json')),
 
   getLog: (logs, event) => logs.find(log => log.event.includes(event)),
 

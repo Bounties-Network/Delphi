@@ -9,7 +9,7 @@ const fs = require('fs');
 module.exports = (deployer, network) => {
   deployer.then(async () => {
     const ds = await DelphiStake.deployed();
-    const conf = JSON.parse(fs.readFileSync('./conf/config.json'));
+    const conf = JSON.parse(fs.readFileSync('./conf/dsConfig.json'));
 
     let arbiter = conf.arbiter;
     let token = conf.token;

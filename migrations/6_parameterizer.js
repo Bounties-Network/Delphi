@@ -22,7 +22,7 @@ module.exports = (deployer, network, accounts) => {
   deployer.link(AttributeStore, Parameterizer);
 
   return deployer.then(async () => {
-    const config = JSON.parse(fs.readFileSync('./conf/registryConfig.json'));
+    const config = JSON.parse(fs.readFileSync('./conf/tcrConfig.json'));
     const parameterizerConfig = config.paramDefaults;
     let tokenAddress = config.token.address;
 

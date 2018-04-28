@@ -21,7 +21,7 @@ module.exports = (deployer, network, accounts) => {
   deployer.link(AttributeStore, PLCRVoting);
 
   return deployer.then(async () => {
-    const config = JSON.parse(fs.readFileSync('./conf/registryConfig.json'));
+    const config = JSON.parse(fs.readFileSync('./conf/tcrConfig.json'));
     let tokenAddress = config.token.address;
 
     if (config.token.deployToken) {
