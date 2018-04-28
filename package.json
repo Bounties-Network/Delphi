@@ -4,6 +4,7 @@
   "description": "A decentralized dispute arbitration system",
   "scripts": {
     "install": "truffle install",
+    "coverage": "solidity-coverage",
     "compile": "truffle compile",
     "test": "npm run lint ./ && truffle test",
     "fix": "eslint --fix",
