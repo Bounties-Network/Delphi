@@ -9,6 +9,19 @@ const BN = require('bignumber.js');
 
 const conf = utils.getConfig();
 
+const Web3 = require('web3');
+
+const web3 = new Web3(Web3.givenProvider || 'ws://localhost:7545');
+
+function sleep(milliseconds) {
+  const start = new Date().getTime();
+  for (let i = 0; i < 1e7; i += 1) {
+    if ((new Date().getTime() - start) > milliseconds) {
+      break;
+    }
+  }
+}
+
 contract('DelphiStake', (accounts) => {
   describe('Function: openClaimWithoutSettlement', () => {
     const [staker, claimant, arbiter] = accounts;
@@ -119,7 +132,36 @@ contract('DelphiStake', (accounts) => {
       assert(false, 'expected claim by non-whitelisted individual to fail');
     });
 
-    it('should revert if someone is attempting to open a claim after the deadline');
+    it('should revert if someone is attempting to open a claim after the deadline', async () => {
+      const timeBlock = await web3.eth.getBlock(await web3.eth.getBlockNumber());
+      const token = await EIP20.new(1000000, 'Delphi Tokens', 18, 'DELPHI', { from: staker });
+      await token.transfer(claimant, 100000, { from: staker });
+      await token.transfer(arbiter, 100000, { from: staker });
+
+      const ds = await DelphiStake.new();
+
+      await token.approve(ds.address, conf.initialStake, { from: staker });
+      await token.transfer(arbiter, 1000, { from: staker });
+
+      await ds.initDelphiStake(conf.initialStake, token.address, conf.minFee, conf.data,
+        timeBlock.timestamp + 10, arbiter, { from: staker });
+
+      const claimAmount = '1';
+      const feeAmount = '10';
+
+      await ds.whitelistClaimant(claimant, timeBlock.timestamp, { from: staker });
+
+      await token.approve(ds.address, feeAmount, { from: claimant });
+      sleep(4000);
+      try {
+        await ds.openClaimWithoutSettlement(claimant, claimAmount, feeAmount, 'claim1', { from: claimant });
+      } catch (err) {
+        assert(utils.isEVMRevert(err), err.toString());
+        return;
+      }
+
+      assert(false, 'expected revert if someone is attempting to open a claim after the deadline');
+    });
 
     it('should revert if _fee is smaller than the minimum', async () => {
       const token = await EIP20.new(1000000, 'Delphi Tokens', 18, 'DELPHI', { from: staker });
@@ -366,8 +408,30 @@ contract('DelphiStake', (accounts) => {
         'balance does not reflect the originally deposited funds and additional fee');
     });
 
-    it('should emit a NewClaim event');
-    // TODO: add events
+    it('should emit a NewClaim event', async () => {
+      const token = await EIP20.new(1000000, 'Delphi Tokens', 18, 'DELPHI', { from: staker });
+      await token.transfer(claimant, 100000, { from: staker });
+      await token.transfer(arbiter, 100000, { from: staker });
+
+      const ds = await DelphiStake.new();
+
+      await token.approve(ds.address, conf.initialStake, { from: staker });
+      await token.transfer(arbiter, 1000, { from: staker });
+
+      await ds.initDelphiStake(conf.initialStake, token.address, conf.minFee, conf.data,
+        conf.deadline, arbiter, { from: staker });
+
+      const claimAmount = '1';
+      const feeAmount = '10';
+
+      await ds.whitelistClaimant(claimant, conf.deadline, { from: staker });
+
+      await token.approve(ds.address, feeAmount, { from: claimant });
+
+      await ds.openClaimWithoutSettlement(claimant, claimAmount, feeAmount, 'claim1', { from: claimant }).then((status) => {
+        assert.strictEqual('ClaimOpened', status.logs[0].event, 'did not emit the NewClaim event');
+      });
+    });
 
     it('should append claims to the end of the claim array, without overwriting earlier claims', async () => {
       const token = await EIP20.new(1000000, 'Delphi Tokens', 18, 'DELPHI', { from: staker });
