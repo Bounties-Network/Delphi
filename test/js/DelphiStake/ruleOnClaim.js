@@ -7,6 +7,8 @@ const DelphiStake = artifacts.require('DelphiStake');
 const EIP20 = artifacts.require('EIP20');
 
 const utils = require('../utils.js');
+const BN = require('bignumber.js');
+
 
 const conf = utils.getConfig();
 
@@ -59,9 +61,53 @@ contract('DelphiStake', (accounts) => {
 
       assert(false, 'A non-arbiter was able to rule on the claim');
     });
-    it('should revert if called on an out-of-bounds claimId');
+    it('should revert if called on an out-of-bounds claimId', async () => {
+      const claimAmount = '1';
+      const feeAmount = '10';
+      const ruling = '1';
 
-    it('should revert if called on an out-of-bounds _ruling');
+      await token.approve(ds.address, feeAmount, { from: claimant });
+
+      await ds.whitelistClaimant(claimant, conf.deadline, { from: staker });
+
+      const claimId = await ds.getNumClaims();
+
+      await ds.openClaim(claimant, claimAmount, feeAmount, '', { from: claimant });
+
+      await ds.settlementFailed(claimId, { from: claimant });
+
+      try {
+        await utils.as(dave, ds.ruleOnClaim, 4, ruling);
+      } catch (err) {
+        assert(utils.isEVMRevert(err), err.toString());
+        return;
+      }
+      assert(false, 'expected revert if called on an out-of-bounds claimId');
+    });
+
+    it('should revert if called on an out-of-bounds _ruling', async () => {
+      const claimAmount = '1';
+      const feeAmount = '10';
+      const ruling = '6';
+
+      await token.approve(ds.address, feeAmount, { from: claimant });
+
+      await ds.whitelistClaimant(claimant, conf.deadline, { from: staker });
+
+      const claimId = await ds.getNumClaims();
+
+      await ds.openClaim(claimant, claimAmount, feeAmount, '', { from: claimant });
+
+      await ds.settlementFailed(claimId, { from: claimant });
+
+      try {
+        await utils.as(dave, ds.ruleOnClaim, claimId, ruling);
+      } catch (err) {
+        assert(utils.isEVMRevert(err), err.toString());
+        return;
+      }
+      assert(false, 'expected revert if called on an out-of-bounds claimId');
+    });
 
     it('should revert if settlement never failed', async () => {
       const claimAmount = '1';
@@ -182,10 +228,86 @@ contract('DelphiStake', (accounts) => {
         'stake incorrectly changed after ruling');
     });
 
-    it('should transfer the fee and surplus to the arbiter and the claim amount + fee to the claimant if the ruling is 0');
-    it('should transfer the fee and surplus to the arbiter and return the claim amount + fee to the stakers stake if the ruling is 1');
-    it('should transfer 2 times the fee plus the surplus to the arbiter and should burn the claim amount if the ruling is 2');
-    it('should transfer the fee deposit back to the claimant, transfer the fee surplus to the arbiter, and return the claim amount and fee to the stakers stake');
+    it('should transfer the fee and surplus to the arbiter and the claim amount + fee to the claimant if the ruling is 0', async () => {
+      const claimAmount = '1';
+      const feeAmount = '10';
+      const ruling = '0';
+
+      await token.approve(ds.address, feeAmount, { from: claimant });
+
+      await ds.whitelistClaimant(claimant, conf.deadline, { from: staker });
+
+      const claimId = await ds.getNumClaims();
+
+      await ds.openClaim(claimant, claimAmount, feeAmount, '', { from: claimant });
+      const originalArbiterBalance = await token.balanceOf(arbiter);
+      await ds.settlementFailed(claimId, { from: claimant });
+      const originalClaimantBalance = await token.balanceOf(claimant);
+      await ds.ruleOnClaim(claimId, ruling, { from: arbiter });
+      const arbiterBalance = await token.balanceOf(arbiter);
+      const claimantBalance = await token.balanceOf(claimant);
+      assert.strictEqual(originalArbiterBalance.add(new BN('10', 10)).toString(10), arbiterBalance.toString(10), 'Arbiter Balance doesnt grow up');
+      assert.strictEqual(originalClaimantBalance.add(new BN('11', 10)).toString(10), claimantBalance.toString(10), 'Claimant Balance doesnt grow up');
+    });
+    it('should transfer the fee and surplus to the arbiter and return the claim amount + fee to the stakers stake if the ruling is 1', async () => {
+      const claimAmount = '1';
+      const feeAmount = '10';
+      const ruling = '1';
+
+      await token.approve(ds.address, feeAmount, { from: claimant });
+
+      await ds.whitelistClaimant(claimant, conf.deadline, { from: staker });
+
+      const claimId = await ds.getNumClaims();
+
+      await ds.openClaim(claimant, claimAmount, feeAmount, '', { from: claimant });
+      const originalArbiterBalance = await token.balanceOf(arbiter);
+      await ds.settlementFailed(claimId, { from: claimant });
+
+      await ds.ruleOnClaim(claimId, ruling, { from: arbiter });
+      const arbiterBalance = await token.balanceOf(arbiter);
+      assert.strictEqual(originalArbiterBalance.add(new BN('10', 10)).toString(10), arbiterBalance.toString(10), 'Balance doesnt grow up');
+    });
+    it('should transfer 2 times the fee plus the surplus to the arbiter and should burn the claim amount if the ruling is 2', async () => {
+      const claimAmount = '1';
+      const feeAmount = '10';
+      const ruling = '2';
+
+      await token.approve(ds.address, feeAmount, { from: claimant });
+
+      await ds.whitelistClaimant(claimant, conf.deadline, { from: staker });
+
+      const claimId = await ds.getNumClaims();
+
+      await ds.openClaim(claimant, claimAmount, feeAmount, '', { from: claimant });
+      const originalArbiterBalance = await token.balanceOf(arbiter);
+      await ds.settlementFailed(claimId, { from: claimant });
+
+      await ds.ruleOnClaim(claimId, ruling, { from: arbiter });
+      const arbiterBalance = await token.balanceOf(arbiter);
+      assert.strictEqual(originalArbiterBalance.add(new BN('20', 10)).toString(10), arbiterBalance.toString(10), 'Balance doesnt grow up');
+      const balance0x0 = await token.balanceOf('0x0000000000000000000000000000000000000000');
+      assert.strictEqual(balance0x0.toString(10), '1', 'address 0x0 doesnt grow up');
+    });
+    it('should transfer the fee deposit back to the claimant, transfer the fee surplus to the arbiter, and return the claim amount and fee to the stakers stake', async () => {
+      const claimAmount = '1';
+      const feeAmount = '10';
+      const ruling = '3';
+
+      await token.approve(ds.address, feeAmount, { from: claimant });
+
+      await ds.whitelistClaimant(claimant, conf.deadline, { from: staker });
+
+      const claimId = await ds.getNumClaims();
+
+      await ds.openClaim(claimant, claimAmount, feeAmount, '', { from: claimant });
+      const originalClaimantBalance = await token.balanceOf(claimant);
+      await ds.settlementFailed(claimId, { from: claimant });
+
+      await ds.ruleOnClaim(claimId, ruling, { from: arbiter });
+      const ClaimantBalance = await token.balanceOf(claimant);
+      assert.strictEqual(originalClaimantBalance.add(new BN('11', 10)).toString(10), ClaimantBalance.toString(10), 'Balance doesnt grow up');
+    });
 
     it('should decrement openClaims', async () => {
       const claimAmount = '1';
