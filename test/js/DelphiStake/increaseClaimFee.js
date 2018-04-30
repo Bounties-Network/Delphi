@@ -35,7 +35,7 @@ contract('DelphiStake', (accounts) => {
       await ds.openClaim(claimant, claimAmount, feeAmount, '', { from: claimant });
 
       try {
-        await ds.increaseClaimFee(3, 11, { from: arbiter });
+        await utils.as(arbiter, ds.increaseClaimFee, 3, 11);
       } catch (err) {
         assert(utils.isEVMRevert(err), err.toString());
         return;
@@ -43,7 +43,45 @@ contract('DelphiStake', (accounts) => {
 
       assert(false, 'expected revert if called with an out-of-bounds claimId');
     });
-    it('should revert if called on a claim which has already been ruled upon');
+
+    it('should revert if called on a claim which has already been ruled upon', async () => {
+      const token = await EIP20.new(1000000, 'Delphi Tokens', 18, 'DELPHI', { from: staker });
+      await token.transfer(claimant, 100000, { from: staker });
+      await token.transfer(arbiter, 100000, { from: staker });
+
+      // Create a new DelphiStake
+      const ds = await DelphiStake.new();
+
+      // Initialize the DelphiStake (it will need to transferFrom the staker, so approve it first)
+      await token.approve(ds.address, conf.initialStake, { from: staker });
+      await token.transfer(arbiter, 1000, { from: staker });
+
+      await ds.initDelphiStake(conf.initialStake, token.address, conf.minFee, conf.data,
+        conf.deadline, arbiter, { from: staker });
+      const claimAmount = '1';
+      const feeAmount = '10';
+      const ruling = '1';
+
+      await token.approve(ds.address, feeAmount, { from: claimant });
+
+      await ds.whitelistClaimant(claimant, conf.deadline, { from: staker });
+
+      const claimId = await ds.getNumClaims();
+
+      await ds.openClaim(claimant, claimAmount, feeAmount, '', { from: claimant });
+      await ds.settlementFailed(claimId, { from: claimant });
+
+      await ds.ruleOnClaim(claimId, ruling, { from: arbiter });
+
+      try {
+        await utils.as(arbiter, ds.increaseClaimFee, 0, 1);
+      } catch (err) {
+        assert(utils.isEVMRevert(err), err.toString());
+        return;
+      }
+      assert(false, 'expected revert if called on a claim which has already been ruled upon');
+    });
+
     it('should revert if settlement has not yet failed', async () => {
       const token = await EIP20.new(1000000, 'Delphi Tokens', 18, 'DELPHI', { from: staker });
       await token.transfer(claimant, 100000, { from: staker });
@@ -67,7 +105,7 @@ contract('DelphiStake', (accounts) => {
       await ds.openClaim(claimant, claimAmount, feeAmount, '', { from: claimant });
 
       try {
-        await ds.increaseClaimFee(0, 11, { from: arbiter });
+        await utils.as(arbiter, ds.increaseClaimFee, 0, 11);
       } catch (err) {
         assert(utils.isEVMRevert(err), err.toString());
         return;
@@ -156,7 +194,5 @@ contract('DelphiStake', (accounts) => {
         assert.strictEqual('FeeIncreased', status.logs[0].event, 'did not emit the FeeIncreased event');
       });
     });
-    it('should emit a WithdrawFinalized event'); // ? ? 
-    
   });
 });
