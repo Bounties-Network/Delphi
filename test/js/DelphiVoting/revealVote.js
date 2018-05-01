@@ -10,7 +10,7 @@ const fs = require('fs');
 const config = JSON.parse(fs.readFileSync('./conf/tcrConfig.json'));
 
 contract('DelphiVoting', (accounts) => {
-  describe('Function: revealVote', () => {
+  describe('Function: revealVote - part 1 ', () => {
     const [staker, claimant, arbiter] = accounts;
 
     before(async () => {
@@ -18,7 +18,6 @@ contract('DelphiVoting', (accounts) => {
       await utils.addToWhitelist(utils.getArbiterListingId(arbiter),
         config.paramDefaults.minDeposit, arbiter);
     });
-
     it('should reveal an arbiter\'s vote and update the vote tally for a vote of 0', async () => {
       const dv = await DelphiVoting.deployed();
       const ds = await DelphiStake.deployed();
@@ -170,7 +169,6 @@ contract('DelphiVoting', (accounts) => {
       assert.strictEqual(finalTally.toString(10), '1',
         'the final vote tally was not as-expected');
     });
-
     it('should not allow an arbiter to reveal twice', async () => {
       const dv = await DelphiVoting.deployed();
 
@@ -200,11 +198,5 @@ contract('DelphiVoting', (accounts) => {
 
       assert(false, 'an arbiter was able to reveal twice');
     });
-
-    it('should revert if the provided vote and salt don\'t match the commitHash');
-
-    it('should not allow an arbiter to reveal before the reveal stage has begun');
-    it('should not allow an arbiter to reveal after the reveal stage has ended');
-    it('should set hasRevealed to true for the msg.sender');
   });
 });
