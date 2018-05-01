@@ -50,10 +50,9 @@ contract('DelphiStake', (accounts) => {
 
       await token.approve(ds.address, 10, { from: staker });
 
-
       try {
-        await ds.initDelphiStake(conf.initialStake, token.address, conf.minFee, conf.data,
-          conf.deadline, arbiter, { from: staker });
+        await utils.as(staker, ds.initDelphiStake, conf.initialStake, token.address,
+          conf.minFee, conf.data, conf.deadline, arbiter);
       } catch (err) {
         assert(utils.isEVMRevert(err), err.toString());
 
@@ -73,8 +72,8 @@ contract('DelphiStake', (accounts) => {
         conf.deadline, arbiter, { from: staker });
 
       try {
-        await ds.initDelphiStake(conf.initialStake, token.address, conf.minFee,
-          conf.data, conf.deadline, arbiter, { from: staker });
+        await utils.as(staker, ds.initDelphiStake, conf.initialStake, token.address,
+          conf.minFee, conf.data, conf.deadline, arbiter);
       } catch (err) {
         assert(utils.isEVMRevert(err), err.toString());
 
@@ -91,8 +90,8 @@ contract('DelphiStake', (accounts) => {
       await token.approve(ds.address, conf.initialStake, { from: staker });
 
       try {
-        await ds.initDelphiStake(conf.initialStake, token.address, conf.minFee,
-          conf.data, '1', arbiter, { from: staker });
+        await utils.as(staker, ds.initDelphiStake, conf.initialStake, token.address,
+          conf.minFee, conf.data, '1', arbiter);
       } catch (err) {
         assert(utils.isEVMRevert(err), err.toString());
 
@@ -109,8 +108,8 @@ contract('DelphiStake', (accounts) => {
       await token.approve(ds.address, conf.initialStake, { from: staker });
 
       try {
-        await ds.initDelphiStake(conf.initialStake, token.address, conf.minFee,
-          conf.data, conf.deadline, '0x0', { from: staker });
+        await utils.as(staker, ds.initDelphiStake, conf.initialStake, token.address,
+          conf.minFee, conf.data, conf.deadline, '0x0');
       } catch (err) {
         assert(utils.isEVMRevert(err), err.toString());
 
