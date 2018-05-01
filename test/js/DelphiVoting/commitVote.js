@@ -126,6 +126,24 @@ contract('DelphiVoting', (accounts) => {
       },
     );
 
-    it('should not allow an arbiter to commit a secret hash of 0');
+    it('should not allow an arbiter to commit a secret hash of 0',
+      async () => {
+        const dv = await DelphiVoting.deployed();
+        const ds = await DelphiStake.deployed();
+
+        // Set constants
+        const NON_EXISTANT_CLAIM = '420';
+
+        // Secret hash 0x0
+        const secretHash = '0x0';
+
+        try {
+          await utils.as(arbiter, dv.commitVote, ds.address, NON_EXISTANT_CLAIM, secretHash);
+        } catch (err) {
+          assert(utils.isEVMRevert(err), err.toString());
+          return;
+        }
+        assert(false, 'expected to not allow an arbiter to commit a secret hash of 0');
+      });
   });
 });
