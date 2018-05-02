@@ -102,7 +102,7 @@ contract('DelphiVoting', (accounts) => {
       const secretHash = utils.getSecretHash(VOTE, SALT);
       await utils.as(arbiter, dv.commitVote, ds.address, claimNumber, secretHash);
 
-      await utils.increaseTime(config.paramDefaults.pCommitStageLength + 1);
+      await utils.increaseTime(config.paramDefaults.pRevealStageLength + 1);
 
       try {
         await utils.as(arbiter, dv.revealVote, claimId, VOTE, SALT);
@@ -111,7 +111,7 @@ contract('DelphiVoting', (accounts) => {
         return;
       }
 
-      assert(false, 'Expected to not allow an arbiter to reveal before the reveal stage has begun');
+      assert(false, 'Expected to not allow an arbiter to reveal before the reveal stage has ended');
     });
     it('should set hasRevealed to true for the msg.sender', async () => {
       const dv = await DelphiVoting.deployed();
