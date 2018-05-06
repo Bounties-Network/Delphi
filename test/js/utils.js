@@ -34,7 +34,7 @@ const utils = {
     await utils.as(staker, ds.whitelistClaimant, claimant, delphiConfig.deadline);
 
     await utils.as(claimant, token.approve, ds.address, new BN(amount, 10).plus(new BN(fee, 10)));
-    await utils.as(claimant, ds.openClaim, claimant, amount, fee, data);
+    await utils.as(claimant, ds.openClaim, amount, fee, data);
 
     const claimId = await ds.getNumClaims();
 

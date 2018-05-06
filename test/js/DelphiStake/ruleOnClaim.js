@@ -46,7 +46,7 @@ contract('DelphiStake', (accounts) => {
 
       const claimId = await ds.getNumClaims();
 
-      await ds.openClaim(claimant, claimAmount, feeAmount, '', { from: claimant });
+      await ds.openClaim(claimAmount, feeAmount, '', { from: claimant });
 
       await ds.settlementFailed(claimId, { from: claimant });
 
@@ -74,7 +74,7 @@ contract('DelphiStake', (accounts) => {
 
       const claimId = await ds.getNumClaims();
 
-      await ds.openClaim(claimant, claimAmount, feeAmount, '', { from: claimant });
+      await ds.openClaim(claimAmount, feeAmount, '', { from: claimant });
 
       try {
         await utils.as(arbiter, ds.ruleOnClaim, claimId, ruling);
@@ -96,7 +96,7 @@ contract('DelphiStake', (accounts) => {
 
       const claimId = await ds.getNumClaims();
 
-      await ds.openClaim(claimant, claimAmount, feeAmount, '', { from: claimant });
+      await ds.openClaim(claimAmount, feeAmount, '', { from: claimant });
 
       await ds.settlementFailed(claimId, { from: claimant });
 
@@ -123,7 +123,7 @@ contract('DelphiStake', (accounts) => {
 
       const claimId = await ds.getNumClaims();
 
-      await ds.openClaim(claimant, claimAmount, feeAmount, '', { from: claimant });
+      await ds.openClaim(claimAmount, feeAmount, '', { from: claimant });
 
       await ds.settlementFailed(claimId, { from: claimant });
 
@@ -145,7 +145,7 @@ contract('DelphiStake', (accounts) => {
 
       const claimId = await ds.getNumClaims();
 
-      await ds.openClaim(claimant, claimAmount, feeAmount, '', { from: claimant });
+      await ds.openClaim(claimAmount, feeAmount, '', { from: claimant });
 
       await ds.settlementFailed(claimId, { from: claimant });
 
@@ -167,7 +167,7 @@ contract('DelphiStake', (accounts) => {
 
       const claimId = await ds.getNumClaims();
 
-      await ds.openClaim(claimant, claimAmount, feeAmount, '', { from: claimant });
+      await ds.openClaim(claimAmount, feeAmount, '', { from: claimant });
 
       await ds.settlementFailed(claimId, { from: claimant });
 
@@ -195,7 +195,7 @@ contract('DelphiStake', (accounts) => {
       // Open a new claim
       await ds.whitelistClaimant(claimant, conf.deadline, { from: staker });
       await token.approve(ds.address, feeAmount, { from: claimant });
-      const { logs } = await ds.openClaim(claimant, claimAmount, feeAmount, '', { from: claimant });
+      const { logs } = await ds.openClaim(claimAmount, feeAmount, '', { from: claimant });
       const claimId = utils.getLog(logs, 'ClaimOpened').args._claimId; // eslint-disable-line
 
       // Get the initial number of open claims
@@ -220,7 +220,7 @@ contract('DelphiStake', (accounts) => {
       await ds.whitelistClaimant(claimant, conf.deadline, { from: staker });
       await token.approve(ds.address, feeAmount, { from: claimant });
       const openClaimLogs
-        = (await ds.openClaim(claimant, claimAmount, feeAmount, '', { from: claimant })).logs;
+        = (await ds.openClaim(claimAmount, feeAmount, '', { from: claimant })).logs;
       const claimId =
         utils.getLog(openClaimLogs, 'ClaimOpened').args._claimId; // eslint-disable-line
 
