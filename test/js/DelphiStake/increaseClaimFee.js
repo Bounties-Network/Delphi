@@ -74,7 +74,7 @@ contract('DelphiStake', (accounts) => {
       await ds.ruleOnClaim(claimId, ruling, { from: arbiter });
 
       try {
-        await utils.as(arbiter, ds.increaseClaimFee, 0, 1);
+        await utils.as(arbiter, ds.increaseClaimFee, 0, 2);
       } catch (err) {
         assert(utils.isEVMRevert(err), err.toString());
         return;
@@ -135,8 +135,12 @@ contract('DelphiStake', (accounts) => {
       await ds.whitelistClaimant(claimant, conf.deadline, { from: staker });
 
       await ds.openClaim(claimant, claimAmount, feeAmount, '', { from: claimant });
+
+      assert.strictEqual((await token.balanceOf(ds.address)).toString(10), '110', 'claim surplus fee incorrectly');
+
       await ds.settlementFailed(0, { from: staker });
       await ds.increaseClaimFee(0, 1, { from: staker });
+      assert.strictEqual((await token.balanceOf(ds.address)).toString(10), '111', 'claim surplus fee incorrectly');
     });
     it('should increase the surplus fee by the _amount', async () => {
       const token = await EIP20.new(1000000, 'Delphi Tokens', 18, 'DELPHI', { from: staker });
