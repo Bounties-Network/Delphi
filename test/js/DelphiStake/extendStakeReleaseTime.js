@@ -10,7 +10,7 @@ const conf = utils.getConfig();
 
 const fs = require('fs');
 
-const config = JSON.parse(fs.readFileSync('./conf/registryConfig.json'));
+const config = JSON.parse(fs.readFileSync('./conf/tcrConfig.json'));
 
 contract('DelphiStake', (accounts) => {// eslint-disable-line
   describe('Function: extendStakeReleaseTime', () => {

@@ -7,7 +7,7 @@ const DelphiStake = artifacts.require('DelphiStake');
 const utils = require('../utils.js');
 const fs = require('fs');
 
-const config = JSON.parse(fs.readFileSync('./conf/registryConfig.json'));
+const config = JSON.parse(fs.readFileSync('./conf/tcrConfig.json'));
 
 
 contract('DelphiVoting', (accounts) => { //eslint-disable-line
