@@ -229,7 +229,7 @@ contract('DelphiVoting', (accounts) => {
         assert(utils.isEVMRevert(err), err.toString());
         return;
       }
-      assert(false, 'Expetected to revert if the reveal period is active');
+      assert(false, 'Expetected to revert if called by anyone but one of the arbiters');
     });
     it('should not allow an arbiter to claim a fee when they did not commit', async () => {
       const dv = await DelphiVoting.deployed();
