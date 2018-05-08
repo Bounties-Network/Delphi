@@ -14,7 +14,7 @@ const conf = utils.getConfig();
 contract('DelphiStake', (accounts) => {
   describe('Function: proposeSettlement', () => {
     const [staker, claimant, arbiter, thirdPary] = accounts;
-    it('should revert if called with an out-of-bounds claimId', async () => {
+    it('Should revert if called with an out-of-bounds claimId', async () => {
       const token = await EIP20.new(1000000, 'Delphi Tokens', 18, 'DELPHI', { from: staker });
       await token.transfer(claimant, 100000, { from: staker });
       await token.transfer(arbiter, 100000, { from: staker });
@@ -36,13 +36,13 @@ contract('DelphiStake', (accounts) => {
 
       await ds.openClaim(claimant, claimAmount, feeAmount, '', { from: claimant });
       try {
-        await ds.proposeSettlement(2, 12, { from: thirdPary });
+        await ds.proposeSettlement(2, 9, { from: thirdPary });
       } catch (err) {
         return;
       }
-      assert(false, 'expected revert if called with an out-of-bounds claimId');
+      assert(false, 'Expected revert if called with an out-of-bounds claimId');
     });
-    it('should revert if called by anyone but the staker or the claimant corresponding to the claimId', async () => {
+    it('Should revert if called by anyone but the staker or the claimant corresponding to the claimId', async () => {
       const token = await EIP20.new(1000000, 'Delphi Tokens', 18, 'DELPHI', { from: staker });
       await token.transfer(claimant, 100000, { from: staker });
       await token.transfer(arbiter, 100000, { from: staker });
@@ -64,14 +64,14 @@ contract('DelphiStake', (accounts) => {
 
       await ds.openClaim(claimant, claimAmount, feeAmount, '', { from: claimant });
       try {
-        await ds.proposeSettlement(0, 12, { from: thirdPary });
+        await ds.proposeSettlement(0, 9, { from: thirdPary });
       } catch (err) {
         return;
       }
       assert(false,
-        'expected revert if called by anyone but the staker or the claimant corresponding to the claimId');
+        'Expected revert if called by anyone but the staker or the claimant corresponding to the claimId');
     });
-    it('should revert if settlement has failed', async () => {
+    it('Should revert if settlement has failed', async () => {
       const token = await EIP20.new(1000000, 'Delphi Tokens', 18, 'DELPHI', { from: staker });
       await token.transfer(claimant, 100000, { from: staker });
       await token.transfer(arbiter, 100000, { from: staker });
@@ -94,14 +94,14 @@ contract('DelphiStake', (accounts) => {
       await ds.openClaim(claimant, claimAmount, feeAmount, '', { from: claimant });
       await ds.settlementFailed(0, { from: staker });
       try {
-        await ds.proposeSettlement(0, 12, { from: staker });
+        await ds.proposeSettlement(0, 9, { from: staker });
       } catch (err) {
         return;
       }
       assert(false,
-        'expected revert if called by anyone but the staker or the claimant corresponding to the claimId');
+        'Expected to revert if settlement has failed');
     });
-    it('should revert if the proposed settlement _amount is more than the sum of the amount and fee of the claim in question', async () => {
+    it('Should revert if the proposed settlement _amount is more than the sum of the amount and fee of the claim in question', async () => {
       const token = await EIP20.new(1000000, 'Delphi Tokens', 18, 'DELPHI', { from: staker });
       await token.transfer(claimant, 100000, { from: staker });
       await token.transfer(arbiter, 100000, { from: staker });
@@ -123,14 +123,14 @@ contract('DelphiStake', (accounts) => {
 
       await ds.openClaim(claimant, claimAmount, feeAmount, '', { from: claimant });
       try {
-        await ds.proposeSettlement(0, 12, { from: thirdPary });
+        await ds.proposeSettlement(0, 12, { from: claimant });
       } catch (err) {
         return;
       }
       assert(false,
-        'expected revert if the proposed settlement _amount is less than the sum of the amount and fee of the claim in question');
+        'Expected revert if the proposed settlement _amount is less than the sum of the amount and fee of the claim in question');
     });
-    it('should create a new settlement by the claimant, and have the settlement properly initialize the fields', async () => {
+    it('Should create a new settlement by the claimant, and have the settlement properly initialize the fields', async () => {
       const token = await EIP20.new(1000000, 'Delphi Tokens', 18, 'DELPHI', { from: staker });
       await token.transfer(claimant, 100000, { from: staker });
       await token.transfer(arbiter, 100000, { from: staker });
@@ -158,7 +158,7 @@ contract('DelphiStake', (accounts) => {
       assert.strictEqual(settlement[1], false, 'staker agree');
       assert.strictEqual(settlement[2], true, 'claimant did not agree');
     });
-    it('should create a new settlement by the staker, and have the settlement properly initialize the fields', async () => {
+    it('Should create a new settlement by the staker, and have the settlement properly initialize the fields', async () => {
       const token = await EIP20.new(1000000, 'Delphi Tokens', 18, 'DELPHI', { from: staker });
       await token.transfer(claimant, 100000, { from: staker });
       await token.transfer(arbiter, 100000, { from: staker });
@@ -186,7 +186,7 @@ contract('DelphiStake', (accounts) => {
       assert.strictEqual(settlement[1], true, 'staker did not agree');
       assert.strictEqual(settlement[2], false, 'claimant agree');
     });
-    it('should emit a SettlementProposed event', async () => {
+    it('Should emit a SettlementProposed event', async () => {
       const token = await EIP20.new(1000000, 'Delphi Tokens', 18, 'DELPHI', { from: staker });
       await token.transfer(claimant, 100000, { from: staker });
       await token.transfer(arbiter, 100000, { from: staker });
