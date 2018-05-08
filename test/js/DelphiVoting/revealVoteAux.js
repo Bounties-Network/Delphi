@@ -19,7 +19,7 @@ contract('DelphiVoting', (accounts) => {
         config.paramDefaults.minDeposit, arbiter);
     });
 
-    it('should revert if the provided vote and salt don\'t match the commitHash', async () => {
+    it('Should revert if the provided vote and salt don\'t match the commitHash', async () => {
       const dv = await DelphiVoting.deployed();
       const ds = await DelphiStake.deployed();
 
@@ -31,7 +31,7 @@ contract('DelphiVoting', (accounts) => {
       const DATA = 'i love cats';
 
       // Open a new claim on the DS and generate a claim ID for it
-      const claimNumber = // should be zero
+      const claimNumber = // Should be zero
         await utils.makeNewClaim(staker, claimant, CLAIM_AMOUNT, FEE_AMOUNT, DATA);
       const claimId = utils.getClaimId(ds.address, claimNumber.toString(10));
 
@@ -52,7 +52,7 @@ contract('DelphiVoting', (accounts) => {
 
       assert(false, 'Expected to revert if the provided vote and salt don\'t match the commitHash');
     });
-    it('should not allow an arbiter to reveal before the reveal stage has begun', async () => {
+    it('Should not allow an arbiter to reveal before the reveal stage has begun', async () => {
       const dv = await DelphiVoting.deployed();
       const ds = await DelphiStake.deployed();
 
@@ -64,7 +64,7 @@ contract('DelphiVoting', (accounts) => {
       const DATA = 'i love cats';
 
       // Open a new claim on the DS and generate a claim ID for it
-      const claimNumber = // should be zero
+      const claimNumber = // Should be zero
         await utils.makeNewClaim(staker, claimant, CLAIM_AMOUNT, FEE_AMOUNT, DATA);
       const claimId = utils.getClaimId(ds.address, claimNumber.toString(10));
 
@@ -82,7 +82,7 @@ contract('DelphiVoting', (accounts) => {
       assert(false, 'Expected to not allow an arbiter to reveal before the reveal stage has begun');
     });
 
-    it('should not allow an arbiter to reveal after the reveal stage has ended', async () => {
+    it('Should not allow an arbiter to reveal after the reveal stage has ended', async () => {
       const dv = await DelphiVoting.deployed();
       const ds = await DelphiStake.deployed();
 
@@ -94,7 +94,7 @@ contract('DelphiVoting', (accounts) => {
       const DATA = 'i love cats';
 
       // Open a new claim on the DS and generate a claim ID for it
-      const claimNumber = // should be zero
+      const claimNumber = // Should be zero
         await utils.makeNewClaim(staker, claimant, CLAIM_AMOUNT, FEE_AMOUNT, DATA);
       const claimId = utils.getClaimId(ds.address, claimNumber.toString(10));
 
@@ -111,9 +111,9 @@ contract('DelphiVoting', (accounts) => {
         return;
       }
 
-      assert(false, 'Expected to not allow an arbiter to reveal before the reveal stage has ended');
+      assert(false, 'Expected to not allow an arbiter to reveal after the reveal stage has ended');
     });
-    it('should set hasRevealed to true for the msg.sender', async () => {
+    it('Should set hasRevealed to true for the msg.sender', async () => {
       const dv = await DelphiVoting.deployed();
       const ds = await DelphiStake.deployed();
 
@@ -125,7 +125,7 @@ contract('DelphiVoting', (accounts) => {
       const DATA = 'i love cats';
 
       // Open a new claim on the DS and generate a claim ID for it
-      const claimNumber = // should be zero
+      const claimNumber = // Should be zero
         await utils.makeNewClaim(staker, claimant, CLAIM_AMOUNT, FEE_AMOUNT, DATA);
       const claimId = utils.getClaimId(ds.address, claimNumber.toString(10));
 
