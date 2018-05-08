@@ -13,7 +13,7 @@ contract('DelphiStake', (accounts) => {//eslint-disable-line
   describe('Function: whitelistClaimant', () => {
     const [staker, claimant, arbiter] = accounts;
 
-    it('should revert if called by anyone but the staker', async () => {
+    it('Should revert if called by anyone but the staker', async () => {
       const token = await EIP20.new(1000000, 'Delphi Tokens', 18, 'DELPHI', { from: staker });
       await token.transfer(claimant, 100000, { from: staker });
       await token.transfer(arbiter, 100000, { from: staker });
@@ -30,8 +30,6 @@ contract('DelphiStake', (accounts) => {//eslint-disable-line
 
       await token.approve(ds.address, feeAmount, { from: claimant });
 
-      await ds.whitelistClaimant(claimant, conf.deadline, { from: staker });
-
       try {
         await ds.whitelistClaimant(claimant, conf.deadline, { from: arbiter });
       } catch (err) {
@@ -42,7 +40,7 @@ contract('DelphiStake', (accounts) => {//eslint-disable-line
       assert(false, 'Expected revert if called by anyone but the staker');
     });
 
-    it('should properly set the _claimant address to the given deadline', async () => {
+    it('Should properly set the _claimant address to the given deadline', async () => {
       const token = await EIP20.new(1000000, 'Delphi Tokens', 18, 'DELPHI', { from: staker });
       await token.transfer(claimant, 100000, { from: staker });
       await token.transfer(arbiter, 100000, { from: staker });
@@ -64,7 +62,7 @@ contract('DelphiStake', (accounts) => {//eslint-disable-line
       assert.strictEqual(whitelisten.toString(10), '1000',
         'deadline didnt set correctly');
     });
-    it('should allow me to extend the deadline for someone who has already been whitelisted', async () => {
+    it('Should allow me to extend the deadline for someone who has already been whitelisted', async () => {
       const token = await EIP20.new(1000000, 'Delphi Tokens', 18, 'DELPHI', { from: staker });
       await token.transfer(claimant, 100000, { from: staker });
       await token.transfer(arbiter, 100000, { from: staker });
@@ -91,7 +89,7 @@ contract('DelphiStake', (accounts) => {//eslint-disable-line
       assert.strictEqual(whitelisten.toString(10), '1001',
         'deadline didnt set correctly');
     });
-    it('should emit ClaimantWhitelisted event', async () => {
+    it('Should emit ClaimantWhitelisted event', async () => {
       const token = await EIP20.new(1000000, 'Delphi Tokens', 18, 'DELPHI', { from: staker });
       await token.transfer(claimant, 100000, { from: staker });
       await token.transfer(arbiter, 100000, { from: staker });
