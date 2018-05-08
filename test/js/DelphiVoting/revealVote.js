@@ -49,7 +49,8 @@ contract('DelphiVoting', (accounts) => {
         'the initial vote tally was not as-expected');
 
       // Reveal the arbiter's vote
-      await utils.as(arbiter, dv.revealVote, claimId, VOTE, SALT);
+      const insertPoint = await dv.getInsertPoint.call(claimId, arbiter, VOTE);
+      await utils.as(arbiter, dv.revealVote, claimId, VOTE, SALT, insertPoint);
 
       // The final tally for the option we revealed for should be one.
       const finalTally = (await dv.revealedVotesForOption.call(claimId, VOTE));
@@ -87,7 +88,8 @@ contract('DelphiVoting', (accounts) => {
         'the initial vote tally was not as-expected');
 
       // Reveal the arbiter's vote
-      await utils.as(arbiter, dv.revealVote, claimId, VOTE, SALT);
+      const insertPoint = await dv.getInsertPoint.call(claimId, arbiter, VOTE);
+      await utils.as(arbiter, dv.revealVote, claimId, VOTE, SALT, insertPoint);
 
       // The final tally for the option we revealed for should be one.
       const finalTally = (await dv.revealedVotesForOption.call(claimId, VOTE));
@@ -125,7 +127,8 @@ contract('DelphiVoting', (accounts) => {
         'the initial vote tally was not as-expected');
 
       // Reveal the arbiter's vote
-      await utils.as(arbiter, dv.revealVote, claimId, VOTE, SALT);
+      const insertPoint = await dv.getInsertPoint.call(claimId, arbiter, VOTE);
+      await utils.as(arbiter, dv.revealVote, claimId, VOTE, SALT, insertPoint);
 
       // The final tally for the option we revealed for should be one.
       const finalTally = (await dv.revealedVotesForOption.call(claimId, VOTE));
@@ -163,7 +166,8 @@ contract('DelphiVoting', (accounts) => {
         'the initial vote tally was not as-expected');
 
       // Reveal the arbiter's vote
-      await utils.as(arbiter, dv.revealVote, claimId, VOTE, SALT);
+      const insertPoint = await dv.getInsertPoint.call(claimId, arbiter, VOTE);
+      await utils.as(arbiter, dv.revealVote, claimId, VOTE, SALT, insertPoint);
 
       // The final tally for the option we revealed for should be one.
       const finalTally = (await dv.revealedVotesForOption.call(claimId, VOTE));
@@ -186,7 +190,8 @@ contract('DelphiVoting', (accounts) => {
       const initialTally = (await dv.revealedVotesForOption.call(claimId, VOTE));
       try {
         // Attempt to reveal again
-        await utils.as(arbiter, dv.revealVote, claimId, VOTE, SALT);
+        const insertPoint = await dv.getInsertPoint.call(claimId, arbiter, VOTE);
+        await utils.as(arbiter, dv.revealVote, claimId, VOTE, SALT, insertPoint);
       } catch (err) {
         assert(utils.isEVMRevert(err), err.toString());
 

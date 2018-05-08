@@ -61,7 +61,8 @@ contract('DelphiVoting', (accounts) => {
       await utils.increaseTime(config.paramDefaults.commitStageLength + 1);
 
       // Reveal vote
-      await utils.as(arbiterAlice, dv.revealVote, claimId, VOTE, SALT);
+      const insertPoint = await dv.getInsertPoint.call(claimId, arbiterAlice, VOTE);
+      await utils.as(arbiterAlice, dv.revealVote, claimId, VOTE, SALT, insertPoint);
 
       // Increase time to finish the reveal phase so we can submit
       await utils.increaseTime(config.paramDefaults.revealStageLength);
@@ -141,9 +142,16 @@ contract('DelphiVoting', (accounts) => {
         await utils.increaseTime(config.paramDefaults.commitStageLength + 1);
 
         // Arbiters reveal votes
-        await utils.as(arbiterAlice, dv.revealVote, claimId, PLURALITY_VOTE, SALT);
-        await utils.as(arbiterBob, dv.revealVote, claimId, PLURALITY_VOTE, SALT);
-        await utils.as(arbiterCharlie, dv.revealVote, claimId, NON_PLURALITY_VOTE, SALT);
+        const aliceInsertPoint = await dv.getInsertPoint.call(claimId, arbiterAlice,
+          PLURALITY_VOTE);
+        await utils.as(arbiterAlice, dv.revealVote, claimId, PLURALITY_VOTE, SALT,
+          aliceInsertPoint);
+        const bobInsertPoint = await dv.getInsertPoint.call(claimId, arbiterBob, PLURALITY_VOTE);
+        await utils.as(arbiterBob, dv.revealVote, claimId, PLURALITY_VOTE, SALT, bobInsertPoint);
+        const charlieInsertPoint = await dv.getInsertPoint.call(claimId, arbiterCharlie,
+          NON_PLURALITY_VOTE);
+        await utils.as(arbiterCharlie, dv.revealVote, claimId, NON_PLURALITY_VOTE, SALT,
+          charlieInsertPoint);
 
         // Increase time to finish the reveal phase so we can submit the ruling
         await utils.increaseTime(config.paramDefaults.revealStageLength);
@@ -243,7 +251,8 @@ contract('DelphiVoting', (accounts) => {
       await utils.increaseTime(config.paramDefaults.commitStageLength + 1);
 
       // Arbiter reveals votes
-      await utils.as(arbiterAlice, dv.revealVote, claimId, PLURALITY_VOTE, SALT);
+      const insertPoint = await dv.getInsertPoint.call(claimId, arbiterAlice, PLURALITY_VOTE);
+      await utils.as(arbiterAlice, dv.revealVote, claimId, PLURALITY_VOTE, SALT, insertPoint);
 
       // Increase time to finish the reveal phase so we can submit the ruling
       await utils.increaseTime(config.paramDefaults.revealStageLength);

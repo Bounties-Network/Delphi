@@ -3,6 +3,7 @@ pragma solidity ^0.4.18;
 import "tcr/Registry.sol";
 import "tcr/Parameterizer.sol";
 import "./DelphiStake.sol";
+import "dll/DLL.sol";
 
 contract DelphiVoting {
 
@@ -10,12 +11,21 @@ contract DelphiVoting {
 
   enum VoteOptions { Justified, NotJustified, Collusive, Fault }
 
+  using AttributeStore for AttributeStore.Data;
+  using DLL for DLL.Data;
+
+  struct Commit {
+    bytes32 commit;
+    uint timestamp;
+  }
+
   struct Claim {
     uint commitEndTime;
     uint revealEndTime;
     VoteOptions result;
+    mapping(uint => DLL.Data) factions;
     mapping(uint => uint) tallies;
-    mapping(address => bytes32) commits;
+    mapping(address => Commit) commits;
     mapping(address => bool) hasRevealed;
     mapping(address => bool) claimedReward;
   }
@@ -30,7 +40,7 @@ contract DelphiVoting {
     _;
   }
 
-  function DelphiVoting(address _arbiterSet, address _parameterizer) public {
+  constructor(address _arbiterSet, address _parameterizer) public {
     arbiterSet = Registry(_arbiterSet);
     parameterizer = Parameterizer(_parameterizer);
   }
@@ -62,23 +72,24 @@ contract DelphiVoting {
     require(commitPeriodActive(claimId));
 
     // Set this voter's commit for this claim to their provided secretHash.
-    claims[claimId].commits[msg.sender] = _secretHash;
+    claims[claimId].commits[msg.sender] = Commit({commit: _secretHash, timestamp: block.number});
 
     // Fire an event saying the message sender voted for this claimID.
     // TODO: Make this event fire the stake and claim number instead of the claimID.
-    VoteCommitted(msg.sender, claimId);
+    emit VoteCommitted(msg.sender, claimId);
   }
 
-  /**
+  /*
   @dev Reveals a vote for the specified claim.
   @param _claimId the keccak256 of a DelphiStake address and a claim number for which the message
   sender has previously committed a vote
   @param _vote the option voted for in the original secret hash.
   @param _salt the salt concatenated to the vote option when originally hashed to its secret form
+  @param _previousCommitter the node in the faction's DLL for this claim which should come before
+  the one we will insert here. Can be computed using getInsertPoint.
   */
-  function revealVote(bytes32 _claimId, uint _vote, uint _salt)
+  function revealVote(bytes32 _claimId, uint _vote, uint _salt, address _previousCommitter)
   public onlyArbiters(msg.sender) {
-    VoteOptions vote = VoteOptions(_vote);
     Claim storage claim = claims[_claimId];
 
     // Do not allow revealing while the reveal period is not active
@@ -86,24 +97,95 @@ contract DelphiVoting {
     // Do not allow a voter to reveal more than once
     require(!claim.hasRevealed[msg.sender]);
     // Require the provided vote is consistent with the original commit
-    require(keccak256(_vote, _salt) == claims[_claimId].commits[msg.sender]);
+    require(keccak256(_vote, _salt) == claims[_claimId].commits[msg.sender].commit);
 
-    // Tally the vote
-    if(vote == VoteOptions.Justified) {
-      claim.tallies[uint(VoteOptions.Justified)] += 1;
-    }
-    else if(vote == VoteOptions.NotJustified) {
-      claim.tallies[uint(VoteOptions.NotJustified)] += 1;
-    }
-    else if(vote == VoteOptions.Collusive) {
-      claim.tallies[uint(VoteOptions.Collusive)] += 1;
-    }
-    else if(vote == VoteOptions.Fault) {
-      claim.tallies[uint(VoteOptions.Fault)] += 1;
-    }
+    // We need the nodes on either side of the node we are proposing to insert, so grab the
+    // next node of the provided previous node. Once we have these, check if the insertion point
+    // is valid with the validPosition function.
+    address nextCommitter =
+      address(claim.factions[_vote].getNext(uint(_previousCommitter)));
+    require(validPosition(_previousCommitter, nextCommitter, _claimId, _vote));
+
+    // Insert the voter into their faction's list, and increment the tally for that vote option
+    claim.factions[_vote].insert(uint(_previousCommitter),
+                                uint(msg.sender),
+                                uint(nextCommitter));
+    claim.tallies[_vote]++;
 
     // Set hasRevealed to true so this voter cannot reveal again
     claim.hasRevealed[msg.sender] = true;
+  }
+
+  /*
+  @dev prevents a user from inserting themselves ahead of other arbiters improperly by checking
+  when they committed their faction vote, and then making sure the arbiter they propose to come
+  after committed earlier, and the arbiter they propose to come before committed later.
+  @param _previousCommitter an arbiter in the same faction who committed before the msg.sender
+  @param _nextCommitter an arbiter in the same faction who committed after the msg.sender
+  @param _claimId the claim whose factions are being inspected.
+  @param _faction the faction in this claim where we make the insertion
+  @return bool asserting whether the proposed insert point is valid or not
+  */
+  function validPosition(address _previousCommitter, address _nextCommitter, bytes32 _claimId,
+                         uint _faction)
+  public view returns (bool) {
+    Claim storage claim = claims[_claimId];
+
+    // Assert the provided arbiters are all in the same faction (or that we are inserting into the
+    // beginning, end of, or into an empty, list.
+    require((claim.factions[_faction].contains(uint(_previousCommitter)) || _previousCommitter == 0)
+      && (claim.factions[_faction].contains(uint(_nextCommitter)) || _nextCommitter == 0));
+
+    // Assert that the proposed insertion point is between two adjacent nodes
+    require(claim.factions[_faction].getNext(uint(_previousCommitter)) == uint(_nextCommitter));
+
+    // Get timestamps for when all of the involved arbiters made their commits
+    uint timestamp = claim.commits[msg.sender].timestamp;
+    uint prevTimestamp = claim.commits[_previousCommitter].timestamp;
+    uint nextTimestamp = claim.commits[_nextCommitter].timestamp;
+
+    // If the committer committed later than the specified previous committer and earlier than
+    // the specified next committer, return true. Else false.
+    if((prevTimestamp <= timestamp) && ((timestamp <= nextTimestamp) || _nextCommitter == 0)) {
+      return true;
+    } else {
+      return false;
+    }
+  }
+
+  /*
+  @dev computes the _previousCommitter argument required by the revealVote function
+  @param _claimId the claim a vote is being revealed for
+  @param _committer a committer in the claim being revealed for
+  @param _faction the faction of a committer in the claim being revealed for
+  @return address the committer (or insert point) the provided committer should insert after
+  */
+  function getInsertPoint(bytes32 _claimId, address _committer, uint _faction)
+  public view returns (address) {
+    Claim storage claim = claims[_claimId];
+
+    uint timestamp = claim.commits[_committer].timestamp;
+    DLL.Data storage faction = claim.factions[_faction];
+
+    // In this loop, we will iterate over the list until we find an insertion point for our node.
+    // When the currentNode is zero, we have reached the end of the list (or the list was empty
+    // to start).
+    uint currentNode = faction.getStart();
+    while(currentNode != 0) {
+      uint nextNode = faction.getNext(currentNode);
+      // Check whether the committer's timestamp is >= the current committer's && <= the next
+      // committer's (or we are inserting at the end of the list)
+      if((claim.commits[address(currentNode)].timestamp <= timestamp) &&
+        ((timestamp <= claim.commits[address(nextNode)].timestamp) ||
+        nextNode == 0)) {
+        return address(currentNode);
+      }
+      currentNode = nextNode;
+    }
+
+    // If we reach the end of the list, either the list was empty or our insertion point is at
+    // the very beginning.
+    return 0;
   }
 
   /**
@@ -147,7 +229,7 @@ contract DelphiVoting {
     // Do not allow arbiters to claim rewards for a claim more than once
     require(!claim.claimedReward[msg.sender]);
     // Check that the arbiter actually committed the vote they say they did
-    require(keccak256(_vote, _salt) == claim.commits[msg.sender]);
+    require(keccak256(_vote, _salt) == claim.commits[msg.sender].commit);
     // Require the vote cast was in the plurality
     require(VoteOptions(_vote) == claim.result);
 
@@ -208,7 +290,7 @@ contract DelphiVoting {
   */
   function getArbiterCommitForClaim(bytes32 _claimId, address _arbiter)
   view public returns (bytes32) {
-    return claims[_claimId].commits[_arbiter];
+    return claims[_claimId].commits[_arbiter].commit;
   }
 
   /**
