@@ -8,9 +8,9 @@ const utils = require('../utils.js');
 
 const conf = utils.getConfig();
 
-const Web3 = require('web3');
+const fs = require('fs');
 
-const web3 = new Web3(Web3.givenProvider || 'ws://localhost:7545');
+const config = JSON.parse(fs.readFileSync('./conf/registryConfig.json'));
 
 contract('DelphiStake', (accounts) => {// eslint-disable-line
   describe('Function: extendStakeReleaseTime', () => {
@@ -30,7 +30,7 @@ contract('DelphiStake', (accounts) => {// eslint-disable-line
         conf.deadline, arbiter, { from: staker });
 
       try {
-        await ds.extendStakeReleaseTime('1', { from: claimant });
+        await ds.extendStakeReleaseTime(config.paramDefaults.revealStageLength, { from: claimant });
       } catch (err) {
         assert(utils.isEVMRevert(err), err.toString());
 
@@ -65,7 +65,6 @@ contract('DelphiStake', (accounts) => {// eslint-disable-line
     });
 
     it('should set the stakeReleaseTime to the _stakeReleaseTime', async () => {
-      const timeBlock = await web3.eth.getBlock(await web3.eth.getBlockNumber());
       const token = await EIP20.new(1000000, 'Delphi Tokens', 18, 'DELPHI', { from: staker });
       await token.transfer(arbiter, 100000, { from: staker });
 
@@ -75,14 +74,13 @@ contract('DelphiStake', (accounts) => {// eslint-disable-line
       await token.transfer(arbiter, 1000, { from: staker });
 
       await ds.initDelphiStake(conf.initialStake, token.address, conf.minFee, conf.data,
-        timeBlock.timestamp + 10, arbiter, { from: staker });
-      await ds.extendStakeReleaseTime(timeBlock.timestamp + 20, { from: staker });
+        conf.deadline + 10, arbiter, { from: staker });
+      await ds.extendStakeReleaseTime(conf.deadline + 20, { from: staker });
       const stakeReleaseTime = await ds.stakeReleaseTime();
-      assert.strictEqual((timeBlock.timestamp + 20).toString(10), stakeReleaseTime.toString(10), 'stakeRelease didnt set correctly');
+      assert.strictEqual((conf.deadline + 20).toString(10), stakeReleaseTime.toString(10), 'stakeRelease didnt set correctly');
     });
 
     it('should emit a ReleaseTimeIncreased event', async () => {
-      const timeBlock = await web3.eth.getBlock(await web3.eth.getBlockNumber());
       const token = await EIP20.new(1000000, 'Delphi Tokens', 18, 'DELPHI', { from: staker });
       await token.transfer(arbiter, 100000, { from: staker });
 
@@ -92,9 +90,9 @@ contract('DelphiStake', (accounts) => {// eslint-disable-line
       await token.transfer(arbiter, 1000, { from: staker });
 
       await ds.initDelphiStake(conf.initialStake, token.address, conf.minFee, conf.data,
-        timeBlock.timestamp + 10, arbiter, { from: staker });
+        conf.deadline + 10, arbiter, { from: staker });
 
-      await ds.extendStakeReleaseTime(timeBlock.timestamp + 20, { from: staker }).then((status) => {
+      await ds.extendStakeReleaseTime(conf.deadline + 20, { from: staker }).then((status) => {
         assert.strictEqual('ReleaseTimeIncreased', status.logs[0].event, 'did not emit the ReleaseTimeIncreased event');
       });
     });
