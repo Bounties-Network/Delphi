@@ -77,7 +77,7 @@ contract('DelphiStake', (accounts) => {
       await ds.settlementFailed(claimId, { from: claimant });
 
       try {
-        await utils.as(dave, ds.ruleOnClaim, 4, ruling);
+        await utils.as(arbiter, ds.ruleOnClaim, 4, ruling);
       } catch (err) {
         assert(utils.isEVMRevert(err), err.toString());
         return;
@@ -101,7 +101,7 @@ contract('DelphiStake', (accounts) => {
       await ds.settlementFailed(claimId, { from: claimant });
 
       try {
-        await utils.as(dave, ds.ruleOnClaim, claimId, ruling);
+        await utils.as(arbiter, ds.ruleOnClaim, claimId, ruling);
       } catch (err) {
         assert(utils.isEVMRevert(err), err.toString());
         return;
