@@ -88,7 +88,7 @@ contract('DelphiVoting', (accounts) => { //eslint-disable-line
         assert(utils.isEVMRevert(err), err.toString());
         return;
       }
-      assert(false, 'Expetected to revert if the claimId generated from the stake address and claim number doesnt exist');
+      assert(false, 'Expected to revert if the claimId generated from the stake address and claim number doesnt exist');
     });
     it('should revert if the commit period is active', async () => {
       const dv = await DelphiVoting.deployed();
@@ -126,7 +126,7 @@ contract('DelphiVoting', (accounts) => { //eslint-disable-line
         assert(utils.isEVMRevert(err), err.toString());
         return;
       }
-      assert(false, 'Expetected to revert if the claimId generated from the stake address and claim number doesnt exist');
+      assert(false, 'Expected to revert if the commit period is active');
     });
     it('should revert if the reveal period is active', async () => {
       const dv = await DelphiVoting.deployed();
@@ -163,7 +163,7 @@ contract('DelphiVoting', (accounts) => { //eslint-disable-line
         assert(utils.isEVMRevert(err), err.toString());
         return;
       }
-      assert(false, 'Expetected to revert if the reveal period is active');
+      assert(false, 'Expected to revert if the reveal period is active');
     });
     it('should correctly tally the votes', async () => {
       const dv = await DelphiVoting.deployed();
