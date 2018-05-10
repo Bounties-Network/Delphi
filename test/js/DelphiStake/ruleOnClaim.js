@@ -72,7 +72,7 @@ contract('DelphiStake', (accounts) => {
 
       const claimId = await ds.getNumClaims();
 
-      await ds.openClaim(claimant, claimAmount, feeAmount, '', { from: claimant });
+      await ds.openClaim(claimAmount, feeAmount, '', { from: claimant });
 
       await ds.settlementFailed(claimId, { from: claimant });
 
@@ -96,7 +96,7 @@ contract('DelphiStake', (accounts) => {
 
       const claimId = await ds.getNumClaims();
 
-      await ds.openClaim(claimant, claimAmount, feeAmount, '', { from: claimant });
+      await ds.openClaim(claimAmount, feeAmount, '', { from: claimant });
 
       await ds.settlementFailed(claimId, { from: claimant });
 
@@ -239,7 +239,7 @@ contract('DelphiStake', (accounts) => {
 
       const claimId = await ds.getNumClaims();
 
-      await ds.openClaim(claimant, claimAmount, feeAmount, '', { from: claimant });
+      await ds.openClaim(claimAmount, feeAmount, '', { from: claimant });
       const originalArbiterBalance = await token.balanceOf(arbiter);
       await ds.settlementFailed(claimId, { from: claimant });
       const originalClaimantBalance = await token.balanceOf(claimant);
@@ -260,7 +260,7 @@ contract('DelphiStake', (accounts) => {
 
       const claimId = await ds.getNumClaims();
 
-      await ds.openClaim(claimant, claimAmount, feeAmount, '', { from: claimant });
+      await ds.openClaim(claimAmount, feeAmount, '', { from: claimant });
       const originalArbiterBalance = await token.balanceOf(arbiter);
       await ds.settlementFailed(claimId, { from: claimant });
 
@@ -279,7 +279,7 @@ contract('DelphiStake', (accounts) => {
 
       const claimId = await ds.getNumClaims();
 
-      await ds.openClaim(claimant, claimAmount, feeAmount, '', { from: claimant });
+      await ds.openClaim(claimAmount, feeAmount, '', { from: claimant });
       const originalArbiterBalance = await token.balanceOf(arbiter);
       await ds.settlementFailed(claimId, { from: claimant });
 
@@ -300,7 +300,7 @@ contract('DelphiStake', (accounts) => {
 
       const claimId = await ds.getNumClaims();
 
-      await ds.openClaim(claimant, claimAmount, feeAmount, '', { from: claimant });
+      await ds.openClaim(claimAmount, feeAmount, '', { from: claimant });
       const originalClaimantBalance = await token.balanceOf(claimant);
       await ds.settlementFailed(claimId, { from: claimant });
 
