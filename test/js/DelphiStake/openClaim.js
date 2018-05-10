@@ -119,7 +119,7 @@ contract('DelphiStake', (accounts) => {
       await token.approve(ds.address, feeAmount, { from: staker });
 
       try {
-        await ds.openClaim(staker, claimAmount, feeAmount, '', { from: staker });
+        await ds.openClaim(claimAmount, feeAmount, '', { from: staker });
       } catch (err) {
         assert(utils.isEVMRevert(err), err.toString());
 
@@ -188,7 +188,7 @@ contract('DelphiStake', (accounts) => {
 
       sleep(4000);
       try {
-        await ds.openClaim(claimant, claimAmount, feeAmount, '', { from: claimant });
+        await ds.openClaim(claimAmount, feeAmount, '', { from: claimant });
       } catch (err) {
         assert(utils.isEVMRevert(err), err.toString());
         return;
@@ -461,7 +461,7 @@ contract('DelphiStake', (accounts) => {
 
       await ds.whitelistClaimant(claimant, conf.deadline, { from: staker });
 
-      await ds.openClaim(claimant, claimAmount, feeAmount, '', { from: claimant }).then((status) => {
+      await ds.openClaim(claimAmount, feeAmount, '', { from: claimant }).then((status) => {
         assert.strictEqual('ClaimOpened', status.logs[0].event, 'did not emit the NewClaim event');
       });
     });
