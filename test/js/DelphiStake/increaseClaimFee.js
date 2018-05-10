@@ -32,7 +32,7 @@ contract('DelphiStake', (accounts) => {
 
       await ds.whitelistClaimant(claimant, conf.deadline, { from: staker });
 
-      await ds.openClaim(claimant, claimAmount, feeAmount, '', { from: claimant });
+      await ds.openClaim(claimAmount, feeAmount, '', { from: claimant });
 
       try {
         await utils.as(arbiter, ds.increaseClaimFee, 3, 11);
@@ -68,7 +68,7 @@ contract('DelphiStake', (accounts) => {
 
       const claimId = await ds.getNumClaims();
 
-      await ds.openClaim(claimant, claimAmount, feeAmount, '', { from: claimant });
+      await ds.openClaim(claimAmount, feeAmount, '', { from: claimant });
       await ds.settlementFailed(claimId, { from: claimant });
 
       await ds.ruleOnClaim(claimId, ruling, { from: arbiter });
@@ -102,7 +102,7 @@ contract('DelphiStake', (accounts) => {
 
       await ds.whitelistClaimant(claimant, conf.deadline, { from: staker });
 
-      await ds.openClaim(claimant, claimAmount, feeAmount, '', { from: claimant });
+      await ds.openClaim(claimAmount, feeAmount, '', { from: claimant });
 
       try {
         await utils.as(arbiter, ds.increaseClaimFee, 0, 11);
@@ -134,7 +134,7 @@ contract('DelphiStake', (accounts) => {
 
       await ds.whitelistClaimant(claimant, conf.deadline, { from: staker });
 
-      await ds.openClaim(claimant, claimAmount, feeAmount, '', { from: claimant });
+      await ds.openClaim(claimAmount, feeAmount, '', { from: claimant });
 
       assert.strictEqual((await token.balanceOf(ds.address)).toString(10), '110', 'claim surplus fee incorrectly');
 
@@ -163,7 +163,7 @@ contract('DelphiStake', (accounts) => {
 
       await ds.whitelistClaimant(claimant, conf.deadline, { from: staker });
 
-      await ds.openClaim(claimant, claimAmount, feeAmount, '', { from: claimant });
+      await ds.openClaim(claimAmount, feeAmount, '', { from: claimant });
       await ds.settlementFailed(0, { from: staker });
       let claim1 = await ds.claims.call('0');
       await ds.increaseClaimFee(0, 1, { from: staker });
@@ -191,7 +191,7 @@ contract('DelphiStake', (accounts) => {
 
       await ds.whitelistClaimant(claimant, conf.deadline, { from: staker });
 
-      await ds.openClaim(claimant, claimAmount, feeAmount, '', { from: claimant });
+      await ds.openClaim(claimAmount, feeAmount, '', { from: claimant });
       await ds.settlementFailed(0, { from: staker });
 
       await ds.increaseClaimFee(0, 1, { from: staker }).then((status) => {

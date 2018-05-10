@@ -79,7 +79,7 @@ contract('DelphiStake', (accounts) => {
 
       await utils.as(staker, ds.whitelistClaimant, claimant, timeBlock.timestamp + 30);
 
-      await utils.as(claimant, ds.openClaim, claimant, claimAmount, feeAmount, '');
+      await utils.as(claimant, ds.openClaim, claimAmount, feeAmount, '');
 
       await utils.increaseTime(8000);
       try {

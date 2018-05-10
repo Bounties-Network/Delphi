@@ -154,7 +154,7 @@ contract('DelphiStake', (accounts) => {
       await token.approve(ds.address, feeAmount, { from: claimant });
       sleep(4000);
       try {
-        await ds.openClaimWithoutSettlement(claimant, claimAmount, feeAmount, 'claim1', { from: claimant });
+        await ds.openClaimWithoutSettlement(claimAmount, feeAmount, 'claim1', { from: claimant });
       } catch (err) {
         assert(utils.isEVMRevert(err), err.toString());
         return;
@@ -428,7 +428,7 @@ contract('DelphiStake', (accounts) => {
 
       await token.approve(ds.address, feeAmount, { from: claimant });
 
-      await ds.openClaimWithoutSettlement(claimant, claimAmount, feeAmount, 'claim1', { from: claimant }).then((status) => {
+      await ds.openClaimWithoutSettlement(claimAmount, feeAmount, 'claim1', { from: claimant }).then((status) => {
         assert.strictEqual('ClaimOpened', status.logs[0].event, 'did not emit the NewClaim event');
       });
     });
