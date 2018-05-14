@@ -7,8 +7,6 @@ const EIP20 = artifacts.require('EIP20');
 
 const utils = require('../utils.js');
 
-const BN = require('bignumber.js');
-
 const conf = utils.getConfig();
 
 contract('DelphiStake', (accounts) => {
@@ -16,11 +14,11 @@ contract('DelphiStake', (accounts) => {
     const [staker, claimant, arbiter, other] = accounts;
 
     const claimAmount = '1';
-    const startingClaims = new BN('0', 10);
 
-    var ds, token;
+    let ds;
+    let token;
 
-    beforeEach( async () => {
+    beforeEach(async () => {
       token = await EIP20.new(1000000, 'Delphi Tokens', 18, 'DELPHI', { from: staker });
       await token.transfer(claimant, 100000, { from: staker });
       await token.transfer(arbiter, 100000, { from: staker });
@@ -38,7 +36,7 @@ contract('DelphiStake', (accounts) => {
       await ds.whitelistClaimant(claimant, conf.deadline, { from: staker });
 
       await ds.openClaim(claimAmount, conf.minFee, '', { from: claimant });
-    })
+    });
 
     it('Should revert if called with an out-of-bounds claimId', async () => {
       try {
@@ -72,7 +70,7 @@ contract('DelphiStake', (accounts) => {
 
     it('Should revert if the proposed settlement _amount is more than the sum of the amount and fee of the claim in question', async () => {
       try {
-        const amount = parseInt(claimAmount) + parseInt(conf.minFee) + 1;
+        const amount = parseInt(claimAmount, 10) + parseInt(conf.minFee, 10) + 1;
         await ds.proposeSettlement(0, amount, { from: claimant });
       } catch (err) {
         return;
@@ -87,8 +85,8 @@ contract('DelphiStake', (accounts) => {
       const settlement = await ds.settlements(0, 0, { from: staker });
 
       assert.strictEqual(settlement[0].toString(10), claimAmount, 'initialized amount incorrectly');
-      assert.strictEqual(settlement[1],              false,       'staker agree');
-      assert.strictEqual(settlement[2],              true,        'claimant did not agree');
+      assert.strictEqual(settlement[1], false, 'staker agree');
+      assert.strictEqual(settlement[2], true, 'claimant did not agree');
     });
 
     it('Should create a new settlement by the staker, and have the settlement properly initialize the fields', async () => {
@@ -97,8 +95,8 @@ contract('DelphiStake', (accounts) => {
       const settlement = await ds.settlements(0, 0, { from: staker });
 
       assert.strictEqual(settlement[0].toString(10), claimAmount, 'initialized amount incorrectly');
-      assert.strictEqual(settlement[1],              true,        'staker did not agree');
-      assert.strictEqual(settlement[2],              false,       'claimant did not agree');
+      assert.strictEqual(settlement[1], true, 'staker did not agree');
+      assert.strictEqual(settlement[2], false, 'claimant did not agree');
     });
     it('Should emit a SettlementProposed event', async () => {
       await ds.proposeSettlement(0, claimAmount, { from: staker }).then((status) => {

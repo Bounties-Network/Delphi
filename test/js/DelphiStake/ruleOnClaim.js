@@ -18,12 +18,13 @@ contract('DelphiStake', (accounts) => {
     const [staker, claimant, arbiter, other] = accounts;
 
     const claimAmount = '1';
-    const ruling = '1';
+    const defaultRuling = '1';
 
     let token;
     let ds;
 
-    var originalArbiterBalance, originalStakerBalance, originalClaimantBalance;
+    let originalArbiterBalance;
+    let originalClaimantBalance;
 
     beforeEach(async () => {
       // Create a new token, apportioning shares to the staker, claimant, and arbiter
@@ -50,13 +51,12 @@ contract('DelphiStake', (accounts) => {
       await ds.settlementFailed('0', { from: claimant });
 
       originalArbiterBalance = await token.balanceOf(arbiter);
-      originalStakerBalance = await token.balanceOf(staker);
       originalClaimantBalance = await token.balanceOf(claimant);
     });
 
     it('should revert if called by a non-arbiter', async () => {
       try {
-        await utils.as(other, ds.ruleOnClaim, '0', ruling);
+        await utils.as(other, ds.ruleOnClaim, '0', defaultRuling);
       } catch (err) {
         assert(utils.isEVMRevert(err), err.toString());
         return;
@@ -66,7 +66,7 @@ contract('DelphiStake', (accounts) => {
     });
     it('should revert if called on an out-of-bounds claimId', async () => {
       try {
-        await utils.as(arbiter, ds.ruleOnClaim, 1, ruling);
+        await utils.as(arbiter, ds.ruleOnClaim, 1, defaultRuling);
       } catch (err) {
         assert(utils.isEVMRevert(err), err.toString());
         return;
@@ -74,7 +74,7 @@ contract('DelphiStake', (accounts) => {
       assert(false, 'expected revert if called on an out-of-bounds claimId');
     });
 
-    it('should revert if called on an out-of-bounds _ruling', async () => {
+    it('should revert if called on an out-of-bounds ruling', async () => {
       try {
         await utils.as(arbiter, ds.ruleOnClaim, '0', 6);
       } catch (err) {
@@ -90,7 +90,7 @@ contract('DelphiStake', (accounts) => {
       await ds.openClaim(claimAmount, conf.minFee, '', { from: claimant });
 
       try {
-        await utils.as(arbiter, ds.ruleOnClaim, 1, ruling);
+        await utils.as(arbiter, ds.ruleOnClaim, 1, defaultRuling);
       } catch (err) {
         assert(utils.isEVMRevert(err), err.toString());
         return;
@@ -99,10 +99,10 @@ contract('DelphiStake', (accounts) => {
     });
 
     it('should revert if the claim has already been ruled', async () => {
-      await utils.as(arbiter, ds.ruleOnClaim, '0', ruling);
+      await utils.as(arbiter, ds.ruleOnClaim, '0', defaultRuling);
 
       try {
-        await utils.as(arbiter, ds.ruleOnClaim, '0', ruling);
+        await utils.as(arbiter, ds.ruleOnClaim, '0', defaultRuling);
       } catch (err) {
         assert(utils.isEVMRevert(err), err.toString());
         return;
@@ -112,21 +112,21 @@ contract('DelphiStake', (accounts) => {
     });
 
     it('should properly set the claim\'s ruling', async () => {
-      await utils.as(arbiter, ds.ruleOnClaim, '0', ruling);
+      await utils.as(arbiter, ds.ruleOnClaim, '0', defaultRuling);
 
       const claim = await ds.claims.call('0');
 
-      assert.strictEqual(claim[5].toString(10), ruling, 'initialized claim ruling incorrectly');
+      assert.strictEqual(claim[5].toString(10), defaultRuling, 'initialized claim ruling incorrectly');
     });
 
     it('should add the claim\'s amount and fee to the stake iff the claim is not accepted', async () => {
-      await ds.ruleOnClaim('0', ruling, { from: arbiter });
+      await ds.ruleOnClaim('0', defaultRuling, { from: arbiter });
       const stake = await ds.claimableStake.call();
       assert.strictEqual(stake.toString(10), conf.initialStake, 'stake not returned to original amount');
     });
 
     it('should not alter the stake if the claim is accepted', async () => {
-      await ds.ruleOnClaim('0', ruling, { from: arbiter });
+      await ds.ruleOnClaim('0', defaultRuling, { from: arbiter });
 
       const stakeAfterRuling = await ds.claimableStake.call();
 
@@ -135,19 +135,19 @@ contract('DelphiStake', (accounts) => {
     });
 
     it('should transfer the fee and surplus to the arbiter and the claim amount + fee to the claimant if the ruling is 0', async () => {
-      const _ruling = '0'
+      const ruling = '0';
 
-      await ds.ruleOnClaim('0', _ruling, { from: arbiter });
+      await ds.ruleOnClaim('0', ruling, { from: arbiter });
 
       const arbiterBalance = await token.balanceOf(arbiter);
       const claimantBalance = await token.balanceOf(claimant);
 
       assert.strictEqual(originalArbiterBalance.add(new BN(conf.minFee, 10)).toString(10), arbiterBalance.toString(10), 'Arbiter Balance doesnt grow up');
-      assert.strictEqual(originalClaimantBalance.add(new BN(parseInt(conf.minFee) + parseInt(claimAmount), 10)).toString(10), claimantBalance.toString(10), 'Claimant Balance doesnt grow up');
+      assert.strictEqual(originalClaimantBalance.add(new BN(parseInt(conf.minFee, 10) + parseInt(claimAmount, 10), 10)).toString(10), claimantBalance.toString(10), 'Claimant Balance doesnt grow up');
     });
 
     it('should transfer the fee and surplus to the arbiter and return the claim amount + fee to the stakers stake if the ruling is 1', async () => {
-      const _ruling = '1';
+      const ruling = '1';
 
       await ds.ruleOnClaim('0', ruling, { from: arbiter });
 
@@ -159,13 +159,13 @@ contract('DelphiStake', (accounts) => {
     });
 
     it('should transfer 2 times the fee plus the surplus to the arbiter and should burn the claim amount if the ruling is 2', async () => {
-      const _ruling = '2';
+      const ruling = '2';
 
-      await ds.ruleOnClaim('0', _ruling, { from: arbiter });
+      await ds.ruleOnClaim('0', ruling, { from: arbiter });
 
       const arbiterBalance = await token.balanceOf(arbiter);
 
-      assert.strictEqual(originalArbiterBalance.add(new BN(parseInt(conf.minFee) * 2, 10)).toString(10), arbiterBalance.toString(10), 'Arbiter balance incorrect');
+      assert.strictEqual(originalArbiterBalance.add(new BN(parseInt(conf.minFee, 10) * 2, 10)).toString(10), arbiterBalance.toString(10), 'Arbiter balance incorrect');
 
       const balance0x0 = await token.balanceOf('0x0000000000000000000000000000000000000000');
 
@@ -173,17 +173,18 @@ contract('DelphiStake', (accounts) => {
     });
 
     it('should transfer the fee deposit back to the claimant, transfer the fee surplus to the arbiter, and return the claim amount and fee to the stakers stake', async () => {
-      const _ruling = '3';
+      const ruling = '3';
 
-      await ds.ruleOnClaim('0', _ruling, { from: arbiter });
+      await ds.ruleOnClaim('0', ruling, { from: arbiter });
 
-      const arbiterBalance = await token.balanceOf(arbiter);
+      // const arbiterBalance = await token.balanceOf(arbiter);
       const stake = await ds.claimableStake.call();
       const claimantBalance = await token.balanceOf(claimant);
 
-      // assert.strictEqual(originalArbiterBalance.add(new BN(feeAmount, 10)).toString(10), arbiterBalance.toString(10), 'Balance doesnt grow up');
       assert.strictEqual(stake.toString(10), conf.initialStake, 'stake not returned to original amount');
-      assert.strictEqual(originalClaimantBalance.add(new BN(parseInt(conf.minFee) + parseInt(claimAmount), 10)).toString(10), claimantBalance.toString(10), 'Incorrect claimant balance');
+      assert.strictEqual(originalClaimantBalance.add(
+        new BN(parseInt(conf.minFee, 10) + parseInt(claimAmount, 10), 10))
+        .toString(10), claimantBalance.toString(10), 'Incorrect claimant balance');
     });
 
     it('should decrement openClaims', async () => {
@@ -198,7 +199,7 @@ contract('DelphiStake', (accounts) => {
 
       // Cancel settlement and rule on the claim
       await ds.settlementFailed(claimId, { from: claimant });
-      await ds.ruleOnClaim(claimId, ruling, { from: arbiter });
+      await ds.ruleOnClaim(claimId, defaultRuling, { from: arbiter });
 
       // Since the claim is closed now, expect openClaims to be less than it was before we closed
       // the claim.
@@ -217,7 +218,7 @@ contract('DelphiStake', (accounts) => {
 
       // Cancel settlement and rule on claim. Capture the logs on ruling.
       await ds.settlementFailed(claimId, { from: claimant });
-      const ruledLogs = (await ds.ruleOnClaim(claimId, ruling, { from: arbiter })).logs;
+      const ruledLogs = (await ds.ruleOnClaim(claimId, defaultRuling, { from: arbiter })).logs;
 
       // Expect utils.getLog to find in the logs returned in openClaim a 'ClaimOpened' event
       assert(typeof utils.getLog(ruledLogs, 'ClaimRuled') !== 'undefined',

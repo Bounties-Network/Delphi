@@ -13,9 +13,10 @@ contract('DelphiStake', (accounts) => {
   describe('Function: increaseClaimFee', () => {
     const [staker, claimant, arbiter] = accounts;
 
-    var ds, token;
+    let ds;
+    let token;
 
-    beforeEach( async () => {
+    beforeEach(async () => {
       token = await EIP20.new(1000000, 'Delphi Tokens', 18, 'DELPHI', { from: staker });
       await token.transfer(claimant, 100000, { from: staker });
       await token.transfer(arbiter, 100000, { from: staker });
@@ -36,7 +37,7 @@ contract('DelphiStake', (accounts) => {
       await ds.whitelistClaimant(claimant, conf.deadline, { from: staker });
 
       await ds.openClaim(claimAmount, feeAmount, '', { from: claimant });
-    })
+    });
 
     it('should revert if called with an out-of-bounds claimId', async () => {
       try {
@@ -90,7 +91,7 @@ contract('DelphiStake', (accounts) => {
       await token.approve(ds.address, 1, { from: staker });
       await ds.increaseClaimFee(0, 1, { from: staker });
 
-      claim1 = await ds.claims.call('0');
+      const claim1 = await ds.claims.call('0');
       assert.strictEqual(claim1[3].toString(10), '1', 'claim surplus fee incorrectly');
     });
 

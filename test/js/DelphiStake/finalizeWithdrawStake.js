@@ -18,9 +18,10 @@ contract('DelphiStake', (accounts) => {
   describe('Function: withdrawStake', () => {
     const [staker, claimant, arbiter] = accounts;
 
-    var ds, token;
+    let ds;
+    let token;
 
-    beforeEach( async () => {
+    beforeEach(async () => {
       token = await EIP20.new(1000000, 'Delphi Tokens', 18, 'DELPHI', { from: staker });
       await utils.as(staker, token.transfer, claimant, 100000);
 
@@ -35,10 +36,9 @@ contract('DelphiStake', (accounts) => {
 
       await utils.as(staker, ds.initDelphiStake, conf.initialStake, token.address,
         conf.minFee, conf.data, tims, arbiter);
-    })
+    });
 
     it('should revert if called by any entity other than the staker', async () => {
-
       try {
         await utils.as(claimant, ds.withdrawStake);
       } catch (err) {
@@ -49,7 +49,6 @@ contract('DelphiStake', (accounts) => {
       assert(false, 'expected revert if called by any entity other than the staker');
     });
     it('should revert if called before the release time', async () => {
-
       try {
         await utils.as(staker, ds.withdrawStake);
       } catch (err) {
@@ -83,8 +82,6 @@ contract('DelphiStake', (accounts) => {
     });
 
     it('should set claimableStake to zero', async () => {
-      const timeBlock = await web3.eth.getBlock(await web3.eth.getBlockNumber());
-
       await utils.increaseTime(5000);
       await utils.as(staker, ds.withdrawStake);
       const claimableStake = await ds.claimableStake();

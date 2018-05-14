@@ -15,9 +15,10 @@ contract('DelphiStake', (accounts) => {
   describe('Function: settlementFailed', () => {
     const [staker, claimant, arbiter, other] = accounts;
 
-    var ds, token;
+    let ds;
+    let token;
 
-    beforeEach( async () => {
+    beforeEach(async () => {
       token = await EIP20.new(1000000, 'Delphi Tokens', 18, 'DELPHI', { from: staker });
       await token.transfer(claimant, 100000, { from: staker });
       await token.transfer(arbiter, 100000, { from: staker });
@@ -38,7 +39,7 @@ contract('DelphiStake', (accounts) => {
       await ds.whitelistClaimant(claimant, conf.deadline, { from: staker });
 
       await ds.openClaim(claimAmount, feeAmount, '', { from: claimant });
-    })
+    });
 
     it('should revert if called with an out-of-bounds claimId', async () => {
       try {

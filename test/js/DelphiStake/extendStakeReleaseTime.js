@@ -16,9 +16,9 @@ contract('DelphiStake', (accounts) => {// eslint-disable-line
   describe('Function: extendStakeReleaseTime', () => {
     const [staker, claimant, arbiter] = accounts;
 
-    var ds;
+    let ds;
 
-    beforeEach( async () => {
+    beforeEach(async () => {
       const token = await EIP20.new(1000000, 'Delphi Tokens', 18, 'DELPHI', { from: staker });
       await token.transfer(claimant, 100000, { from: staker });
       await token.transfer(arbiter, 100000, { from: staker });
@@ -29,7 +29,7 @@ contract('DelphiStake', (accounts) => {// eslint-disable-line
 
       await ds.initDelphiStake(conf.initialStake, token.address, conf.minFee, conf.data,
         conf.deadline, arbiter, { from: staker });
-    })
+    });
 
     it('should revert if called by anyone but the staker', async () => {
       try {
