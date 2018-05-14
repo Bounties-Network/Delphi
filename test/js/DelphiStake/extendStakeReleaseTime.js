@@ -16,19 +16,22 @@ contract('DelphiStake', (accounts) => {// eslint-disable-line
   describe('Function: extendStakeReleaseTime', () => {
     const [staker, claimant, arbiter] = accounts;
 
-    it('should revert if called by anyone but the staker', async () => {
+    var ds;
+
+    beforeEach( async () => {
       const token = await EIP20.new(1000000, 'Delphi Tokens', 18, 'DELPHI', { from: staker });
       await token.transfer(claimant, 100000, { from: staker });
       await token.transfer(arbiter, 100000, { from: staker });
-
-      const ds = await DelphiStake.new();
+      ds = await DelphiStake.new();
 
       await token.approve(ds.address, conf.initialStake, { from: staker });
       await token.transfer(arbiter, 1000, { from: staker });
 
       await ds.initDelphiStake(conf.initialStake, token.address, conf.minFee, conf.data,
         conf.deadline, arbiter, { from: staker });
+    })
 
+    it('should revert if called by anyone but the staker', async () => {
       try {
         await ds.extendStakeReleaseTime(config.paramDefaults.revealStageLength, { from: claimant });
       } catch (err) {
@@ -41,18 +44,6 @@ contract('DelphiStake', (accounts) => {// eslint-disable-line
     });
 
     it('should revert if the new _stakeReleaseTime is not later than the current stake Release Time', async () => {
-      const token = await EIP20.new(1000000, 'Delphi Tokens', 18, 'DELPHI', { from: staker });
-      await token.transfer(claimant, 100000, { from: staker });
-      await token.transfer(arbiter, 100000, { from: staker });
-
-      const ds = await DelphiStake.new();
-
-      await token.approve(ds.address, conf.initialStake, { from: staker });
-      await token.transfer(arbiter, 1000, { from: staker });
-
-      await ds.initDelphiStake(conf.initialStake, token.address, conf.minFee, conf.data,
-        conf.deadline, arbiter, { from: staker });
-
       try {
         await ds.extendStakeReleaseTime('1', { from: staker });
       } catch (err) {
@@ -65,33 +56,12 @@ contract('DelphiStake', (accounts) => {// eslint-disable-line
     });
 
     it('should set the stakeReleaseTime to the _stakeReleaseTime', async () => {
-      const token = await EIP20.new(1000000, 'Delphi Tokens', 18, 'DELPHI', { from: staker });
-      await token.transfer(arbiter, 100000, { from: staker });
-
-      const ds = await DelphiStake.new();
-
-      await token.approve(ds.address, conf.initialStake, { from: staker });
-      await token.transfer(arbiter, 1000, { from: staker });
-
-      await ds.initDelphiStake(conf.initialStake, token.address, conf.minFee, conf.data,
-        conf.deadline + 10, arbiter, { from: staker });
       await ds.extendStakeReleaseTime(conf.deadline + 20, { from: staker });
       const stakeReleaseTime = await ds.stakeReleaseTime();
       assert.strictEqual((conf.deadline + 20).toString(10), stakeReleaseTime.toString(10), 'stakeRelease didnt set correctly');
     });
 
     it('should emit a ReleaseTimeIncreased event', async () => {
-      const token = await EIP20.new(1000000, 'Delphi Tokens', 18, 'DELPHI', { from: staker });
-      await token.transfer(arbiter, 100000, { from: staker });
-
-      const ds = await DelphiStake.new();
-
-      await token.approve(ds.address, conf.initialStake, { from: staker });
-      await token.transfer(arbiter, 1000, { from: staker });
-
-      await ds.initDelphiStake(conf.initialStake, token.address, conf.minFee, conf.data,
-        conf.deadline + 10, arbiter, { from: staker });
-
       await ds.extendStakeReleaseTime(conf.deadline + 20, { from: staker }).then((status) => {
         assert.strictEqual('ReleaseTimeIncreased', status.logs[0].event, 'did not emit the ReleaseTimeIncreased event');
       });
