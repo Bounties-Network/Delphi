@@ -17,17 +17,27 @@ const web3 = new Web3(Web3.givenProvider || 'ws://localhost:7545');
 contract('DelphiStake', (accounts) => {
   describe('Function: withdrawStake', () => {
     const [staker, claimant, arbiter] = accounts;
-    it('should revert if called by any entity other than the staker', async () => {
-      const token = await EIP20.new(1000000, 'Delphi Tokens', 18, 'DELPHI', { from: staker });
+
+    var ds, token;
+
+    beforeEach( async () => {
+      token = await EIP20.new(1000000, 'Delphi Tokens', 18, 'DELPHI', { from: staker });
       await utils.as(staker, token.transfer, claimant, 100000);
 
-      const ds = await DelphiStake.new();
+      ds = await DelphiStake.new();
+
       await utils.as(staker, token.approve, ds.address, conf.initialStake);
 
       await utils.as(staker, token.transfer, arbiter, 1000);
 
+      const timeBlock = await web3.eth.getBlock(await web3.eth.getBlockNumber());
+      const tims = timeBlock.timestamp + 6;
+
       await utils.as(staker, ds.initDelphiStake, conf.initialStake, token.address,
-        conf.minFee, conf.data, conf.deadline, arbiter);
+        conf.minFee, conf.data, tims, arbiter);
+    })
+
+    it('should revert if called by any entity other than the staker', async () => {
 
       try {
         await utils.as(claimant, ds.withdrawStake);
@@ -39,17 +49,7 @@ contract('DelphiStake', (accounts) => {
       assert(false, 'expected revert if called by any entity other than the staker');
     });
     it('should revert if called before the release time', async () => {
-      const token = await EIP20.new(1000000, 'Delphi Tokens', 18, 'DELPHI', { from: staker });
-      await utils.as(staker, token.transfer, claimant, 100000);
 
-      const ds = await DelphiStake.new();
-
-      await utils.as(staker, token.approve, ds.address, conf.initialStake);
-
-      await utils.as(staker, token.transfer, arbiter, 1000);
-
-      await utils.as(staker, ds.initDelphiStake, conf.initialStake, token.address,
-        conf.minFee, conf.data, conf.deadline, arbiter);
       try {
         await utils.as(staker, ds.withdrawStake);
       } catch (err) {
@@ -61,16 +61,6 @@ contract('DelphiStake', (accounts) => {
     });
     it('should revert if open claims remain', async () => {
       const timeBlock = await web3.eth.getBlock(await web3.eth.getBlockNumber());
-      const token = await EIP20.new(1000000, 'Delphi Tokens', 18, 'DELPHI', { from: staker });
-      await utils.as(staker, token.transfer, claimant, 100000);
-
-      const ds = await DelphiStake.new();
-
-      await utils.as(staker, token.approve, ds.address, conf.initialStake);
-      await utils.as(staker, token.transfer, arbiter, 1000);
-
-      await utils.as(staker, ds.initDelphiStake, conf.initialStake, token.address,
-        conf.minFee, conf.data, timeBlock.timestamp + 3, arbiter);
 
       const claimAmount = new BN('1', 10);
       const feeAmount = new BN('10', 10);
@@ -94,16 +84,6 @@ contract('DelphiStake', (accounts) => {
 
     it('should set claimableStake to zero', async () => {
       const timeBlock = await web3.eth.getBlock(await web3.eth.getBlockNumber());
-      const token = await EIP20.new(1000000, 'Delphi Tokens', 18, 'DELPHI', { from: staker });
-      await utils.as(staker, token.transfer, claimant, 100000);
-
-      const ds = await DelphiStake.new();
-
-      await utils.as(staker, token.approve, ds.address, conf.initialStake);
-      await utils.as(staker, token.transfer, arbiter, 1000);
-
-      await utils.as(staker, ds.initDelphiStake, conf.initialStake, token.address,
-        conf.minFee, conf.data, timeBlock.timestamp + 3, arbiter);
 
       await utils.increaseTime(5000);
       await utils.as(staker, ds.withdrawStake);
@@ -112,21 +92,7 @@ contract('DelphiStake', (accounts) => {
     });
 
     it('should transfer the old stake amount to the staker', async () => {
-      const token = await EIP20.new(1000000, 'Delphi Tokens', 18, 'DELPHI', { from: staker });
-      await utils.as(staker, token.transfer, claimant, 100000);
-
-      const ds = await DelphiStake.new();
-
-      await utils.as(staker, token.approve, ds.address, 50);
-      await utils.as(staker, token.transfer, arbiter, 1000);
-
-      const timeBlock = await web3.eth.getBlock(await web3.eth.getBlockNumber());
-      const tims = timeBlock.timestamp + 6;
-
-      await utils.as(staker, ds.initDelphiStake, 50, token.address,
-        conf.minFee, conf.data, tims, arbiter);
-
-      await utils.increaseTime(1000);
+      await utils.increaseTime(10000);
       await utils.as(staker, ds.withdrawStake);
       const stakerCurrentBalance = await token.balanceOf(staker);
       assert.strictEqual(stakerCurrentBalance.toString(10), '899000',
@@ -134,20 +100,6 @@ contract('DelphiStake', (accounts) => {
     });
 
     it('should emit a StakeWithdrawn event', async () => {
-      const token = await EIP20.new(1000000, 'Delphi Tokens', 18, 'DELPHI', { from: staker });
-      await utils.as(staker, token.transfer, claimant, 100000);
-
-      const ds = await DelphiStake.new();
-
-      await utils.as(staker, token.approve, ds.address, conf.initialStake);
-      await utils.as(staker, token.transfer, arbiter, 1000);
-
-      const timeBlock = await web3.eth.getBlock(await web3.eth.getBlockNumber());
-      const tims = timeBlock.timestamp + 6;
-
-      await utils.as(staker, ds.initDelphiStake, 50, token.address,
-        conf.minFee, conf.data, tims, arbiter);
-
       await utils.increaseTime(10000);
 
       await ds.withdrawStake({ from: staker }).then((status) => {
