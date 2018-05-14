@@ -13,12 +13,12 @@ const conf = utils.getConfig();
 
 contract('DelphiStake', (accounts) => {
   describe('Function: acceptSettlement', () => {
+    const [staker, claimant, arbiter, other] = accounts;
 
-    const [staker, claimant, arbiter, thirdPary] = accounts;
+    let ds;
+    let token;
 
-    var ds, token;
-
-    beforeEach( async () => {
+    beforeEach(async () => {
       token = await EIP20.new(1000000, 'Delphi Tokens', 18, 'DELPHI', { from: staker });
       await token.transfer(claimant, 100000, { from: staker });
       await token.transfer(arbiter, 100000, { from: staker });
@@ -37,7 +37,7 @@ contract('DelphiStake', (accounts) => {
       await token.approve(ds.address, feeAmount, { from: claimant });
       await ds.whitelistClaimant(claimant, conf.deadline, { from: staker });
       await ds.openClaim(claimAmount, feeAmount, '', { from: claimant });
-    })
+    });
 
     it('Should revert if called with an out-of-bounds claimId', async () => {
       await ds.proposeSettlement(0, 10, { from: staker });
@@ -48,6 +48,7 @@ contract('DelphiStake', (accounts) => {
       }
       assert(false, 'Expected revert if called with an out-of-bounds claimId');
     });
+
     it('Should revert if called with an out-of-bounds settlementId', async () => {
       await ds.proposeSettlement(0, 10, { from: staker });
       try {
@@ -57,15 +58,17 @@ contract('DelphiStake', (accounts) => {
       }
       assert(false, 'Expected revert if called with an out-of-bounds claimId');
     });
+
     it('Should revert if called by anyone but the staker or the claimant corresponding to the claimId', async () => {
       await ds.proposeSettlement(0, 0, { from: staker });
       try {
-        await ds.acceptSettlement(0, 0, { from: thirdPary });
+        await ds.acceptSettlement(0, 0, { from: other });
       } catch (err) {
         return;
       }
       assert(false, 'Expected revert if called by anyone but the staker or the claimant corresponding to the claimId');
     });
+
     it('Should revert if settlement has failed', async () => {
       await ds.proposeSettlement(0, 0, { from: staker });
 
@@ -77,6 +80,7 @@ contract('DelphiStake', (accounts) => {
       }
       assert(false, 'Expected revert if settlement has failed');
     });
+
     it('Should set the stakerAgrees to true when called by a staker on a claimants settlement', async () => {
       await ds.proposeSettlement(0, 0, { from: claimant });
 
@@ -87,26 +91,26 @@ contract('DelphiStake', (accounts) => {
       assert.strictEqual(settlement[1], true, 'staker did not agree');
 
       try {
-        await ds.acceptSettlement(0, 0, { from: thirdPary });
+        await ds.acceptSettlement(0, 0, { from: other });
       } catch (err) {
         return;
       }
       assert(false, 'Expected revert if other party\' accept settlement ');
     });
-    it('Should set the claimantAgrees to true when called by a claimant on a claimants settlement', async () => {
 
+    it('Should set the claimantAgrees to true when called by a claimant on a claimants settlement', async () => {
       await ds.proposeSettlement(0, 0, { from: claimant });
       const settlement = await ds.settlements(0, 0, { from: staker });
       assert.strictEqual(settlement[2], true, 'claimant did not agree');
       try {
-        await ds.acceptSettlement(0, 0, { from: thirdPary });
+        await ds.acceptSettlement(0, 0, { from: other });
       } catch (err) {
         return;
       }
       assert(false, 'Expected revert if other party\' accept settlement ');
     });
-    it('Should revert if called by a staker on their own settlement', async () => {
 
+    it('Should revert if called by a staker on their own settlement', async () => {
       await ds.proposeSettlement(0, 0, { from: staker });
 
       try {
@@ -117,7 +121,6 @@ contract('DelphiStake', (accounts) => {
       assert(false, 'Expected revert if called by a staker on their own settlement');
     });
     it('Should revert if called by a claimant on their own settlement', async () => {
-
       await ds.proposeSettlement(0, 0, { from: claimant });
 
       try {
@@ -129,7 +132,6 @@ contract('DelphiStake', (accounts) => {
     });
 
     it('Should revert if the settlement has failed', async () => {
-
       const openclaims = await ds.openClaims();
 
       assert.strictEqual(openclaims.toString(10), '1', 'openClaims value is not correctly');
@@ -149,7 +151,6 @@ contract('DelphiStake', (accounts) => {
     });
 
     it('Should revert if a claim\'s settlement has been accepted', async () => {
-
       const openclaims = await ds.openClaims();
 
       assert.strictEqual(openclaims.toString(10), '1', 'openClaims value is not correctly');
@@ -169,14 +170,13 @@ contract('DelphiStake', (accounts) => {
     });
 
     it('Should set the claim.ruled to true', async () => {
-
       await ds.proposeSettlement(0, 0, { from: claimant });
       await ds.acceptSettlement(0, 0, { from: staker });
       const claim = await ds.claims.call('0');
       assert.strictEqual(claim[6], true, 'wrong ruled false, Expected true');
     });
-    it('Should return the unused claim funds from the staker back to their stake', async () => {
 
+    it('Should return the unused claim funds from the staker back to their stake', async () => {
       let claimableStake = await ds.claimableStake();
       assert.strictEqual(claimableStake.toString(10), '89', 'Expected 89 tokens available');
 
@@ -185,8 +185,8 @@ contract('DelphiStake', (accounts) => {
       claimableStake = await ds.claimableStake();
       assert.strictEqual(claimableStake.toString(10), '100', 'Expected 100 tokens available');
     });
-    it('Should decrement the number of open claims', async () => {
 
+    it('Should decrement the number of open claims', async () => {
       let openclaims = await ds.openClaims();
 
       assert.strictEqual(openclaims.toString(10), '1', 'openClaims value is not correctly');
@@ -197,7 +197,6 @@ contract('DelphiStake', (accounts) => {
       assert.strictEqual(openclaims.toString(10), '0', 'openClaims value is not correctly');
     });
     it('Should transfer the settlement amount, plus their original deposit, back to the claimant', async () => {
-
       const originalClaimantBalance = 100000;
       let claimantBalance = await token.balanceOf(claimant);
 
@@ -209,8 +208,8 @@ contract('DelphiStake', (accounts) => {
 
       assert.strictEqual(originalClaimantBalance.toString(10), claimantBalance.toString(10), 'Expected equal claimant balance');
     });
-    it('Should emit a SettlementAccepted event', async () => {
 
+    it('Should emit a SettlementAccepted event', async () => {
       await ds.proposeSettlement(0, 0, { from: claimant });
       await ds.acceptSettlement(0, 0, { from: staker }).then((status) => {
         assert.strictEqual('SettlementAccepted', status.logs[0].event, 'did not emit the SettlementAccepted event');

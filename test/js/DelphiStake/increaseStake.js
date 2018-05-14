@@ -15,9 +15,11 @@ contract('DelphiStake', (accounts) => {
     const [staker, claimant, arbiter, dave] = accounts;
     const incAmount = '1';
 
-    var ds, token, initialStake;
+    let ds;
+    let token;
+    let initialStake;
 
-    beforeEach( async () => {
+    beforeEach(async () => {
       token = await EIP20.new(1000000, 'Delphi Tokens', 18, 'DELPHI', { from: staker });
       await token.transfer(claimant, 100000, { from: staker });
       await token.transfer(arbiter, 100000, { from: staker });
@@ -34,7 +36,7 @@ contract('DelphiStake', (accounts) => {
       await token.approve(ds.address, incAmount, { from: dave });
 
       initialStake = new BN(conf.initialStake, 10);
-    })
+    });
 
     it('should revert if called by any entity other than the staker', async () => {
       try {
@@ -54,7 +56,6 @@ contract('DelphiStake', (accounts) => {
     });
 
     it('should revert if _value does not equal the tokens transferred', async () => {
-
       try {
         await ds.increaseStake(incAmount + 1, { from: staker });
       } catch (err) {

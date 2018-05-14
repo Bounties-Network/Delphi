@@ -9,19 +9,6 @@ const BN = require('bignumber.js');
 
 const conf = utils.getConfig();
 
-const Web3 = require('web3');
-
-const web3 = new Web3(Web3.givenProvider || 'ws://localhost:7545');
-
-function sleep(milliseconds) {
-  const start = new Date().getTime();
-  for (let i = 0; i < 1e7; i += 1) {
-    if ((new Date().getTime() - start) > milliseconds) {
-      break;
-    }
-  }
-}
-
 contract('DelphiStake', (accounts) => {
   describe('Function: openClaimWithoutSettlement', () => {
     const [staker, claimant, arbiter, other] = accounts;
@@ -29,9 +16,10 @@ contract('DelphiStake', (accounts) => {
     const claimAmount = '1';
     const startingClaims = new BN('0', 10);
 
-    var ds, token;
+    let ds;
+    let token;
 
-    beforeEach( async () => {
+    beforeEach(async () => {
       token = await EIP20.new(1000000, 'Delphi Tokens', 18, 'DELPHI', { from: staker });
       await token.transfer(claimant, 100000, { from: staker });
       await token.transfer(arbiter, 100000, { from: staker });
@@ -45,7 +33,7 @@ contract('DelphiStake', (accounts) => {
         conf.deadline, arbiter, { from: staker });
 
       await ds.whitelistClaimant(claimant, conf.deadline, { from: staker });
-    })
+    });
 
     it('should not allow the arbiter to open a claim', async () => {
       await ds.whitelistClaimant(arbiter, conf.deadline, { from: staker });
@@ -106,7 +94,7 @@ contract('DelphiStake', (accounts) => {
     });
 
     it('should revert if someone is attempting to open a claim after the deadline', async () => {
-      await ds.whitelistClaimant(other, parseInt(conf.deadline) - 1, { from: staker });
+      await ds.whitelistClaimant(other, parseInt(conf.deadline, 10) - 1, { from: staker });
 
       await token.approve(ds.address, conf.minFee, { from: claimant });
 
@@ -123,7 +111,7 @@ contract('DelphiStake', (accounts) => {
     it('should revert if _fee is smaller than the minimum', async () => {
       await ds.whitelistClaimant(claimant, conf.deadline, { from: staker });
 
-      const feeAmount = parseInt(conf.minFee) - 1;
+      const feeAmount = parseInt(conf.minFee, 10) - 1;
 
       await token.approve(ds.address, feeAmount, { from: claimant });
 
@@ -143,7 +131,7 @@ contract('DelphiStake', (accounts) => {
     });
 
     it('should revert if _amount + _fee is greater than the available stake', async () => {
-      const amount = parseInt(conf.minFee) + parseInt(conf.initialStake) + 1;
+      const amount = parseInt(conf.minFee, 10) + parseInt(conf.initialStake, 10) + 1;
 
       await token.approve(ds.address, amount, { from: claimant });
 
@@ -199,14 +187,14 @@ contract('DelphiStake', (accounts) => {
 
         const claim = await ds.claims.call(claimId);
 
-        assert.strictEqual(claim[0],              claimant,    'initialized claimant incorrectly');
+        assert.strictEqual(claim[0], claimant, 'initialized claimant incorrectly');
         assert.strictEqual(claim[1].toString(10), claimAmount, 'initialized claim amount incorrectly');
         assert.strictEqual(claim[2].toString(10), conf.minFee, 'initialized claim fee incorrectly');
-        assert.strictEqual(claim[3].toString(10), '0',         'initialized claim surplus fee incorrectly');
-        assert.strictEqual(claim[4],              'newclaim',  'initialized claim data incorrectly');
-        assert.strictEqual(claim[5].toString(10), '0',         'initialized claim ruling incorrectly');
-        assert.strictEqual(claim[6],              false,       'initialized ruled bool incorrectly');
-        assert.strictEqual(claim[7],              true,        'initialized settlementFailed incorrectly');
+        assert.strictEqual(claim[3].toString(10), '0', 'initialized claim surplus fee incorrectly');
+        assert.strictEqual(claim[4], 'newclaim', 'initialized claim data incorrectly');
+        assert.strictEqual(claim[5].toString(10), '0', 'initialized claim ruling incorrectly');
+        assert.strictEqual(claim[6], false, 'initialized ruled bool incorrectly');
+        assert.strictEqual(claim[7], true, 'initialized settlementFailed incorrectly');
       });
 
     it('should increment the openClaims.call counter', async () => {
@@ -246,7 +234,6 @@ contract('DelphiStake', (accounts) => {
     });
 
     it('should append claims to the end of the claim array, without overwriting earlier claims', async () => {
-
       await token.approve(ds.address, conf.minFee, { from: claimant });
       await ds.openClaimWithoutSettlement(claimAmount, conf.minFee, 'claim1', { from: claimant });
 
@@ -258,36 +245,36 @@ contract('DelphiStake', (accounts) => {
 
       const claim1 = await ds.claims.call('0');
 
-      assert.strictEqual(claim1[0],              claimant,    'initialized claimant incorrectly');
+      assert.strictEqual(claim1[0], claimant, 'initialized claimant incorrectly');
       assert.strictEqual(claim1[1].toString(10), claimAmount, 'initialized claim amount incorrectly');
       assert.strictEqual(claim1[2].toString(10), conf.minFee, 'initialized claim fee incorrectly');
-      assert.strictEqual(claim1[3].toString(10), '0',         'initialized claim surplus fee incorrectly');
-      assert.strictEqual(claim1[4],              'claim1',    'initialized claim data incorrectly');
-      assert.strictEqual(claim1[5].toString(10), '0',         'initialized claim ruling incorrectly');
-      assert.strictEqual(claim1[6],              false,       'initialized ruled bool incorrectly');
-      assert.strictEqual(claim1[7],              true,        'initialized settlementFailed incorrectly');
+      assert.strictEqual(claim1[3].toString(10), '0', 'initialized claim surplus fee incorrectly');
+      assert.strictEqual(claim1[4], 'claim1', 'initialized claim data incorrectly');
+      assert.strictEqual(claim1[5].toString(10), '0', 'initialized claim ruling incorrectly');
+      assert.strictEqual(claim1[6], false, 'initialized ruled bool incorrectly');
+      assert.strictEqual(claim1[7], true, 'initialized settlementFailed incorrectly');
 
       const claim2 = await ds.claims.call('1');
 
-      assert.strictEqual(claim2[0],              claimant,    'initialized claimant incorrectly');
+      assert.strictEqual(claim2[0], claimant, 'initialized claimant incorrectly');
       assert.strictEqual(claim2[1].toString(10), claimAmount, 'initialized claim amount incorrectly');
       assert.strictEqual(claim2[2].toString(10), conf.minFee, 'initialized claim fee incorrectly');
-      assert.strictEqual(claim2[3].toString(10), '0',         'initialized claim surplus fee incorrectly');
-      assert.strictEqual(claim2[4],              'claim2',    'initialized claim data incorrectly');
-      assert.strictEqual(claim2[5].toString(10), '0',         'initialized claim ruling incorrectly');
-      assert.strictEqual(claim2[6],              false,       'initialized ruled bool incorrectly');
-      assert.strictEqual(claim2[7],              true,        'initialized settlementFailed incorrectly');
+      assert.strictEqual(claim2[3].toString(10), '0', 'initialized claim surplus fee incorrectly');
+      assert.strictEqual(claim2[4], 'claim2', 'initialized claim data incorrectly');
+      assert.strictEqual(claim2[5].toString(10), '0', 'initialized claim ruling incorrectly');
+      assert.strictEqual(claim2[6], false, 'initialized ruled bool incorrectly');
+      assert.strictEqual(claim2[7], true, 'initialized settlementFailed incorrectly');
 
       const claim3 = await ds.claims.call('2');
 
-      assert.strictEqual(claim3[0],              claimant,    'initialized claimant incorrectly');
+      assert.strictEqual(claim3[0], claimant, 'initialized claimant incorrectly');
       assert.strictEqual(claim3[1].toString(10), claimAmount, 'initialized claim amount incorrectly');
       assert.strictEqual(claim3[2].toString(10), conf.minFee, 'initialized claim fee incorrectly');
-      assert.strictEqual(claim3[3].toString(10), '0',         'initialized claim surplus fee incorrectly');
-      assert.strictEqual(claim3[4],              'claim3',    'initialized claim data incorrectly');
-      assert.strictEqual(claim3[5].toString(10), '0',         'initialized claim ruling incorrectly');
-      assert.strictEqual(claim3[6],              false,       'initialized ruled bool incorrectly');
-      assert.strictEqual(claim3[7],              true,        'initialized settlementFailed incorrectly');
+      assert.strictEqual(claim3[3].toString(10), '0', 'initialized claim surplus fee incorrectly');
+      assert.strictEqual(claim3[4], 'claim3', 'initialized claim data incorrectly');
+      assert.strictEqual(claim3[5].toString(10), '0', 'initialized claim ruling incorrectly');
+      assert.strictEqual(claim3[6], false, 'initialized ruled bool incorrectly');
+      assert.strictEqual(claim3[7], true, 'initialized settlementFailed incorrectly');
     });
   });
 });

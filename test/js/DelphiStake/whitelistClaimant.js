@@ -13,9 +13,10 @@ contract('DelphiStake', (accounts) => {//eslint-disable-line
   describe('Function: whitelistClaimant', () => {
     const [staker, claimant, arbiter, other] = accounts;
 
-    var ds, token;
+    let ds;
+    let token;
 
-    beforeEach( async () => {
+    beforeEach(async () => {
       token = await EIP20.new(1000000, 'Delphi Tokens', 18, 'DELPHI', { from: staker });
       await token.transfer(claimant, 100000, { from: staker });
       await token.transfer(arbiter, 100000, { from: staker });
@@ -31,7 +32,7 @@ contract('DelphiStake', (accounts) => {//eslint-disable-line
       const feeAmount = new BN('10', 10);
 
       await token.approve(ds.address, feeAmount, { from: claimant });
-    })
+    });
 
     it('Should revert if called by arbiter', async () => {
       try {
@@ -75,7 +76,7 @@ contract('DelphiStake', (accounts) => {//eslint-disable-line
     });
 
     it('Should emit ClaimantWhitelisted event', async () => {
-        await ds.whitelistClaimant(claimant, '1000', { from: staker }).then((status) => {
+      await ds.whitelistClaimant(claimant, '1000', { from: staker }).then((status) => {
         assert.strictEqual('ClaimantWhitelisted', status.logs[0].event, 'did not emit the ClaimantWhitelisted event');
       });
     });

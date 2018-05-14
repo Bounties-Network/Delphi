@@ -12,9 +12,10 @@ contract('DelphiStake', (accounts) => {
   describe('Function: DelphiStake', () => {
     const [staker, , arbiter] = accounts;
 
-    var ds, token;
+    let ds;
+    let token;
 
-    beforeEach( async () => {
+    beforeEach(async () => {
       token = await EIP20.new(1000000, 'Delphi Tokens', 18, 'DELPHI', { from: staker });
       ds = await DelphiStake.new();
 
