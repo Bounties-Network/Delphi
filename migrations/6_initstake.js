@@ -2,6 +2,7 @@
 
 const DelphiVoting = artifacts.require('DelphiVoting.sol');
 const DelphiStake = artifacts.require('DelphiStake.sol');
+const DelphiStakeFactory = artifacts.require('DelphiStakeFactory.sol');
 const Token = artifacts.require('tokens/eip20/EIP20.sol');
 
 const fs = require('fs');
@@ -9,6 +10,10 @@ const fs = require('fs');
 module.exports = (deployer, network) => {
   deployer.then(async () => {
     const ds = await DelphiStake.deployed();
+    const df = await DelphiStakeFactory.deployed();
+
+    console.log("dsf address: %s", DelphiStakeFactory.address)
+
     const conf = JSON.parse(fs.readFileSync('./conf/dsConfig.json'));
 
     let arbiter = conf.arbiter;
@@ -21,10 +26,11 @@ module.exports = (deployer, network) => {
       token = (await Token.deployed()).address;
 
       await (await Token.at(token))
-        .approve(ds.address, conf.initialStake);
+        .approve(df.address, conf.initialStake);
     }
-    return ds.initDelphiStake(conf.initialStake, token, conf.minFee, conf.data,
+
+    console.log("hiii")
+    return df.createDelphiStake(conf.initialStake, token, conf.minFee, conf.data,
       conf.deadline, arbiter);
   });
 };
-
