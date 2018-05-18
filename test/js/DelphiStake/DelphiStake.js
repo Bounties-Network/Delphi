@@ -11,13 +11,18 @@ const conf = utils.getConfig();
 contract('DelphiStake', (accounts) => {
   describe('Function: DelphiStake', () => {
     const [staker, , arbiter] = accounts;
-    it('should instantiate the contract with the expected values', async () => {
-      const token = await EIP20.new(1000000, 'Delphi Tokens', 18, 'DELPHI', { from: staker });
 
-      const ds = await DelphiStake.new();
+    let ds;
+    let token;
+
+    beforeEach(async () => {
+      token = await EIP20.new(1000000, 'Delphi Tokens', 18, 'DELPHI', { from: staker });
+      ds = await DelphiStake.new();
 
       await token.approve(ds.address, conf.initialStake, { from: staker });
+    });
 
+    it('should instantiate the contract with the expected values', async () => {
       await ds.initDelphiStake(conf.initialStake, token.address, conf.minFee, conf.data,
         conf.deadline, arbiter, { from: staker });
 
@@ -25,8 +30,8 @@ contract('DelphiStake', (accounts) => {
       assert.strictEqual(stake.toString(10), conf.initialStake,
         'the stake was initialized improperly');
 
-      const tokenAddress = await ds.token.call();
-      assert.strictEqual(tokenAddress, token.address,
+      const tokenaddress = await ds.token.call();
+      assert.strictEqual(token.address, tokenaddress,
         'the stake token address was initialized improperly');
 
       const data = await ds.data.call();
@@ -44,16 +49,9 @@ contract('DelphiStake', (accounts) => {
     });
 
     it('should revert when _value does not equal the amount of tokens sent', async () => {
-      const token = await EIP20.new(1000000, 'Delphi Tokens', 18, 'DELPHI', { from: staker });
-
-      const ds = await DelphiStake.new();
-
-      await token.approve(ds.address, 10, { from: staker });
-
-
       try {
-        await ds.initDelphiStake(conf.initialStake, token.address, conf.minFee, conf.data,
-          conf.deadline, arbiter, { from: staker });
+        await utils.as(staker, ds.initDelphiStake, conf.initialStake + 100, token.address,
+          conf.minFee, conf.data, conf.deadline, arbiter);
       } catch (err) {
         assert(utils.isEVMRevert(err), err.toString());
 
@@ -61,8 +59,44 @@ contract('DelphiStake', (accounts) => {
       }
       assert(false, 'did not revert after trying to init the stake with an incorrect amount of tokens');
     });
-    it('should revert when trying to call the initialize function more than once');
-    it('should revert when trying to call the initialize function with a deadline that is before now');
-    it('should revert when trying to initialize with an arbiter of address(0)');
+
+    it('should revert when trying to call the initialize function more than once', async () => {
+      await ds.initDelphiStake(conf.initialStake, token.address, conf.minFee, conf.data,
+        conf.deadline, arbiter, { from: staker });
+
+      try {
+        await utils.as(staker, ds.initDelphiStake, conf.initialStake, token.address,
+          conf.minFee, conf.data, conf.deadline, arbiter);
+      } catch (err) {
+        assert(utils.isEVMRevert(err), err.toString());
+
+        return;
+      }
+      assert(false, 'did not revert after trying to init the stake more than once');
+    });
+
+    it('should revert when trying to call the initialize function with a deadline that is before now', async () => {
+      try {
+        await utils.as(staker, ds.initDelphiStake, conf.initialStake, token.address,
+          conf.minFee, conf.data, '1', arbiter);
+      } catch (err) {
+        assert(utils.isEVMRevert(err), err.toString());
+
+        return;
+      }
+      assert(false, 'did not revert after trying to call the initialize function with a deadline that is before now');
+    });
+
+    it('should revert when trying to initialize with an arbiter of address(0)', async () => {
+      try {
+        await utils.as(staker, ds.initDelphiStake, conf.initialStake, token.address,
+          conf.minFee, conf.data, conf.deadline, '0x0');
+      } catch (err) {
+        assert(utils.isEVMRevert(err), err.toString());
+
+        return;
+      }
+      assert(false, 'did not revert after trying to initialize with an arbiter of address(0)');
+    });
   });
 });

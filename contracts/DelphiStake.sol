@@ -70,7 +70,7 @@ contract DelphiStake {
     }
 
     modifier notStakerOrArbiter(){
-        require(msg.sender!= staker && msg.sender!= arbiter);
+        require(msg.sender != staker && msg.sender != arbiter);
         _;
     }
 
@@ -114,8 +114,8 @@ contract DelphiStake {
         _;
     }
 
-    modifier canOpenClaim(address _claimant){
-      require(whitelistedDeadlines[_claimant] >= now);
+    modifier onlyWhitelistedClaimant(){
+      require(whitelistedDeadlines[msg.sender] >= now);
       _;
     }
 
@@ -189,9 +189,7 @@ contract DelphiStake {
     /*
     @dev a whitelisted claimant can use this function to make a claim for remuneration. Once
     opened, an opportunity for pre-arbitration settlement will commence, but claims cannot be
-    unilaterally cancelled. Claims can only be opened for whitelisted individuals, however
-    anyone may open a claim on a whitelisted individual's behalf (depositing the necessary fee for them)
-    @param _claimant the entity which will act as the claimant in the course of the adjudication.
+    unilaterally cancelled.
     @param _amount the size of the claim being made, denominated in the stake's token. Must be less
     than or equal to the current amount of stake not locked up in other disputes, minus the fee deposited.
     @param _fee the size of the fee, denominated in the stake's token, to be offered to the arbiter
@@ -200,20 +198,20 @@ contract DelphiStake {
     @param _data an arbitrary string, perhaps an IPFS hash, containing data substantiating the
     basis for the claim.
     */
-    function openClaim(address _claimant, uint _amount, uint _fee, string _data)
+    function openClaim(uint _amount, uint _fee, string _data)
     public
     notStakerOrArbiter
     stakerCanPay(_amount, _fee)
-    canOpenClaim(_claimant)
+    onlyWhitelistedClaimant
     largeEnoughFee(_fee)
     {
         // Transfer the fee into the DelphiStake
-        require(token.transferFrom(_claimant, this, _fee));
+        require(token.transferFrom(msg.sender, this, _fee));
 
         // Add a new claim to the claims array and increment the openClaims counter. Because there
         // is necessarily at least one open claim now, pause any active withdrawal (lockup)
         // countdown.
-        claims.push(Claim(_claimant, _amount, _fee, 0, _data, 0, false, false));
+        claims.push(Claim(msg.sender, _amount, _fee, 0, _data, 0, false, false));
         openClaims ++;
 
         // The claim amount and claim fee are reserved for this particular claim until the arbiter
@@ -227,9 +225,7 @@ contract DelphiStake {
 
     /*
     @dev a whitelisted claimant can use this function to make a claim for remuneration. Opened claims
-    will proceed directly to full arbitration, when their claims can be ruled upon. Claims can
-    only be opened for whitelisted individuals, however anyone may open a claim on a whitelisted
-    individual's behalf (depositing the necessary fee for them)
+    will proceed directly to full arbitration, when their claims can be ruled upon.
     @param _claimant the entity which will act as the claimant in the course of the adjudication.
     @param _amount the size of the claim being made, denominated in the stake's token. Must be less
     than or equal to the current amount of stake not locked up in other disputes, minus the fee deposited.
@@ -239,15 +235,15 @@ contract DelphiStake {
     @param _data an arbitrary string, perhaps an IPFS hash, containing data substantiating the
     basis for the claim.
     */
-    function openClaimWithoutSettlement(address _claimant, uint _amount, uint _fee, string _data)
+    function openClaimWithoutSettlement(uint _amount, uint _fee, string _data)
     public
     notStakerOrArbiter
     stakerCanPay(_amount, _fee)
-    canOpenClaim(_claimant)
+    onlyWhitelistedClaimant
     largeEnoughFee(_fee)
     {
-        require(token.transferFrom(_claimant, this, _fee));
-        claims.push(Claim(_claimant, _amount, _fee, 0, _data, 0, false, true));
+        require(token.transferFrom(msg.sender, this, _fee));
+        claims.push(Claim(msg.sender, _amount, _fee, 0, _data, 0, false, true));
         openClaims ++;
 
         // The claim amount and claim fee are reserved for this particular claim until the arbiter
