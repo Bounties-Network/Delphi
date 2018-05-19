@@ -12,8 +12,6 @@ module.exports = (deployer, network) => {
     const ds = await DelphiStake.deployed();
     const df = await DelphiStakeFactory.deployed();
 
-    console.log("dsf address: %s", DelphiStakeFactory.address)
-
     const conf = JSON.parse(fs.readFileSync('./conf/dsConfig.json'));
 
     let arbiter = conf.arbiter;
@@ -29,7 +27,6 @@ module.exports = (deployer, network) => {
         .approve(df.address, conf.initialStake);
     }
 
-    console.log("hiii")
     return df.createDelphiStake(conf.initialStake, token, conf.minFee, conf.data,
       conf.deadline, arbiter);
   });
