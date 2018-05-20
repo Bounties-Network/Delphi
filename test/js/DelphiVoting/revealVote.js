@@ -3,6 +3,7 @@
 
 const DelphiVoting = artifacts.require('DelphiVoting');
 const DelphiStake = artifacts.require('DelphiStake');
+const DelphiStakeFactory = artifacts.require('DelphiStakeFactory');
 
 const utils = require('../utils.js');
 const fs = require('fs');
@@ -13,15 +14,20 @@ contract('DelphiVoting', (accounts) => {
   describe('Function: revealVote - part 1 ', () => {
     const [staker, claimant, arbiter] = accounts;
 
+    let ds;
+    let dv;
+
     before(async () => {
+      const df = await DelphiStakeFactory.deployed();
+
+      ds = await DelphiStake.at( await df.stakes.call('0') );
+      dv = await DelphiVoting.deployed();
+
       // Add an arbiter to the whitelist
       await utils.addToWhitelist(utils.getArbiterListingId(arbiter),
         config.paramDefaults.minDeposit, arbiter);
     });
     it('should reveal an arbiter\'s vote and update the vote tally for a vote of 0', async () => {
-      const dv = await DelphiVoting.deployed();
-      const ds = await DelphiStake.deployed();
-
       // Set constants
       const CLAIM_AMOUNT = '10';
       const FEE_AMOUNT = '10';
@@ -57,9 +63,6 @@ contract('DelphiVoting', (accounts) => {
     });
 
     it('should reveal an arbiter\'s vote and update the vote tally for a vote of 1', async () => {
-      const dv = await DelphiVoting.deployed();
-      const ds = await DelphiStake.deployed();
-
       // Set constants
       const CLAIM_AMOUNT = '10';
       const FEE_AMOUNT = '10';
@@ -95,9 +98,6 @@ contract('DelphiVoting', (accounts) => {
     });
 
     it('should reveal an arbiter\'s vote and update the vote tally for a vote of 2', async () => {
-      const dv = await DelphiVoting.deployed();
-      const ds = await DelphiStake.deployed();
-
       // Set constants
       const CLAIM_AMOUNT = '10';
       const FEE_AMOUNT = '10';
@@ -133,9 +133,6 @@ contract('DelphiVoting', (accounts) => {
     });
 
     it('should reveal an arbiter\'s vote and update the vote tally for a vote of 3', async () => {
-      const dv = await DelphiVoting.deployed();
-      const ds = await DelphiStake.deployed();
-
       // Set constants
       const CLAIM_AMOUNT = '10';
       const FEE_AMOUNT = '10';
@@ -170,15 +167,13 @@ contract('DelphiVoting', (accounts) => {
         'the final vote tally was not as-expected');
     });
     it('should not allow an arbiter to reveal twice', async () => {
-      const dv = await DelphiVoting.deployed();
-
       // Set constants
       const CLAIM_NUMBER = '0'; // Use previous claim number
       const VOTE = '1'; // Use the same vote option we used before
       const SALT = '420';
 
       // Generate a claim ID
-      const claimId = utils.getClaimId(DelphiStake.address, CLAIM_NUMBER);
+      const claimId = utils.getClaimId(ds.address, CLAIM_NUMBER);
 
       // Get the initial tally for the vote option we are going to try re-revealing in
       const initialTally = (await dv.revealedVotesForOption.call(claimId, VOTE));

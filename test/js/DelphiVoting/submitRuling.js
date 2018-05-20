@@ -3,6 +3,7 @@
 
 const DelphiVoting = artifacts.require('DelphiVoting');
 const DelphiStake = artifacts.require('DelphiStake');
+const DelphiStakeFactory = artifacts.require('DelphiStakeFactory');
 
 const utils = require('../utils.js');
 const fs = require('fs');
@@ -13,15 +14,21 @@ const config = JSON.parse(fs.readFileSync('./conf/tcrConfig.json'));
 contract('DelphiVoting', (accounts) => { //eslint-disable-line
   describe('Function: submitRuling', () => {
     const [staker, claimant, arbiter, thirdPary] = accounts;
+
+    let ds;
+    let dv;
+
     before(async () => {
+      const df = await DelphiStakeFactory.deployed();
+
+      ds = await DelphiStake.at( await df.stakes.call('0') );
+      dv = await DelphiVoting.deployed();
+
       // Add an arbiter to the whitelist
       await utils.addToWhitelist(utils.getArbiterListingId(arbiter),
         config.paramDefaults.minDeposit, arbiter);
     });
     it('should allow anyone to submit a ruling (non-voters)', async () => {
-      const dv = await DelphiVoting.deployed();
-      const ds = await DelphiStake.deployed();
-
       // Set constants
       const CLAIM_AMOUNT = '10';
       const FEE_AMOUNT = '10';
@@ -38,7 +45,7 @@ contract('DelphiVoting', (accounts) => { //eslint-disable-line
       const initialClaimExists = await dv.claimExists.call(claimId);
       assert.strictEqual(initialClaimExists, false,
         'The claim was instantiated before it should have been');
-      // 
+      //
       // Generate a secret hash and commit it as a vote
       const secretHash = utils.getSecretHash(VOTE, SALT);
       await utils.as(arbiter, dv.commitVote, ds.address, claimNumber, secretHash);
@@ -52,9 +59,6 @@ contract('DelphiVoting', (accounts) => { //eslint-disable-line
       await utils.as(thirdPary, dv.submitRuling, ds.address, claimNumber);
     });
     it('should revert if the claimId generated from the stake address and claim number doesnt exist', async () => {
-      const dv = await DelphiVoting.deployed();
-      const ds = await DelphiStake.deployed();
-
       // Set constants
       const CLAIM_AMOUNT = '10';
       const FEE_AMOUNT = '10';
@@ -71,7 +75,7 @@ contract('DelphiVoting', (accounts) => { //eslint-disable-line
       const initialClaimExists = await dv.claimExists.call(claimId);
       assert.strictEqual(initialClaimExists, false,
         'The claim was instantiated before it should have been');
-      // 
+
       // Generate a secret hash and commit it as a vote
       const secretHash = utils.getSecretHash(VOTE, SALT);
       await utils.as(arbiter, dv.commitVote, ds.address, claimNumber, secretHash);
@@ -91,9 +95,6 @@ contract('DelphiVoting', (accounts) => { //eslint-disable-line
       assert(false, 'Expected to revert if the claimId generated from the stake address and claim number doesnt exist');
     });
     it('should revert if the commit period is active', async () => {
-      const dv = await DelphiVoting.deployed();
-      const ds = await DelphiStake.deployed();
-
       // Set constants
       const CLAIM_AMOUNT = '10';
       const FEE_AMOUNT = '10';
@@ -110,7 +111,7 @@ contract('DelphiVoting', (accounts) => { //eslint-disable-line
       const initialClaimExists = await dv.claimExists.call(claimId);
       assert.strictEqual(initialClaimExists, false,
         'The claim was instantiated before it should have been');
-      // 
+      //
       // Generate a secret hash and commit it as a vote
       const secretHash = utils.getSecretHash(VOTE, SALT);
       await utils.as(arbiter, dv.commitVote, ds.address, claimNumber, secretHash);
@@ -129,9 +130,6 @@ contract('DelphiVoting', (accounts) => { //eslint-disable-line
       assert(false, 'Expected to revert if the commit period is active');
     });
     it('should revert if the reveal period is active', async () => {
-      const dv = await DelphiVoting.deployed();
-      const ds = await DelphiStake.deployed();
-
       // Set constants
       const CLAIM_AMOUNT = '10';
       const FEE_AMOUNT = '10';
@@ -148,7 +146,7 @@ contract('DelphiVoting', (accounts) => { //eslint-disable-line
       const initialClaimExists = await dv.claimExists.call(claimId);
       assert.strictEqual(initialClaimExists, false,
         'The claim was instantiated before it should have been');
-      // 
+      //
       // Generate a secret hash and commit it as a vote
       const secretHash = utils.getSecretHash(VOTE, SALT);
       await utils.as(arbiter, dv.commitVote, ds.address, claimNumber, secretHash);
@@ -166,9 +164,6 @@ contract('DelphiVoting', (accounts) => { //eslint-disable-line
       assert(false, 'Expected to revert if the reveal period is active');
     });
     it('should correctly tally the votes', async () => {
-      const dv = await DelphiVoting.deployed();
-      const ds = await DelphiStake.deployed();
-
       // Set constants
       const CLAIM_AMOUNT = '10';
       const FEE_AMOUNT = '10';
@@ -185,7 +180,7 @@ contract('DelphiVoting', (accounts) => { //eslint-disable-line
       const initialClaimExists = await dv.claimExists.call(claimId);
       assert.strictEqual(initialClaimExists, false,
         'The claim was instantiated before it should have been');
-      // 
+      //
       // Generate a secret hash and commit it as a vote
       const secretHash = utils.getSecretHash(VOTE, SALT);
       await utils.as(arbiter, dv.commitVote, ds.address, claimNumber, secretHash);
@@ -197,13 +192,10 @@ contract('DelphiVoting', (accounts) => { //eslint-disable-line
 
       // Submit rulling as non-voter
       await utils.as(thirdPary, dv.submitRuling, ds.address, claimNumber);
-      // Check if it is Fault 
+      // Check if it is Fault
       assert.strictEqual((await dv.claims(claimId))[2].toString(), '3', 'tally vote is not correct');
     });
     it('should correctly rule on the claim in the stake', async () => {
-      const dv = await DelphiVoting.deployed();
-      const ds = await DelphiStake.deployed();
-
       // Set constants
       const CLAIM_AMOUNT = '10';
       const FEE_AMOUNT = '10';
@@ -220,7 +212,7 @@ contract('DelphiVoting', (accounts) => { //eslint-disable-line
       const initialClaimExists = await dv.claimExists.call(claimId);
       assert.strictEqual(initialClaimExists, false,
         'The claim was instantiated before it should have been');
-      // 
+      
       // Generate a secret hash and commit it as a vote
       const secretHash = utils.getSecretHash(VOTE, SALT);
       await utils.as(arbiter, dv.commitVote, ds.address, claimNumber, secretHash);

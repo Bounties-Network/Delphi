@@ -30,7 +30,7 @@ contract('DelphiStake', (accounts) => {
 
       await token.approve(ds.address, conf.initialStake, { from: staker });
 
-      await ds.initDelphiStake(conf.initialStake, token.address, conf.minFee, conf.data,
+      await ds.initDelphiStake(staker, conf.initialStake, token.address, conf.minFee, conf.data,
         conf.deadline, arbiter, { from: staker });
 
       // whitelist the claimant since most tests
