@@ -30,7 +30,7 @@ const utils = {
 
   makeNewClaim: async (staker, claimant, amount, fee, data) => {
     const df = await DelphiStakeFactory.deployed();
-    const ds = await DelphiStake.at( await df.stakes.call('0') );
+    const ds = await DelphiStake.at(await df.stakes.call('0'));
 
     const token = EIP20.at(await ds.token.call());
 

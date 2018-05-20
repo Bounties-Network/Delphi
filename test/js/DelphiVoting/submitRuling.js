@@ -21,7 +21,7 @@ contract('DelphiVoting', (accounts) => { //eslint-disable-line
     before(async () => {
       const df = await DelphiStakeFactory.deployed();
 
-      ds = await DelphiStake.at( await df.stakes.call('0') );
+      ds = await DelphiStake.at(await df.stakes.call('0'));
       dv = await DelphiVoting.deployed();
 
       // Add an arbiter to the whitelist
@@ -212,7 +212,7 @@ contract('DelphiVoting', (accounts) => { //eslint-disable-line
       const initialClaimExists = await dv.claimExists.call(claimId);
       assert.strictEqual(initialClaimExists, false,
         'The claim was instantiated before it should have been');
-      
+
       // Generate a secret hash and commit it as a vote
       const secretHash = utils.getSecretHash(VOTE, SALT);
       await utils.as(arbiter, dv.commitVote, ds.address, claimNumber, secretHash);

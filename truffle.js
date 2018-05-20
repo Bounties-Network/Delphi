@@ -19,11 +19,11 @@ module.exports = {
     },
     // config for solidity-coverage
     coverage: {
-      host: 'ganache',
+      host: 'localhost',
       network_id: '*',
-      port: 8545, // <-- If you change this, also set the port option in .solcover.js.
-      // gas: 0xfffffffffff, // <-- Use this high gas value
-      // gasPrice: 0x01, // <-- Use this low gas price
+      port: 7545, // <-- If you change this, also set the port option in .solcover.js.
+      gas: 0xfffffffffff, // <-- Use this high gas value
+      gasPrice: 0x01, // <-- Use this low gas price
     },
   },
 };

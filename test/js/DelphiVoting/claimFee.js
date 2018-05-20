@@ -23,7 +23,7 @@ contract('DelphiVoting', (accounts) => {
     before(async () => {
       const df = await DelphiStakeFactory.deployed();
 
-      ds = await DelphiStake.at( await df.stakes.call('0') );
+      ds = await DelphiStake.at(await df.stakes.call('0'));
       dv = await DelphiVoting.deployed();
 
       token = EIP20.at(await ds.token.call());
@@ -73,7 +73,6 @@ contract('DelphiVoting', (accounts) => {
 
       // Submit ruling
       await utils.as(arbiterAlice, dv.submitRuling, ds.address, claimNumber);
-      console.log('submitted ruling')
 
       // Claim fee. Capture the arbiters balance before and after.
       const startingBalance = await token.balanceOf(arbiterAlice);

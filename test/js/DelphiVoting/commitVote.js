@@ -20,7 +20,7 @@ contract('DelphiVoting', (accounts) => {
     before(async () => {
       const df = await DelphiStakeFactory.deployed();
 
-      ds = await DelphiStake.at( await df.stakes.call('0') );
+      ds = await DelphiStake.at(await df.stakes.call('0'));
       dv = await DelphiVoting.deployed();
 
       // Add an arbiter to the whitelist
