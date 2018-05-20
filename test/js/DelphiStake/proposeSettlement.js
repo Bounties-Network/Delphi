@@ -28,7 +28,7 @@ contract('DelphiStake', (accounts) => {
       await token.approve(ds.address, conf.initialStake, { from: staker });
       await token.transfer(arbiter, 1000, { from: staker });
 
-      await ds.initDelphiStake(conf.initialStake, token.address, conf.minFee, conf.data,
+      await ds.initDelphiStake(staker, conf.initialStake, token.address, conf.minFee, conf.data,
         conf.deadline, arbiter, { from: staker });
 
       await token.approve(ds.address, conf.minFee, { from: claimant });

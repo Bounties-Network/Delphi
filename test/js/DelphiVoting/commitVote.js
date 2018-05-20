@@ -3,6 +3,7 @@
 
 const DelphiVoting = artifacts.require('DelphiVoting');
 const DelphiStake = artifacts.require('DelphiStake');
+const DelphiStakeFactory = artifacts.require('DelphiStakeFactory');
 
 const utils = require('../utils.js');
 const fs = require('fs');
@@ -13,16 +14,21 @@ contract('DelphiVoting', (accounts) => {
   describe('Function: commitVote', () => {
     const [staker, arbiter, arbiter2, claimant, bob] = accounts;
 
+    let dv;
+    let ds;
+
     before(async () => {
+      const df = await DelphiStakeFactory.deployed();
+
+      ds = await DelphiStake.at( await df.stakes.call('0') );
+      dv = await DelphiVoting.deployed();
+
       // Add an arbiter to the whitelist
       await utils.addToWhitelist(utils.getArbiterListingId(arbiter),
         config.paramDefaults.minDeposit, arbiter);
     });
 
     it('should initialize a new claim and log the arbiter\'s vote', async () => {
-      const dv = await DelphiVoting.deployed();
-      const ds = await DelphiStake.deployed();
-
       // Set constants
       const CLAIM_AMOUNT = '10';
       const FEE_AMOUNT = '10';
@@ -32,7 +38,7 @@ contract('DelphiVoting', (accounts) => {
       // Make a new claim in the DelphiStake and generate a claim ID
       const claimNumber = // should be zero, since this is the first test
         await utils.makeNewClaim(staker, claimant, CLAIM_AMOUNT, FEE_AMOUNT, 'i love cats');
-      const claimId = utils.getClaimId(DelphiStake.address, claimNumber.toString(10));
+      const claimId = utils.getClaimId(ds.address, claimNumber.toString(10));
 
       // Nobody has voted yet for the new claim, so from the DelphiVoting contract's perpective,
       // this claim does not exist.
@@ -54,9 +60,6 @@ contract('DelphiVoting', (accounts) => {
     });
 
     it('should update an arbiter\'s vote in a claim', async () => {
-      const dv = await DelphiVoting.deployed();
-      const ds = await DelphiStake.deployed();
-
       // Set constants
       const CLAIM_NUMBER = '0'; // Use previous claim number
       const VOTE = '2'; // Previous commit by this arbiter in this claim was for 2
@@ -64,7 +67,7 @@ contract('DelphiVoting', (accounts) => {
 
       // Generate a new secretHash and compute the claim ID
       const secretHash = utils.getSecretHash(VOTE, SALT);
-      const claimId = utils.getClaimId(DelphiStake.address, CLAIM_NUMBER);
+      const claimId = utils.getClaimId(ds.address, CLAIM_NUMBER);
 
       // Capture the initial secret hash and make sure it is not the same as our new secret hash
       const initialSecretHash = await dv.getArbiterCommitForClaim.call(claimId, arbiter);
@@ -79,9 +82,6 @@ contract('DelphiVoting', (accounts) => {
     });
 
     it('should not allow a non-arbiter to vote', async () => {
-      const dv = await DelphiVoting.deployed();
-      const ds = await DelphiStake.deployed();
-
       // Set constants
       const CLAIM_NUMBER = '0'; // Use previous claim number
       const VOTE = '1';
@@ -103,8 +103,6 @@ contract('DelphiVoting', (accounts) => {
     it('should not allow an arbiter to commit after the commit period has ended', async () => {
       await utils.addToWhitelist(utils.getArbiterListingId(arbiter2),
         config.paramDefaults.minDeposit, arbiter2);
-      const dv = await DelphiVoting.deployed();
-      const ds = await DelphiStake.deployed();
 
       // Set constants
       const CLAIM_AMOUNT = '10';
@@ -122,7 +120,7 @@ contract('DelphiVoting', (accounts) => {
       const initialClaimExists = await dv.claimExists.call(claimId);
       assert.strictEqual(initialClaimExists, false,
         'The claim was instantiated before it should have been');
-      // 
+      //
       // Generate a secret hash and commit it as a vote
       const secretHash = utils.getSecretHash(VOTE, SALT);
       await utils.as(arbiter, dv.commitVote, ds.address, claimNumber, secretHash);
@@ -142,9 +140,6 @@ contract('DelphiVoting', (accounts) => {
 
     it('should not allow an arbiter to commit a vote for a claim which does not exist',
       async () => {
-        const dv = await DelphiVoting.deployed();
-        const ds = await DelphiStake.deployed();
-
         // Set constants
         const NON_EXISTANT_CLAIM = '420';
         const SALT = '420';
@@ -166,9 +161,6 @@ contract('DelphiVoting', (accounts) => {
 
     it('should not allow an arbiter to commit a secret hash of 0',
       async () => {
-        const dv = await DelphiVoting.deployed();
-        const ds = await DelphiStake.deployed();
-
         // Set constants
         const NON_EXISTANT_CLAIM = '420';
 

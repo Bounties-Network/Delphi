@@ -140,7 +140,7 @@ contract DelphiStake {
     a stake can be withdrawn by the staker
     @param _arbiter the address which is able to rule on open claims
     */
-    function initDelphiStake(uint _value, EIP20 _token, uint _minimumFee, string _data, uint _stakeReleaseTime, address _arbiter)
+    function initDelphiStake(address _staker, uint _value, EIP20 _token, uint _minimumFee, string _data, uint _stakeReleaseTime, address _arbiter)
     public
     {
         require(_stakeReleaseTime > now);
@@ -162,7 +162,7 @@ contract DelphiStake {
         data = _data;
         stakeReleaseTime = _stakeReleaseTime;
         arbiter = _arbiter;
-        staker = msg.sender;
+        staker = _staker;
     }
 
     /*
