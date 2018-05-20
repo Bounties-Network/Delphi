@@ -132,6 +132,7 @@ contract DelphiStake {
     /*
     @dev when creating a new Delphi Stake using a proxy contract architecture, a user must
     initialialize their stake, depositing their tokens
+    @param _staker the address which is creating the stake through the proxy contract
     @param _value the value of the stake in token units
     @param _token the address of the token being deposited
     @param _minimumFee the minimum fee which must be deposited by both parties for each claim
