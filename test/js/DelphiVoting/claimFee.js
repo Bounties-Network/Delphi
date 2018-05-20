@@ -3,6 +3,7 @@
 
 const DelphiVoting = artifacts.require('DelphiVoting');
 const DelphiStake = artifacts.require('DelphiStake');
+const DelphiStakeFactory = artifacts.require('DelphiStakeFactory');
 const EIP20 = artifacts.require('tokens/eip20/EIP20.sol');
 
 const utils = require('../utils.js');
@@ -15,9 +16,15 @@ contract('DelphiVoting', (accounts) => {
   describe('Function: claimFee', () => {
     const [staker, claimant, arbiterAlice, arbiterBob, arbiterCharlie, thirdPary] = accounts;
 
+    let ds;
+    let dv;
+    let token;
+
     before(async () => {
-      const ds = await DelphiStake.deployed();
-      const token = EIP20.at(await ds.token.call());
+      const df = await DelphiStakeFactory.deployed();
+      ds = await DelphiStake.at( await df.stakes.call('0') );
+      dv = await DelphiVoting.deployed();
+      token = EIP20.at(await ds.token.call());
 
       // The claimant will need tokens to fund fees when they make claims. The zero account
       // has lots of tokens because it deployed the token contract
@@ -36,10 +43,6 @@ contract('DelphiVoting', (accounts) => {
     });
 
     it('should allow an arbiter to claim a fee', async () => {
-      const dv = await DelphiVoting.deployed();
-      const ds = await DelphiStake.deployed();
-      const token = EIP20.at(await ds.token.call());
-
       // Set constants
       const CLAIM_AMOUNT = '10';
       const FEE_AMOUNT = '10';
@@ -67,11 +70,12 @@ contract('DelphiVoting', (accounts) => {
       await utils.increaseTime(config.paramDefaults.revealStageLength);
 
       // Submit ruling
-      await utils.as(arbiterAlice, dv.submitRuling, DelphiStake.address, claimNumber);
+      await utils.as(arbiterAlice, dv.submitRuling, ds.address, claimNumber);
+      console.log('submitted ruling')
 
       // Claim fee. Capture the arbiters balance before and after.
       const startingBalance = await token.balanceOf(arbiterAlice);
-      await utils.as(arbiterAlice, dv.claimFee, DelphiStake.address, claimNumber, VOTE, SALT);
+      await utils.as(arbiterAlice, dv.claimFee, ds.address, claimNumber, VOTE, SALT);
       const finalBalance = await token.balanceOf(arbiterAlice);
 
       // The arbiter's final balance should be their starting balance plus the entire FEE_AMOUNT,
@@ -81,10 +85,6 @@ contract('DelphiVoting', (accounts) => {
     });
 
     it('should not allow an arbiter to claim a fee twice', async () => {
-      const dv = await DelphiVoting.deployed();
-      const ds = await DelphiStake.deployed();
-      const token = EIP20.at(await ds.token.call());
-
       // Set constants
       const VOTE = '1';
       const SALT = '420';
@@ -95,7 +95,7 @@ contract('DelphiVoting', (accounts) => {
       const startingBalance = await token.balanceOf(arbiterAlice);
       try {
         // Attempt to claim the fee again
-        await utils.as(arbiterAlice, dv.claimFee, DelphiStake.address, CLAIM_NUMBER, VOTE, SALT);
+        await utils.as(arbiterAlice, dv.claimFee, ds.address, CLAIM_NUMBER, VOTE, SALT);
       } catch (err) {
         assert(utils.isEVMRevert(err), err.toString());
 
@@ -111,10 +111,6 @@ contract('DelphiVoting', (accounts) => {
 
     it('should not allow an arbiter to claim a fee when they voted out of the plurality',
       async () => {
-        const dv = await DelphiVoting.deployed();
-        const ds = await DelphiStake.deployed();
-        const token = EIP20.at(await ds.token.call());
-
         // Set constants
         const CLAIM_AMOUNT = '10';
         const FEE_AMOUNT = '10';
@@ -149,13 +145,13 @@ contract('DelphiVoting', (accounts) => {
         await utils.increaseTime(config.paramDefaults.revealStageLength);
 
         // Submit ruling
-        await utils.as(arbiterAlice, dv.submitRuling, DelphiStake.address, claimNumber);
+        await utils.as(arbiterAlice, dv.submitRuling, ds.address, claimNumber);
 
         // Capture Charlie's starting balance
         const startingBalance = await token.balanceOf(arbiterCharlie);
         try {
           // non-plurality arbiter, Charlie, attempts claim fee
-          await utils.as(arbiterCharlie, dv.claimFee, DelphiStake.address, claimNumber,
+          await utils.as(arbiterCharlie, dv.claimFee, ds.address, claimNumber,
             NON_PLURALITY_VOTE, SALT);
         } catch (err) {
           assert(utils.isEVMRevert(err), err.toString());
@@ -172,10 +168,6 @@ contract('DelphiVoting', (accounts) => {
       });
 
     it('should apportion the fee properly when multiple arbiters must claim', async () => {
-      const dv = await DelphiVoting.deployed();
-      const ds = await DelphiStake.deployed();
-      const token = EIP20.at(await ds.token.call());
-
       // Use previous claim, since we have two arbiters who still have not claimed for it
       const CLAIM_NUMBER = '1';
       const FEE_AMOUNT = new BN('10', 10); // Use previous fee amount
@@ -185,7 +177,7 @@ contract('DelphiVoting', (accounts) => {
 
       // Capture Alice's starting token balance, claim the fee and get her final balance
       const startingBalanceAlice = await token.balanceOf(arbiterAlice);
-      await utils.as(arbiterAlice, dv.claimFee, DelphiStake.address, CLAIM_NUMBER,
+      await utils.as(arbiterAlice, dv.claimFee, ds.address, CLAIM_NUMBER,
         PLURALITY_VOTE, SALT);
       const finalBalanceAlice = await token.balanceOf(arbiterAlice);
 
@@ -198,7 +190,7 @@ contract('DelphiVoting', (accounts) => {
 
       // Capture Bob's starting token balance, claim the fee and get his final balance
       const startingBalanceBob = await token.balanceOf(arbiterBob);
-      await utils.as(arbiterBob, dv.claimFee, DelphiStake.address, CLAIM_NUMBER,
+      await utils.as(arbiterBob, dv.claimFee, ds.address, CLAIM_NUMBER,
         PLURALITY_VOTE, SALT);
       const finalBalanceBob = await token.balanceOf(arbiterBob);
 
@@ -214,8 +206,6 @@ contract('DelphiVoting', (accounts) => {
     });
 
     it('should revert if called by anyone but one of the arbiters', async () => {
-      const dv = await DelphiVoting.deployed();
-
       // Use previous claim, since we have two arbiters who still have not claimed for it
       const CLAIM_NUMBER = '1';
       const PLURALITY_VOTE = '1';
@@ -223,7 +213,7 @@ contract('DelphiVoting', (accounts) => {
 
       try {
         // Check the requiere onlyArbiters
-        await utils.as(thirdPary, dv.claimFee, DelphiStake.address, CLAIM_NUMBER,
+        await utils.as(thirdPary, dv.claimFee, ds.address, CLAIM_NUMBER,
           PLURALITY_VOTE, SALT);
       } catch (err) {
         assert(utils.isEVMRevert(err), err.toString());
@@ -232,8 +222,6 @@ contract('DelphiVoting', (accounts) => {
       assert(false, 'Expetected to revert if called by anyone but one of the arbiters');
     });
     it('should not allow an arbiter to claim a fee when they did not commit', async () => {
-      const dv = await DelphiVoting.deployed();
-
       // Set constants
       const CLAIM_AMOUNT = '10';
       const FEE_AMOUNT = '10';
@@ -246,7 +234,7 @@ contract('DelphiVoting', (accounts) => {
 
       try {
         // Check the requiere onlyArbiters
-        await utils.as(arbiterAlice, dv.claimFee, DelphiStake.address, claimNumber,
+        await utils.as(arbiterAlice, dv.claimFee, ds.address, claimNumber,
           VOTE, SALT);
       } catch (err) {
         assert(utils.isEVMRevert(err), err.toString());
@@ -255,9 +243,6 @@ contract('DelphiVoting', (accounts) => {
       assert(false, 'Expetected to not allow an arbiter to claim a fee when they did not commit');
     });
     it('should not allow an arbiter to claim a fee when they committed but did not reveal', async () => {
-      const dv = await DelphiVoting.deployed();
-      const ds = await DelphiStake.deployed();
-
       // Set constants
       const CLAIM_AMOUNT = '10';
       const FEE_AMOUNT = '10';
@@ -278,7 +263,7 @@ contract('DelphiVoting', (accounts) => {
       await utils.increaseTime(config.paramDefaults.commitStageLength + 1);
 
       try {
-        await utils.as(arbiterAlice, dv.claimFee, DelphiStake.address, claimNumber, VOTE, SALT);
+        await utils.as(arbiterAlice, dv.claimFee, ds.address, claimNumber, VOTE, SALT);
       } catch (err) {
         assert(utils.isEVMRevert(err), err.toString());
         return;

@@ -3,6 +3,7 @@
 
 const DelphiVoting = artifacts.require('DelphiVoting');
 const DelphiStake = artifacts.require('DelphiStake');
+const DelphiStakeFactory = artifacts.require('DelphiStakeFactory');
 
 const utils = require('../utils.js');
 const fs = require('fs');
@@ -13,16 +14,21 @@ contract('DelphiVoting', (accounts) => {
   describe('Function: revealVote - part 2', () => {
     const [staker, claimant, arbiter] = accounts;
 
+    let ds;
+    let dv;
+
     before(async () => {
+      const df = await DelphiStakeFactory.deployed();
+
+      ds = await DelphiStake.at( await df.stakes.call('0') );
+      dv = await DelphiVoting.deployed();
+
       // Add an arbiter to the whitelist
       await utils.addToWhitelist(utils.getArbiterListingId(arbiter),
         config.paramDefaults.minDeposit, arbiter);
     });
 
     it('Should revert if the provided vote and salt don\'t match the commitHash', async () => {
-      const dv = await DelphiVoting.deployed();
-      const ds = await DelphiStake.deployed();
-
       // Set constants
       const CLAIM_AMOUNT = '10';
       const FEE_AMOUNT = '10';
@@ -53,9 +59,6 @@ contract('DelphiVoting', (accounts) => {
       assert(false, 'Expected to revert if the provided vote and salt don\'t match the commitHash');
     });
     it('Should not allow an arbiter to reveal before the reveal stage has begun', async () => {
-      const dv = await DelphiVoting.deployed();
-      const ds = await DelphiStake.deployed();
-
       // Set constants
       const CLAIM_AMOUNT = '10';
       const FEE_AMOUNT = '10';
@@ -83,9 +86,6 @@ contract('DelphiVoting', (accounts) => {
     });
 
     it('Should not allow an arbiter to reveal after the reveal stage has ended', async () => {
-      const dv = await DelphiVoting.deployed();
-      const ds = await DelphiStake.deployed();
-
       // Set constants
       const CLAIM_AMOUNT = '10';
       const FEE_AMOUNT = '10';
@@ -114,9 +114,6 @@ contract('DelphiVoting', (accounts) => {
       assert(false, 'Expected to not allow an arbiter to reveal after the reveal stage has ended');
     });
     it('Should set hasRevealed to true for the msg.sender', async () => {
-      const dv = await DelphiVoting.deployed();
-      const ds = await DelphiStake.deployed();
-
       // Set constants
       const CLAIM_AMOUNT = '10';
       const FEE_AMOUNT = '10';

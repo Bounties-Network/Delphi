@@ -23,7 +23,7 @@ contract('DelphiStake', (accounts) => {
     });
 
     it('should instantiate the contract with the expected values', async () => {
-      await ds.initDelphiStake(conf.initialStake, token.address, conf.minFee, conf.data,
+      await ds.initDelphiStake(staker, conf.initialStake, token.address, conf.minFee, conf.data,
         conf.deadline, arbiter, { from: staker });
 
       const stake = await ds.claimableStake.call();
@@ -50,7 +50,7 @@ contract('DelphiStake', (accounts) => {
 
     it('should revert when _value does not equal the amount of tokens sent', async () => {
       try {
-        await utils.as(staker, ds.initDelphiStake, conf.initialStake + 100, token.address,
+        await utils.as(staker, ds.initDelphiStake, staker, conf.initialStake + 100, token.address,
           conf.minFee, conf.data, conf.deadline, arbiter);
       } catch (err) {
         assert(utils.isEVMRevert(err), err.toString());
@@ -61,11 +61,11 @@ contract('DelphiStake', (accounts) => {
     });
 
     it('should revert when trying to call the initialize function more than once', async () => {
-      await ds.initDelphiStake(conf.initialStake, token.address, conf.minFee, conf.data,
+      await ds.initDelphiStake(staker, conf.initialStake, token.address, conf.minFee, conf.data,
         conf.deadline, arbiter, { from: staker });
 
       try {
-        await utils.as(staker, ds.initDelphiStake, conf.initialStake, token.address,
+        await utils.as(staker, ds.initDelphiStake, staker, conf.initialStake, token.address,
           conf.minFee, conf.data, conf.deadline, arbiter);
       } catch (err) {
         assert(utils.isEVMRevert(err), err.toString());
@@ -77,7 +77,7 @@ contract('DelphiStake', (accounts) => {
 
     it('should revert when trying to call the initialize function with a deadline that is before now', async () => {
       try {
-        await utils.as(staker, ds.initDelphiStake, conf.initialStake, token.address,
+        await utils.as(staker, ds.initDelphiStake, staker, conf.initialStake, token.address,
           conf.minFee, conf.data, '1', arbiter);
       } catch (err) {
         assert(utils.isEVMRevert(err), err.toString());
@@ -89,7 +89,7 @@ contract('DelphiStake', (accounts) => {
 
     it('should revert when trying to initialize with an arbiter of address(0)', async () => {
       try {
-        await utils.as(staker, ds.initDelphiStake, conf.initialStake, token.address,
+        await utils.as(staker, ds.initDelphiStake, staker, conf.initialStake, token.address,
           conf.minFee, conf.data, conf.deadline, '0x0');
       } catch (err) {
         assert(utils.isEVMRevert(err), err.toString());

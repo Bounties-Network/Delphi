@@ -34,7 +34,7 @@ contract('DelphiStake', (accounts) => {
       const timeBlock = await web3.eth.getBlock(await web3.eth.getBlockNumber());
       const tims = timeBlock.timestamp + 6;
 
-      await utils.as(staker, ds.initDelphiStake, conf.initialStake, token.address,
+      await utils.as(staker, ds.initDelphiStake, staker, conf.initialStake, token.address,
         conf.minFee, conf.data, tims, arbiter);
     });
 

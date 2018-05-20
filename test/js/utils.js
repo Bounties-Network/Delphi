@@ -2,6 +2,7 @@
 
 const Registry = artifacts.require('Registry.sol');
 const DelphiStake = artifacts.require('DelphiStake.sol');
+const DelphiStakeFactory = artifacts.require('DelphiStakeFactory');
 const EIP20 = artifacts.require('tokens/eip20/EIP20.sol');
 
 const HttpProvider = require('ethjs-provider-http');
@@ -28,7 +29,9 @@ const utils = {
   },
 
   makeNewClaim: async (staker, claimant, amount, fee, data) => {
-    const ds = await DelphiStake.deployed();
+    const df = await DelphiStakeFactory.deployed();
+    const ds = await DelphiStake.at( await df.stakes.call('0') );
+
     const token = EIP20.at(await ds.token.call());
 
     await utils.as(staker, ds.whitelistClaimant, claimant, delphiConfig.deadline);

@@ -1,5 +1,4 @@
 pragma solidity ^0.4.18;
-import "tokens/eip20/EIP20.sol";
 import "./inherited/Proxy.sol";
 import "./DelphiStake.sol";
 
@@ -25,9 +24,9 @@ contract DelphiStakeFactory {
     address newStake = new Proxy(masterCopy);
     stakes.push(DelphiStake(newStake));
 
-    _token.approve(stakes[stakes.length - 1], _value);
-
-    stakes[stakes.length - 1].initDelphiStake(_value, _token, _minimumFee, _data, _stakeReleaseTime, _arbiter);
+    _token.approve(newStake, _value);
+    
+    stakes[stakes.length - 1].initDelphiStake(msg.sender, _value, _token, _minimumFee, _data, _stakeReleaseTime, _arbiter);
 
     StakeCreated(stakes.length - 1, stakes[stakes.length - 1]);
   }
