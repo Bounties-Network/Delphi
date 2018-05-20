@@ -22,8 +22,10 @@ contract('DelphiVoting', (accounts) => {
 
     before(async () => {
       const df = await DelphiStakeFactory.deployed();
+
       ds = await DelphiStake.at( await df.stakes.call('0') );
       dv = await DelphiVoting.deployed();
+
       token = EIP20.at(await ds.token.call());
 
       // The claimant will need tokens to fund fees when they make claims. The zero account
