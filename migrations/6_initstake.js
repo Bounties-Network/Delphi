@@ -1,7 +1,6 @@
 /* global artifacts */
 
 const DelphiVoting = artifacts.require('DelphiVoting.sol');
-const DelphiStake = artifacts.require('DelphiStake.sol');
 const DelphiStakeFactory = artifacts.require('DelphiStakeFactory.sol');
 const Token = artifacts.require('tokens/eip20/EIP20.sol');
 
@@ -9,7 +8,6 @@ const fs = require('fs');
 
 module.exports = (deployer, network) => {
   deployer.then(async () => {
-    const ds = await DelphiStake.deployed();
     const df = await DelphiStakeFactory.deployed();
 
     const conf = JSON.parse(fs.readFileSync('./conf/dsConfig.json'));
