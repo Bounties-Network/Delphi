@@ -30,7 +30,10 @@ contract DelphiVoting {
     _;
   }
 
-  function DelphiVoting(address _arbiterSet, address _parameterizer) public {
+  function init(address _arbiterSet, address _parameterizer) public {
+    require(_arbiterSet != 0 && arbiterSet == address(0));
+    require(_parameterizer != 0 && parameterizer == address(0));
+
     arbiterSet = Registry(_arbiterSet);
     parameterizer = Parameterizer(_parameterizer);
   }
