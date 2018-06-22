@@ -3,6 +3,5 @@
 const DelphiStake = artifacts.require('DelphiStake.sol');
 const DelphiStakeFactory = artifacts.require('DelphiStakeFactory.sol');
 
-module.exports = (deployer) => {
-  deployer.deploy(DelphiStakeFactory, DelphiStake.address);
-};
+module.exports = deployer => deployer.deploy(DelphiStake)
+  .then(() => deployer.deploy(DelphiStakeFactory, DelphiStake.address));
