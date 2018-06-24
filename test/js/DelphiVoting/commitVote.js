@@ -4,137 +4,220 @@
 const DelphiVoting = artifacts.require('DelphiVoting');
 const DelphiStake = artifacts.require('DelphiStake');
 const DelphiStakeFactory = artifacts.require('DelphiStakeFactory');
+const DelphiVotingFactory = artifacts.require('DelphiVotingFactory');
+const RegistryFactory = artifacts.require('tcr/RegistryFactory.sol');
+const Registry = artifacts.require('tcr/Registry.sol');
+const EIP20 = artifacts.require('tokens/eip20/EIP20.sol');
 
 const utils = require('../utils.js');
-const fs = require('fs');
 
-const config = JSON.parse(fs.readFileSync('./conf/tcrConfig.json'));
+const HttpProvider = require('ethjs-provider-http');
+const EthRPC = require('ethjs-rpc');
+const Web3 = require('web3');
+
+const web3 = new Web3(new Web3.providers.HttpProvider('http://localhost:7545'));
+const rpc = new EthRPC(new HttpProvider('http://localhost:7545'));
+
+const solkeccak = Web3.utils.soliditySha3;
 
 contract('DelphiVoting', (accounts) => {
   describe('Function: commitVote', () => {
-    const [staker, arbiter, arbiter2, claimant, bob] = accounts;
+    const [staker, claimant, arbiterAlice, arbiterBob, arbiterCharlie] = accounts;
 
-    let dv;
-    let ds;
+    let delphiStake;
+    let delphiVoting;
+    let token;
 
-    before(async () => {
-      const df = await DelphiStakeFactory.deployed();
+    beforeEach(async () => {
+      // Get deployed factory contracts
+      const delphiVotingFactory = await DelphiVotingFactory.deployed();
+      const delphiStakeFactory = await DelphiStakeFactory.deployed();
+      const registryFactory = await RegistryFactory.deployed();
 
-      ds = await DelphiStake.at(await df.stakes.call('0'));
-      dv = await DelphiVoting.deployed();
+      // Create a new registry and curation token
+      const registryReceipt = await registryFactory.newRegistryWithToken(
+        1000000,
+        'RegistryCoin',
+        0,
+        'REG',
+        [100, 100, 100, 100, 100, 100, 100, 100, 60, 60, 50, 50],
+        'The Arbiter Registry',
+      );
 
-      // Add an arbiter to the whitelist
-      await utils.addToWhitelist(utils.getArbiterListingId(arbiter),
-        config.paramDefaults.minDeposit, arbiter);
+      // Get instances of the registry and its token
+      const registryToken = EIP20.at(registryReceipt.logs[0].args.token);
+      const registry = Registry.at(registryReceipt.logs[0].args.registry);
+
+      // Give 100k REG to each account, and approve the Registry to transfer it
+      await Promise.all(accounts.map(async (account) => {
+        await registryToken.transfer(account, 100000);
+        await registryToken.approve(registry.address, 100, { from: account });
+      }));
+
+      // Apply Alice, Bob, and Charlie to the registry
+      await registry.apply(solkeccak(arbiterAlice), 100, '', { from: arbiterAlice });
+      await registry.apply(solkeccak(arbiterBob), 100, '', { from: arbiterBob });
+      await registry.apply(solkeccak(arbiterCharlie), 100, '', { from: arbiterCharlie });
+
+      // Increase time past the registry application period
+      await rpc.sendAsync({ method: 'evm_increaseTime', params: [101] });
+
+      // Add arbiters to the Registry
+      await registry.updateStatus(solkeccak(arbiterAlice));
+      await registry.updateStatus(solkeccak(arbiterBob));
+      await registry.updateStatus(solkeccak(arbiterCharlie));
+
+      // Create a DelphiVoting with 100 second voting periods, and which uses the registry we
+      // just created as its arbiter set
+      const delphiVotingReceipt = await delphiVotingFactory.makeDelphiVoting(registry.address,
+        [solkeccak('parameterizerVotingPeriod'), solkeccak('commitStageLen'),
+          solkeccak('revealStageLen')],
+        [100, 100, 100]);
+      delphiVoting = DelphiVoting.at(delphiVotingReceipt.logs[0].args.delphiVoting);
+
+      // Create DisputeCoin and give 100k DIS to each account
+      token = await EIP20.new(1000000, 'DisputeCoin', 0, 'DIS');
+      await Promise.all(accounts.map(async account => token.transfer(account, 100000)));
+
+      // Create a DelphiStake with 90k DIS tokens, 1k minFee, and a release time 1k seconds
+      // from now
+      await token.approve(delphiStakeFactory.address, 90000, { from: staker });
+      const expirationTime = (await web3.eth.getBlock('latest')).timestamp + 1000;
+      const delphiStakeReceipt = await delphiStakeFactory.createDelphiStake(90000, token.address,
+        1000, '', expirationTime, delphiVoting.address, { from: staker });
+      // eslint-disable-next-line
+      delphiStake = DelphiStake.at(delphiStakeReceipt.logs[0].args._contractAddress);
     });
 
     it('should initialize a new claim and log the arbiter\'s vote', async () => {
       // Set constants
-      const CLAIM_AMOUNT = '10';
-      const FEE_AMOUNT = '10';
+      const CLAIM_AMOUNT = '10000';
+      const FEE_AMOUNT = '1000';
       const VOTE = '1';
       const SALT = '420';
 
       // Make a new claim in the DelphiStake and generate a claim ID
-      const claimNumber = // should be zero, since this is the first test
-        await utils.makeNewClaim(staker, claimant, CLAIM_AMOUNT, FEE_AMOUNT, 'i love cats');
-      const claimId = utils.getClaimId(ds.address, claimNumber.toString(10));
+      const claimNumber =
+        await utils.makeNewClaim(staker, claimant, CLAIM_AMOUNT, FEE_AMOUNT, 'i love cats',
+          delphiStake);
+      const claimId = utils.getClaimId(delphiStake.address, claimNumber.toString(10));
 
       // Nobody has voted yet for the new claim, so from the DelphiVoting contract's perpective,
       // this claim does not exist.
-      const initialClaimExists = await dv.claimExists.call(claimId);
+      const initialClaimExists = await delphiVoting.claimExists.call(claimId);
       assert.strictEqual(initialClaimExists, false,
         'The claim was instantiated before it should have been');
 
-      // Generate a secret hash and, as the arbiter, commit it for the claim which was just opened
+      // Generate a secret hash and, as the arbiter, commit it for the claim which was just
+      // opened
       const secretHash = utils.getSecretHash(VOTE, SALT);
-      await utils.as(arbiter, dv.commitVote, ds.address, claimNumber, secretHash);
+      await delphiVoting.commitVote(delphiStake.address, claimNumber, secretHash,
+        { from: arbiterAlice });
 
       // Now, because an arbiter has voted, a claim should exist in the eyes of the DV contract
-      const finalClaimExists = await dv.claimExists.call(claimId);
+      const finalClaimExists = await delphiVoting.claimExists.call(claimId);
       assert.strictEqual(finalClaimExists, true, 'The claim was not instantiated');
 
       // Lets also make sure the secret hash which was stored was the same which we committed.
-      const storedSecretHash = await dv.getArbiterCommitForClaim.call(claimId, arbiter);
+      const storedSecretHash =
+        await delphiVoting.getArbiterCommitForClaim.call(claimId, arbiterAlice);
       assert.strictEqual(storedSecretHash, secretHash, 'The vote was not properly stored');
     });
 
     it('should update an arbiter\'s vote in a claim', async () => {
       // Set constants
-      const CLAIM_NUMBER = '0'; // Use previous claim number
-      const VOTE = '2'; // Previous commit by this arbiter in this claim was for 2
+      const CLAIM_AMOUNT = '10000';
+      const FEE_AMOUNT = '1000';
       const SALT = '420';
 
-      // Generate a new secretHash and compute the claim ID
-      const secretHash = utils.getSecretHash(VOTE, SALT);
-      const claimId = utils.getClaimId(ds.address, CLAIM_NUMBER);
+      // Make a new claim in the DelphiStake and generate a claim ID
+      const claimNumber =
+        await utils.makeNewClaim(staker, claimant, CLAIM_AMOUNT, FEE_AMOUNT, 'i love cats',
+          delphiStake);
+      const claimId = utils.getClaimId(delphiStake.address, claimNumber.toString(10));
 
-      // Capture the initial secret hash and make sure it is not the same as our new secret hash
-      const initialSecretHash = await dv.getArbiterCommitForClaim.call(claimId, arbiter);
-      assert.notEqual(initialSecretHash, secretHash);
+      // Generate an initial secret hash and, as the arbiter, commit it for the claim which
+      // was just opened
+      const initialSecretHash = utils.getSecretHash(1, SALT);
+      await delphiVoting.commitVote(delphiStake.address, claimNumber, initialSecretHash,
+        { from: arbiterAlice });
 
-      // As the arbiter, commit the new secret hash
-      await utils.as(arbiter, dv.commitVote, ds.address, CLAIM_NUMBER, secretHash);
+      // Generate a final secret hash and, as the arbiter, commit it for the claim which
+      // was just opened
+      const finalSecretHash = utils.getSecretHash(0, SALT);
+      await delphiVoting.commitVote(delphiStake.address, claimNumber, finalSecretHash,
+        { from: arbiterAlice });
 
-      // The final secret hash should be different than the initial secret hash
-      const finalSecretHash = await dv.getArbiterCommitForClaim.call(claimId, arbiter);
-      assert.strictEqual(finalSecretHash, secretHash);
+      // Lets also make sure the secret hash which was stored was the same which we committed.
+      const storedSecretHash =
+        await delphiVoting.getArbiterCommitForClaim.call(claimId, arbiterAlice);
+      assert.strictEqual(storedSecretHash, finalSecretHash, 'The vote was not properly stored');
     });
 
     it('should not allow a non-arbiter to vote', async () => {
       // Set constants
-      const CLAIM_NUMBER = '0'; // Use previous claim number
+      const CLAIM_AMOUNT = '10000';
+      const FEE_AMOUNT = '1000';
       const VOTE = '1';
       const SALT = '420';
 
-      // Generate a secret hash
-      const secretHash = utils.getSecretHash(VOTE, SALT);
+      // Make a new claim in the DelphiStake and generate a claim ID
+      const claimNumber =
+        await utils.makeNewClaim(staker, claimant, CLAIM_AMOUNT, FEE_AMOUNT, 'i love cats',
+          delphiStake);
 
+      // Generate a secret hash and, as a non-arbiter, try to commit it for the claim which
+      // was just opened
+      const secretHash = utils.getSecretHash(VOTE, SALT);
       try {
-        // As bob, who is not an arbiter, attempt to commit a vote
-        await utils.as(bob, dv.commitVote, ds.address, CLAIM_NUMBER, secretHash);
+        await delphiVoting.commitVote(delphiStake.address, claimNumber, secretHash,
+          { from: staker });
       } catch (err) {
         assert(utils.isEVMRevert(err), err.toString());
+
         return;
       }
+
       assert(false, 'should not have been able to vote as non-arbiter');
     });
 
     it('should not allow an arbiter to commit after the commit period has ended', async () => {
-      await utils.addToWhitelist(utils.getArbiterListingId(arbiter2),
-        config.paramDefaults.minDeposit, arbiter2);
-
       // Set constants
-      const CLAIM_AMOUNT = '10';
-      const FEE_AMOUNT = '10';
-      const VOTE = '0';
+      const CLAIM_AMOUNT = '10000';
+      const FEE_AMOUNT = '1000';
+      const VOTE = '1';
       const SALT = '420';
-      const DATA = 'i love cats';
 
-      // Open a new claim on the DS and generate a claim ID for it
-      const claimNumber = // should be zero
-        await utils.makeNewClaim(staker, claimant, CLAIM_AMOUNT, FEE_AMOUNT, DATA);
-      const claimId = utils.getClaimId(ds.address, claimNumber.toString(10));
+      // Make a new claim in the DelphiStake and generate a claim ID
+      const claimNumber =
+        await utils.makeNewClaim(staker, claimant, CLAIM_AMOUNT, FEE_AMOUNT, 'i love cats',
+          delphiStake);
 
-      // Check if the claimId exists
-      const initialClaimExists = await dv.claimExists.call(claimId);
-      assert.strictEqual(initialClaimExists, false,
-        'The claim was instantiated before it should have been');
-      //
-      // Generate a secret hash and commit it as a vote
+      // Generate a secret hash and, as the arbiter, commit it for the claim which was just
+      // opened. This instantiates the claim and gets the clock ticking.
       const secretHash = utils.getSecretHash(VOTE, SALT);
-      await utils.as(arbiter, dv.commitVote, ds.address, claimNumber, secretHash);
-      await utils.increaseTime(config.paramDefaults.pRevealStageLength + 1);
+      await delphiVoting.commitVote(delphiStake.address, claimNumber, secretHash,
+        { from: arbiterAlice });
 
-      // Check if submitRuling is available
-      assert.strictEqual(await dv.commitPeriodActive(claimId), false, 'The commit period is active');
+      // Increase time past the commit period
+      await rpc.sendAsync({ method: 'evm_increaseTime', params: [101] });
 
       try {
-        await utils.as(arbiter, dv.commitVote, ds.address, claimNumber, secretHash);
+        await delphiVoting.commitVote(delphiStake.address, claimNumber, secretHash,
+          { from: arbiterAlice });
       } catch (err) {
         assert(utils.isEVMRevert(err), err.toString());
-        return;
+
+        try {
+          await delphiVoting.commitVote(delphiStake.address, claimNumber, secretHash,
+            { from: arbiterBob });
+        } catch (err2) {
+          assert(utils.isEVMRevert(err2), err2.toString());
+
+          return;
+        }
       }
+
       assert(false, 'Expetected to not allow an arbiter to commit after the commit period has ended');
     });
 
@@ -150,9 +233,11 @@ contract('DelphiVoting', (accounts) => {
 
         try {
           // As the arbiter, try to commit a vote for a claim which does not exist in the DS
-          await utils.as(arbiter, dv.commitVote, ds.address, NON_EXISTANT_CLAIM, secretHash);
+          await delphiVoting.commitVote(delphiStake.address, NON_EXISTANT_CLAIM, secretHash,
+            { from: arbiterAlice });
         } catch (err) {
           assert(utils.isEVMRevert(err), err.toString());
+
           return;
         }
         assert(false, 'should not have been able to vote in an uninitialized claim');
@@ -162,17 +247,23 @@ contract('DelphiVoting', (accounts) => {
     it('should not allow an arbiter to commit a secret hash of 0',
       async () => {
         // Set constants
-        const NON_EXISTANT_CLAIM = '420';
+        const CLAIM_AMOUNT = '10000';
+        const FEE_AMOUNT = '1000';
 
-        // Secret hash 0x0
-        const secretHash = '0x0';
+        // Make a new claim in the DelphiStake and generate a claim ID
+        const claimNumber =
+          await utils.makeNewClaim(staker, claimant, CLAIM_AMOUNT, FEE_AMOUNT, 'i love cats',
+            delphiStake);
 
         try {
-          await utils.as(arbiter, dv.commitVote, ds.address, NON_EXISTANT_CLAIM, secretHash);
+          await delphiVoting.commitVote(delphiStake.address, claimNumber, 0,
+            { from: arbiterAlice });
         } catch (err) {
           assert(utils.isEVMRevert(err), err.toString());
+
           return;
         }
+
         assert(false, 'expected to not allow an arbiter to commit a secret hash of 0');
       });
   });
