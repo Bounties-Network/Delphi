@@ -35,11 +35,11 @@ const utils = {
     await utils.as(claimant, token.approve, ds.address, new BN(fee, 10));
     await utils.as(claimant, ds.openClaim, amount, fee, data);
 
-    const claimId = await ds.getNumClaims();
+    const claimId = (await ds.getNumClaims()).sub(1);
 
-    await utils.as(claimant, ds.settlementFailed, claimId.sub(1));
+    await utils.as(claimant, ds.settlementFailed, claimId);
 
-    return claimId.sub(1);
+    return claimId;
   },
 
   addToWhitelist: async (listingHash, deposit, actor) => {
