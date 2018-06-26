@@ -26,14 +26,15 @@ contract DelphiVotingFactory {
   supplied by the user.
   @param _token an EIP20 token to be consumed by the new PLCR contract
   */
-  function makeDelphiVoting(address _arbiterSet, bytes32[] _paramKeys, uint[] _paramValues)
+  function makeDelphiVoting(address _arbiterSet, uint _feeDecayValue, bytes32[] _paramKeys,
+                            uint[] _paramValues)
   public returns (DelphiVoting dv) {
     address parameterizer = parameterizerFactory.createDemocraticParameterizer(
       _arbiterSet, _paramKeys, _paramValues
     );
 
     dv = DelphiVoting(proxyFactory.createProxy(canonizedDelphiVoting, ""));
-    dv.init(_arbiterSet, parameterizer);
+    dv.init(_arbiterSet, parameterizer, _feeDecayValue);
 
     emit newDelphiVoting(msg.sender, dv, _arbiterSet, parameterizer);
   }
