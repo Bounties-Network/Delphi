@@ -19,8 +19,8 @@ contract('DelphiVotingFactory', () => {
     });
 
     it('should deploy a new DelphiVoting contract with a 100 second voting period', async () => {
-      const receipt = await dvf.makeDelphiVoting(2666, [solkeccak('parameterizerVotingPeriod')],
-        [100]);
+      const receipt = await dvf.makeDelphiVoting(2666, 5,
+        [solkeccak('parameterizerVotingPeriod')], [100]);
       const dv = DelphiVoting.at(receipt.logs[0].args.delphiVoting);
       const dp = DemocraticParameterizer.at(await dv.parameterizer.call());
 
