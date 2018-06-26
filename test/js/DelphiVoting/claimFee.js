@@ -8,6 +8,7 @@ const DelphiVotingFactory = artifacts.require('DelphiVotingFactory');
 const RegistryFactory = artifacts.require('tcr/RegistryFactory.sol');
 const Registry = artifacts.require('tcr/Registry.sol');
 const EIP20 = artifacts.require('tokens/eip20/EIP20.sol');
+const LookupTable = artifacts.require('LookupTable');
 
 const utils = require('../utils.js');
 const BN = require('bignumber.js');
@@ -75,6 +76,10 @@ contract('DelphiVoting', (accounts) => {
           solkeccak('revealStageLen')],
         [100, 100, 100]);
       delphiVoting = DelphiVoting.at(delphiVotingReceipt.logs[0].args.delphiVoting);
+
+      // Pre-compute LookupTable values
+      const lookupTable = LookupTable.at(await delphiVoting.lt.call());
+      await lookupTable.getGuaranteedPercentageForIndex(10);
 
       // Create DisputeCoin and give 100k DIS to each account
       token = await EIP20.new(1000000, 'DisputeCoin', 0, 'DIS');
@@ -299,29 +304,23 @@ contract('DelphiVoting', (accounts) => {
       // Submit ruling
       await delphiVoting.submitRuling(delphiStake.address, claimNumber, { from: arbiterAlice });
 
-      // Capture Alice's starting token balance, claim the fee and get her final balance
-      const startingBalanceAlice = await token.balanceOf(arbiterAlice);
+      // Claim the fee and get Alice's final balance
       await delphiVoting.claimFee(delphiStake.address, claimNumber, PLURALITY_VOTE, SALT,
         { from: arbiterAlice });
       const finalBalanceAlice = await token.balanceOf(arbiterAlice);
 
       // Alice's expected final balance is her starting balance plus half the total available fee
-      const expectedFinalBalanceAlice = startingBalanceAlice.plus(FEE_AMOUNT
-        .div(new BN(2, 10)))
-        .round(0, BN.ROUND_DOWN);
+      const expectedFinalBalanceAlice = '100520';
       assert.strictEqual(finalBalanceAlice.toString(10), expectedFinalBalanceAlice.toString(10),
         'Alice did not get the proper fee allocation');
 
-      // Capture Bob's starting token balance, claim the fee and get his final balance
-      const startingBalanceBob = await token.balanceOf(arbiterBob);
+      // Claim the fee and get Bob's final balance
       await delphiVoting.claimFee(delphiStake.address, claimNumber, PLURALITY_VOTE, SALT,
         { from: arbiterBob });
       const finalBalanceBob = await token.balanceOf(arbiterBob);
 
       // Bob's expected final balance is his starting balance plus half the total available fee
-      const expectedFinalBalanceBob = startingBalanceBob.plus(FEE_AMOUNT
-        .div(new BN(2, 10)))
-        .round(0, BN.ROUND_DOWN);
+      const expectedFinalBalanceBob = '100480';
       assert.strictEqual(finalBalanceBob.toString(10), expectedFinalBalanceBob.toString(10),
         'Bob did not get the proper fee allocation');
     });
