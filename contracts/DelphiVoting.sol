@@ -233,7 +233,6 @@ contract DelphiVoting {
   function claimFee(address _stake, uint _claimNumber, uint _vote, uint _salt)
   public onlyArbiters(msg.sender) {
     DelphiStake ds = DelphiStake(_stake);
-    EIP20 token = ds.token();
     Claim storage claim = claims[keccak256(_stake, _claimNumber)]; // Grabbing a pointer
 
     // The ruling needs to have been submitted before an arbiter can claim their reward
@@ -245,10 +244,23 @@ contract DelphiVoting {
     // Require the vote cast was in the plurality
     require(VoteOptions(_vote) == claim.result);
 
-    // Get the total fee for the claim, compute what this arbiter's share is and transfer it
-    uint totalFee = ds.getTotalFeeForClaim(_claimNumber);
-    uint arbiterFee = totalFee/claim.tallies[uint(claim.result)]; // TODO: safemath
-    token.transfer(msg.sender, arbiterFee);
+    // Compute the rank of the arbiter in the list
+    // TODO: Make this plausibly-live by storing ranks lazily when they're computed
+    uint arbiterFactionIndex = 0;
+    address indexedArbiter = address(claim.factions[_vote].getStart());
+    while(indexedArbiter != msg.sender) {
+      indexedArbiter = address(claim.factions[_vote].getNext(uint(indexedArbiter)));
+      arbiterFactionIndex++;
+    }
+
+    uint arbiterOwedPercentage = lt.getGuaranteedPercentageForIndex(arbiterFactionIndex);
+    // pay_i = arbiterOwedPercentage * (fee / 100) + ((100 - LT[n - 1]) / n) * (fee / 100)
+    uint arbiterFee =
+      arbiterOwedPercentage * (ds.getTotalFeeForClaim(_claimNumber) / 100) +
+      ((100 - lt.lt(claim.tallies[_vote] - 1)) / claim.tallies[_vote]) *
+      (ds.getTotalFeeForClaim(_claimNumber) / 100);
+                                                                  
+    require(ds.token().transfer(msg.sender, arbiterFee));
 
     // Set claimedReward to true so the arbiter cannot claim again
     claim.claimedReward[msg.sender] = true;
