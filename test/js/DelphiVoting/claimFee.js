@@ -68,10 +68,10 @@ contract('DelphiVoting', (accounts) => {
       await registry.updateStatus(solkeccak(arbiterBob));
       await registry.updateStatus(solkeccak(arbiterCharlie));
 
-      // Create a DelphiVoting with 100 second voting periods, and which uses the registry we
-      // just created as its arbiter set
+      // Create a DelphiVoting with 100 second voting periods, fee decay value of five, 
+      // and which uses the registry we just created as its arbiter set
       const delphiVotingReceipt = await delphiVotingFactory.makeDelphiVoting(registry.address,
-        [solkeccak('parameterizerVotingPeriod'), solkeccak('commitStageLen'),
+        5, [solkeccak('parameterizerVotingPeriod'), solkeccak('commitStageLen'),
           solkeccak('revealStageLen')],
         [100, 100, 100]);
       delphiVoting = DelphiVoting.at(delphiVotingReceipt.logs[0].args.delphiVoting);
@@ -114,7 +114,8 @@ contract('DelphiVoting', (accounts) => {
       await rpc.sendAsync({ method: 'evm_increaseTime', params: [101] });
 
       // Reveal vote
-      await delphiVoting.revealVote(claimId, VOTE, SALT, { from: arbiterAlice });
+      const insertPoint = await delphiVoting.getInsertPoint.call(claimId, arbiterAlice, VOTE);
+      await delphiVoting.revealVote(claimId, VOTE, SALT, insertPoint, { from: arbiterAlice });
 
       // Increase time to finish the reveal phase so we can submit
       await rpc.sendAsync({ method: 'evm_increaseTime', params: [100] });
@@ -158,7 +159,8 @@ contract('DelphiVoting', (accounts) => {
       await rpc.sendAsync({ method: 'evm_increaseTime', params: [101] });
 
       // Reveal vote
-      await delphiVoting.revealVote(claimId, VOTE, SALT, { from: arbiterAlice });
+      const insertPoint = await delphiVoting.getInsertPoint.call(claimId, arbiterAlice, VOTE);
+      await delphiVoting.revealVote(claimId, VOTE, SALT, insertPoint, { from: arbiterAlice });
 
       // Increase time to finish the reveal phase so we can submit
       await rpc.sendAsync({ method: 'evm_increaseTime', params: [100] });
@@ -217,9 +219,18 @@ contract('DelphiVoting', (accounts) => {
         await rpc.sendAsync({ method: 'evm_increaseTime', params: [101] });
 
         // Arbiters reveal votes
-        await delphiVoting.revealVote(claimId, PLURALITY_VOTE, SALT, { from: arbiterAlice });
-        await delphiVoting.revealVote(claimId, PLURALITY_VOTE, SALT, { from: arbiterBob });
-        await delphiVoting.revealVote(claimId, NON_PLURALITY_VOTE, SALT, { from: arbiterCharlie });
+        const insertPointAlice =
+          await delphiVoting.getInsertPoint.call(claimId, arbiterAlice, PLURALITY_VOTE);
+        await delphiVoting.revealVote(claimId, PLURALITY_VOTE, SALT, insertPointAlice,
+          { from: arbiterAlice });
+        const insertPointBob =
+          await delphiVoting.getInsertPoint.call(claimId, arbiterAlice, PLURALITY_VOTE);
+        await delphiVoting.revealVote(claimId, PLURALITY_VOTE, SALT, insertPointBob,
+          { from: arbiterBob });
+        const insertPointCharlie =
+          await delphiVoting.getInsertPoint.call(claimId, arbiterAlice, NON_PLURALITY_VOTE);
+        await delphiVoting.revealVote(claimId, NON_PLURALITY_VOTE, SALT, insertPointCharlie,
+          { from: arbiterCharlie });
 
         // Increase time to finish the reveal phase so we can submit the ruling
         await rpc.sendAsync({ method: 'evm_increaseTime', params: [100] });
@@ -273,8 +284,14 @@ contract('DelphiVoting', (accounts) => {
       await rpc.sendAsync({ method: 'evm_increaseTime', params: [101] });
 
       // Arbiters reveal votes
-      await delphiVoting.revealVote(claimId, PLURALITY_VOTE, SALT, { from: arbiterAlice });
-      await delphiVoting.revealVote(claimId, PLURALITY_VOTE, SALT, { from: arbiterBob });
+      const insertPointAlice =
+        await delphiVoting.getInsertPoint.call(claimId, arbiterAlice, PLURALITY_VOTE);
+      await delphiVoting.revealVote(claimId, PLURALITY_VOTE, SALT, insertPointAlice,
+        { from: arbiterAlice });
+      const insertPointBob =
+        await delphiVoting.getInsertPoint.call(claimId, arbiterAlice, PLURALITY_VOTE);
+      await delphiVoting.revealVote(claimId, PLURALITY_VOTE, SALT, insertPointBob,
+        { from: arbiterBob });
 
       // Increase time to finish the reveal phase so we can submit the ruling
       await rpc.sendAsync({ method: 'evm_increaseTime', params: [100] });
@@ -333,7 +350,8 @@ contract('DelphiVoting', (accounts) => {
       await rpc.sendAsync({ method: 'evm_increaseTime', params: [101] });
 
       // Reveal vote
-      await delphiVoting.revealVote(claimId, VOTE, SALT, { from: arbiterAlice });
+      const insertPoint = await delphiVoting.getInsertPoint.call(claimId, arbiterAlice, VOTE);
+      await delphiVoting.revealVote(claimId, VOTE, SALT, insertPoint, { from: arbiterAlice });
 
       // Increase time to finish the reveal phase so we can submit
       await rpc.sendAsync({ method: 'evm_increaseTime', params: [100] });
@@ -377,7 +395,8 @@ contract('DelphiVoting', (accounts) => {
       await rpc.sendAsync({ method: 'evm_increaseTime', params: [101] });
 
       // Reveal vote
-      await delphiVoting.revealVote(claimId, VOTE, SALT, { from: arbiterAlice });
+      const insertPoint = await delphiVoting.getInsertPoint.call(claimId, arbiterAlice, VOTE);
+      await delphiVoting.revealVote(claimId, VOTE, SALT, insertPoint, { from: arbiterAlice });
 
       // Increase time to finish the reveal phase so we can submit
       await rpc.sendAsync({ method: 'evm_increaseTime', params: [100] });

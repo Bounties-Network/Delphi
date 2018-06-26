@@ -67,10 +67,10 @@ contract('DelphiVoting', (accounts) => {
       await registry.updateStatus(solkeccak(arbiterBob));
       await registry.updateStatus(solkeccak(arbiterCharlie));
 
-      // Create a DelphiVoting with 100 second voting periods, and which uses the registry we
-      // just created as its arbiter set
+      // Create a DelphiVoting with 100 second voting periods, fee decay value of five, 
+      // and which uses the registry we just created as its arbiter set
       const delphiVotingReceipt = await delphiVotingFactory.makeDelphiVoting(registry.address,
-        [solkeccak('parameterizerVotingPeriod'), solkeccak('commitStageLen'),
+        5, [solkeccak('parameterizerVotingPeriod'), solkeccak('commitStageLen'),
           solkeccak('revealStageLen')],
         [100, 100, 100]);
       delphiVoting = DelphiVoting.at(delphiVotingReceipt.logs[0].args.delphiVoting);
@@ -117,7 +117,8 @@ contract('DelphiVoting', (accounts) => {
         'the initial vote tally was not as-expected');
 
       // Reveal the arbiter's vote
-      await delphiVoting.revealVote(claimId, VOTE, SALT, { from: arbiterAlice });
+      const insertPoint = await delphiVoting.getInsertPoint.call(claimId, arbiterAlice, VOTE);
+      await delphiVoting.revealVote(claimId, VOTE, SALT, insertPoint, { from: arbiterAlice });
 
       // The final tally for the option we revealed for should be one.
       const finalTally = (await delphiVoting.revealedVotesForOption.call(claimId, VOTE));
@@ -147,10 +148,11 @@ contract('DelphiVoting', (accounts) => {
       await rpc.sendAsync({ method: 'evm_increaseTime', params: [101] });
 
       // Reveal the arbiter's vote
-      await delphiVoting.revealVote(claimId, VOTE, SALT, { from: arbiterAlice });
+      const insertPoint = await delphiVoting.getInsertPoint.call(claimId, arbiterAlice, VOTE);
+      await delphiVoting.revealVote(claimId, VOTE, SALT, insertPoint, { from: arbiterAlice });
 
       try {
-        await delphiVoting.revealVote(claimId, VOTE, SALT, { from: arbiterAlice });
+        await delphiVoting.revealVote(claimId, VOTE, SALT, insertPoint, { from: arbiterAlice });
       } catch (err) {
         assert(utils.isEVMRevert(err), err.toString());
 
@@ -182,7 +184,8 @@ contract('DelphiVoting', (accounts) => {
       await rpc.sendAsync({ method: 'evm_increaseTime', params: [101] });
 
       try {
-        await delphiVoting.revealVote(claimId, VOTE, 421, { from: arbiterAlice });
+        const insertPoint = await delphiVoting.getInsertPoint.call(claimId, arbiterAlice, VOTE);
+        await delphiVoting.revealVote(claimId, VOTE, 421, insertPoint, { from: arbiterAlice });
       } catch (err) {
         assert(utils.isEVMRevert(err), err.toString());
 
@@ -211,7 +214,8 @@ contract('DelphiVoting', (accounts) => {
         { from: arbiterAlice });
 
       try {
-        await delphiVoting.revealVote(claimId, VOTE, SALT, { from: arbiterAlice });
+        const insertPoint = await delphiVoting.getInsertPoint.call(claimId, arbiterAlice, VOTE);
+        await delphiVoting.revealVote(claimId, VOTE, SALT, insertPoint, { from: arbiterAlice });
       } catch (err) {
         assert(utils.isEVMRevert(err), err.toString());
 
@@ -243,7 +247,8 @@ contract('DelphiVoting', (accounts) => {
       await rpc.sendAsync({ method: 'evm_increaseTime', params: [201] });
 
       try {
-        await delphiVoting.revealVote(claimId, VOTE, SALT, { from: arbiterAlice });
+        const insertPoint = await delphiVoting.getInsertPoint.call(claimId, arbiterAlice, VOTE);
+        await delphiVoting.revealVote(claimId, VOTE, SALT, insertPoint, { from: arbiterAlice });
       } catch (err) {
         assert(utils.isEVMRevert(err), err.toString());
 

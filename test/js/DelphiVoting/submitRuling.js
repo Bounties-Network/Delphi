@@ -67,10 +67,10 @@ contract('DelphiVoting', (accounts) => { //eslint-disable-line
       await registry.updateStatus(solkeccak(arbiterBob));
       await registry.updateStatus(solkeccak(arbiterCharlie));
 
-      // Create a DelphiVoting with 100 second voting periods, and which uses the registry we
-      // just created as its arbiter set
+      // Create a DelphiVoting with 100 second voting periods, fee decay value of five, 
+      // and which uses the registry we just created as its arbiter set
       const delphiVotingReceipt = await delphiVotingFactory.makeDelphiVoting(registry.address,
-        [solkeccak('parameterizerVotingPeriod'), solkeccak('commitStageLen'),
+        5, [solkeccak('parameterizerVotingPeriod'), solkeccak('commitStageLen'),
           solkeccak('revealStageLen')],
         [100, 100, 100]);
       delphiVoting = DelphiVoting.at(delphiVotingReceipt.logs[0].args.delphiVoting);
@@ -224,7 +224,8 @@ contract('DelphiVoting', (accounts) => { //eslint-disable-line
       await rpc.sendAsync({ method: 'evm_increaseTime', params: [101] });
 
       // Reveal vote
-      await delphiVoting.revealVote(claimId, VOTE, SALT, { from: arbiterAlice });
+      const insertPoint = await delphiVoting.getInsertPoint.call(claimId, arbiterAlice, VOTE);
+      await delphiVoting.revealVote(claimId, VOTE, SALT, insertPoint, { from: arbiterAlice });
 
       // Increase time past reveal period
       await rpc.sendAsync({ method: 'evm_increaseTime', params: [100] });
@@ -259,7 +260,8 @@ contract('DelphiVoting', (accounts) => { //eslint-disable-line
         await rpc.sendAsync({ method: 'evm_increaseTime', params: [101] });
 
         // Reveal vote
-        await delphiVoting.revealVote(claimId, VOTE, SALT, { from: arbiterAlice });
+        const insertPoint = await delphiVoting.getInsertPoint.call(claimId, arbiterAlice, VOTE);
+        await delphiVoting.revealVote(claimId, VOTE, SALT, insertPoint, { from: arbiterAlice });
 
         // Increase time past reveal period
         await rpc.sendAsync({ method: 'evm_increaseTime', params: [100] });
