@@ -30,6 +30,7 @@ contract DelphiVoting {
     mapping(address => Commit) commits;
     mapping(address => bool) hasRevealed;
     mapping(address => bool) claimedReward;
+    mapping(address => uint) ranks;
   }
 
   Registry public arbiterSet;
@@ -244,22 +245,18 @@ contract DelphiVoting {
     // Require the vote cast was in the plurality
     require(VoteOptions(_vote) == claim.result);
 
-    // Compute the rank of the arbiter in the list
-    // TODO: Make this plausibly-live by storing ranks lazily when they're computed
-    uint arbiterFactionIndex = 0;
-    address indexedArbiter = address(claim.factions[_vote].getStart());
-    while(indexedArbiter != msg.sender) {
-      indexedArbiter = address(claim.factions[_vote].getNext(uint(indexedArbiter)));
-      arbiterFactionIndex++;
-    }
+    // Calculate the arbiter's rank: the order in which they committed a vote for this faction
+    uint arbiterRank = computeArbiterRank(claim, _vote, msg.sender);
 
-    uint arbiterOwedPercentage = lt.getGuaranteedPercentageForIndex(arbiterFactionIndex);
+    // Calculate the arbiter's owed fee
+    uint arbiterOwedPercentage = lt.getGuaranteedPercentageForIndex(arbiterRank);
     // pay_i = arbiterOwedPercentage * (fee / 100) + ((100 - LT[n - 1]) / n) * (fee / 100)
     uint arbiterFee =
       arbiterOwedPercentage * (ds.getTotalFeeForClaim(_claimNumber) / 100) +
       ((100 - lt.lt(claim.tallies[_vote] - 1)) / claim.tallies[_vote]) *
       (ds.getTotalFeeForClaim(_claimNumber) / 100);
                                                                   
+    // Transfer the arbiter their owed fee
     require(ds.token().transfer(msg.sender, arbiterFee));
 
     // Set claimedReward to true so the arbiter cannot claim again
@@ -354,6 +351,40 @@ contract DelphiVoting {
     claims[_claimId].commitEndTime = now + parameterizer.get('commitStageLen');
     claims[_claimId].revealEndTime =
       claims[_claimId].commitEndTime + parameterizer.get('revealStageLen');
+  }
+
+  function computeArbiterRank(Claim storage _claim, uint _faction, address _arbiter)
+  private returns (uint) {
+    // A rank value for this arbiter has already been computed
+    if(_claim.ranks[_arbiter] != 0) {
+      return _claim.ranks[_arbiter];
+    }
+
+    // Get the previous arbiter
+    address previousArbiter = address(_claim.factions[_faction].getPrev(uint(_arbiter)));
+
+    // previousArbiter is the null node. The _arbiter was the first to commit. Its rank is 0.
+    if(previousArbiter == address(0)) {
+      return 0;
+    } 
+
+    // The previous arbiter's previous arbiter is the null node, meaning the previous arbiter
+    // was the first to commit
+    if(address(_claim.factions[_faction].getPrev(uint(previousArbiter))) == address(0)) {
+      _claim.ranks[_arbiter] = 1;
+      return _claim.ranks[_arbiter];
+    }
+
+    // Compute or get the rank of the previous arbiter, depending on if it has already been
+    // computed
+    uint previousArbiterRank = computeArbiterRank(_claim, _faction, previousArbiter);
+
+    // A rank value has been computed for the previous arbiter. Use it to compute a rank for the
+    // current arbiter.
+    if(previousArbiterRank != 0) {
+      _claim.ranks[_arbiter] = previousArbiterRank + 1;
+      return _claim.ranks[_arbiter];
+    }
   }
 
   /*
