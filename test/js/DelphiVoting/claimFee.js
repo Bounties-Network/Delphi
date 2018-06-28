@@ -24,7 +24,8 @@ const solkeccak = Web3.utils.soliditySha3;
 
 contract('DelphiVoting', (accounts) => {
   describe('Function: claimFee', () => {
-    const [staker, claimant, arbiterAlice, arbiterBob, arbiterCharlie] = accounts;
+    const [staker, claimant, arbiterAlice, arbiterBob, arbiterCharlie, arbiterDanielle,
+      arbiterEdwin, arbiterFederika, arbiterGale, arbiterHenry] = accounts;
 
     let delphiStake;
     let delphiVoting;
@@ -60,6 +61,11 @@ contract('DelphiVoting', (accounts) => {
       await registry.apply(solkeccak(arbiterAlice), 100, '', { from: arbiterAlice });
       await registry.apply(solkeccak(arbiterBob), 100, '', { from: arbiterBob });
       await registry.apply(solkeccak(arbiterCharlie), 100, '', { from: arbiterCharlie });
+      await registry.apply(solkeccak(arbiterDanielle), 100, '', { from: arbiterDanielle });
+      await registry.apply(solkeccak(arbiterEdwin), 100, '', { from: arbiterEdwin });
+      await registry.apply(solkeccak(arbiterFederika), 100, '', { from: arbiterFederika });
+      await registry.apply(solkeccak(arbiterGale), 100, '', { from: arbiterGale });
+      await registry.apply(solkeccak(arbiterHenry), 100, '', { from: arbiterHenry });
 
       // Increase time past the registry application period
       await rpc.sendAsync({ method: 'evm_increaseTime', params: [101] });
@@ -68,6 +74,11 @@ contract('DelphiVoting', (accounts) => {
       await registry.updateStatus(solkeccak(arbiterAlice));
       await registry.updateStatus(solkeccak(arbiterBob));
       await registry.updateStatus(solkeccak(arbiterCharlie));
+      await registry.updateStatus(solkeccak(arbiterDanielle));
+      await registry.updateStatus(solkeccak(arbiterEdwin));
+      await registry.updateStatus(solkeccak(arbiterFederika));
+      await registry.updateStatus(solkeccak(arbiterGale));
+      await registry.updateStatus(solkeccak(arbiterHenry));
 
       // Create a DelphiVoting with 100 second voting periods, fee decay value of five, 
       // and which uses the registry we just created as its arbiter set
@@ -294,7 +305,7 @@ contract('DelphiVoting', (accounts) => {
       await delphiVoting.revealVote(claimId, PLURALITY_VOTE, SALT, insertPointAlice,
         { from: arbiterAlice });
       const insertPointBob =
-        await delphiVoting.getInsertPoint.call(claimId, arbiterAlice, PLURALITY_VOTE);
+        await delphiVoting.getInsertPoint.call(claimId, arbiterBob, PLURALITY_VOTE);
       await delphiVoting.revealVote(claimId, PLURALITY_VOTE, SALT, insertPointBob,
         { from: arbiterBob });
 
@@ -309,7 +320,7 @@ contract('DelphiVoting', (accounts) => {
         { from: arbiterAlice });
       const finalBalanceAlice = await token.balanceOf(arbiterAlice);
 
-      // Alice's expected final balance is her starting balance plus half the total available fee
+      // Alice's expected final balance is her starting balance plus (20 + 26)% of the fee
       const expectedFinalBalanceAlice = '100520';
       assert.strictEqual(finalBalanceAlice.toString(10), expectedFinalBalanceAlice.toString(10),
         'Alice did not get the proper fee allocation');
@@ -319,10 +330,158 @@ contract('DelphiVoting', (accounts) => {
         { from: arbiterBob });
       const finalBalanceBob = await token.balanceOf(arbiterBob);
 
-      // Bob's expected final balance is his starting balance plus half the total available fee
+      // Bob's expected final balance is his starting balance plus (16 + 26)% of the fee
       const expectedFinalBalanceBob = '100480';
       assert.strictEqual(finalBalanceBob.toString(10), expectedFinalBalanceBob.toString(10),
         'Bob did not get the proper fee allocation');
+    });
+
+    it('should apportion the fee properly when a large number of arbiters claim in random ' +
+      'orders', async () => {
+      // Set constants
+      const CLAIM_AMOUNT = '10000';
+      const FEE_AMOUNT = new BN('1000', 10);
+      const PLURALITY_VOTE = '1';
+      const SALT = '420';
+
+      // Compute secret hashes for the plurality and non-plurality vote options
+      const pluralitySecretHash = utils.getSecretHash(PLURALITY_VOTE, SALT);
+
+      // Make a new claim and compute its claim ID.
+      const claimNumber =
+        await utils.makeNewClaim(staker, claimant, CLAIM_AMOUNT, FEE_AMOUNT, 'i love cats',
+          delphiStake);
+      const claimId = utils.getClaimId(delphiStake.address, claimNumber.toString(10));
+
+      // Arbiters commit votes.
+      await delphiVoting.commitVote(delphiStake.address, claimNumber, pluralitySecretHash,
+        { from: arbiterAlice });
+      await delphiVoting.commitVote(delphiStake.address, claimNumber, pluralitySecretHash,
+        { from: arbiterBob });
+      await delphiVoting.commitVote(delphiStake.address, claimNumber, pluralitySecretHash,
+        { from: arbiterCharlie });
+      await delphiVoting.commitVote(delphiStake.address, claimNumber, pluralitySecretHash,
+        { from: arbiterDanielle });
+      await delphiVoting.commitVote(delphiStake.address, claimNumber, pluralitySecretHash,
+        { from: arbiterEdwin });
+      await delphiVoting.commitVote(delphiStake.address, claimNumber, pluralitySecretHash,
+        { from: arbiterFederika });
+      await delphiVoting.commitVote(delphiStake.address, claimNumber, pluralitySecretHash,
+        { from: arbiterGale });
+      await delphiVoting.commitVote(delphiStake.address, claimNumber, pluralitySecretHash,
+        { from: arbiterHenry });
+
+      // Increase time to get to the reveal phase
+      await rpc.sendAsync({ method: 'evm_increaseTime', params: [101] });
+
+      // Arbiters reveal votes
+      const insertPointAlice =
+        await delphiVoting.getInsertPoint.call(claimId, arbiterAlice, PLURALITY_VOTE);
+      await delphiVoting.revealVote(claimId, PLURALITY_VOTE, SALT, insertPointAlice,
+        { from: arbiterAlice });
+      const insertPointBob =
+        await delphiVoting.getInsertPoint.call(claimId, arbiterBob, PLURALITY_VOTE);
+      await delphiVoting.revealVote(claimId, PLURALITY_VOTE, SALT, insertPointBob,
+        { from: arbiterBob });
+      const insertPointCharlie =
+        await delphiVoting.getInsertPoint.call(claimId, arbiterCharlie, PLURALITY_VOTE);
+      await delphiVoting.revealVote(claimId, PLURALITY_VOTE, SALT, insertPointCharlie,
+        { from: arbiterCharlie });
+      const insertPointDanielle =
+        await delphiVoting.getInsertPoint.call(claimId, arbiterDanielle, PLURALITY_VOTE);
+      await delphiVoting.revealVote(claimId, PLURALITY_VOTE, SALT, insertPointDanielle,
+        { from: arbiterDanielle });
+      const insertPointEdwin =
+        await delphiVoting.getInsertPoint.call(claimId, arbiterEdwin, PLURALITY_VOTE);
+      await delphiVoting.revealVote(claimId, PLURALITY_VOTE, SALT, insertPointEdwin,
+        { from: arbiterEdwin });
+      const insertPointFederika =
+        await delphiVoting.getInsertPoint.call(claimId, arbiterFederika, PLURALITY_VOTE);
+      await delphiVoting.revealVote(claimId, PLURALITY_VOTE, SALT, insertPointFederika,
+        { from: arbiterFederika });
+      const insertPointGale =
+        await delphiVoting.getInsertPoint.call(claimId, arbiterGale, PLURALITY_VOTE);
+      await delphiVoting.revealVote(claimId, PLURALITY_VOTE, SALT, insertPointGale,
+        { from: arbiterGale });
+      const insertPointHenry =
+        await delphiVoting.getInsertPoint.call(claimId, arbiterHenry, PLURALITY_VOTE);
+      await delphiVoting.revealVote(claimId, PLURALITY_VOTE, SALT, insertPointHenry,
+        { from: arbiterHenry });
+
+      // Increase time to finish the reveal phase so we can submit the ruling
+      await rpc.sendAsync({ method: 'evm_increaseTime', params: [100] });
+
+      // Submit ruling
+      await delphiVoting.submitRuling(delphiStake.address, claimNumber, { from: arbiterAlice });
+
+      // Claim fees
+      await delphiVoting.claimFee(delphiStake.address, claimNumber, PLURALITY_VOTE, SALT,
+        { from: arbiterFederika });
+      await delphiVoting.claimFee(delphiStake.address, claimNumber, PLURALITY_VOTE, SALT,
+        { from: arbiterAlice });
+      await delphiVoting.claimFee(delphiStake.address, claimNumber, PLURALITY_VOTE, SALT,
+        { from: arbiterBob });
+      await delphiVoting.claimFee(delphiStake.address, claimNumber, PLURALITY_VOTE, SALT,
+        { from: arbiterCharlie });
+      await delphiVoting.claimFee(delphiStake.address, claimNumber, PLURALITY_VOTE, SALT,
+        { from: arbiterDanielle });
+      await delphiVoting.claimFee(delphiStake.address, claimNumber, PLURALITY_VOTE, SALT,
+        { from: arbiterEdwin });
+      await delphiVoting.claimFee(delphiStake.address, claimNumber, PLURALITY_VOTE, SALT,
+        { from: arbiterGale });
+      await delphiVoting.claimFee(delphiStake.address, claimNumber, PLURALITY_VOTE, SALT,
+        { from: arbiterHenry });
+
+      // Alice's expected final balance is her starting balance plus (20 + 2)% of the fee
+      const finalBalanceAlice = await token.balanceOf(arbiterAlice);
+      const expectedFinalBalanceAlice = '100220';
+      assert.strictEqual(finalBalanceAlice.toString(10), expectedFinalBalanceAlice.toString(10),
+        'Alice did not get the proper fee allocation');
+
+      // Bob's expected final balance is his starting balance plus (16 + 2)% of the fee
+      const finalBalanceBob = await token.balanceOf(arbiterBob);
+      const expectedFinalBalanceBob = '100180';
+      assert.strictEqual(finalBalanceBob.toString(10), expectedFinalBalanceBob.toString(10),
+        'Bob did not get the proper fee allocation');
+
+      // Charlie's expected final balance is his starting balance plus (12 + 2)% of the fee
+      const finalBalanceCharlie = await token.balanceOf(arbiterCharlie);
+      const expectedFinalBalanceCharlie = '100140';
+      assert.strictEqual(finalBalanceCharlie.toString(10),
+        expectedFinalBalanceCharlie.toString(10),
+        'Charlie did not get the proper fee allocation');
+
+      // Danielle's expected final balance is her starting balance plus (10 + 2)% of the fee
+      const finalBalanceDanielle = await token.balanceOf(arbiterDanielle);
+      const expectedFinalBalanceDanielle = '100120';
+      assert.strictEqual(finalBalanceDanielle.toString(10),
+        expectedFinalBalanceDanielle.toString(10),
+        'Danielle did not get the proper fee allocation');
+
+      // Edwin's expected final balance is his starting balance plus (8 + 2)% of the fee
+      const finalBalanceEdwin = await token.balanceOf(arbiterEdwin);
+      const expectedFinalBalanceEdwin = '100100';
+      assert.strictEqual(finalBalanceEdwin.toString(10), expectedFinalBalanceEdwin.toString(10),
+        'Edwin did not get the proper fee allocation');
+
+      // Federika's expected final balance is her starting balance plus (6 + 2)% of the fee
+      const finalBalanceFederika = await token.balanceOf(arbiterFederika);
+      const expectedFinalBalanceFederika = '100080';
+      assert.strictEqual(finalBalanceFederika.toString(10),
+        expectedFinalBalanceFederika.toString(10),
+        'Federika did not get the proper fee allocation');
+
+      // Gale's expected final balance is her starting balance plus (5 + 2)% of the fee
+      const finalBalanceGale = await token.balanceOf(arbiterGale);
+      const expectedFinalBalanceGale = '100070';
+      assert.strictEqual(finalBalanceGale.toString(10), expectedFinalBalanceGale.toString(10),
+        'Gale did not get the proper fee allocation');
+
+      // Henry's expected final balance is his starting balance plus (4 + 2)% of the fee
+      const finalBalanceHenry = await token.balanceOf(arbiterHenry);
+      const expectedFinalBalanceHenry = '100060';
+      assert.strictEqual(finalBalanceHenry.toString(10), expectedFinalBalanceHenry.toString(10),
+        'Henry did not get the proper fee allocation');
     });
 
     it('should revert if called by anyone but one of the arbiters', async () => {
