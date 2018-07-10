@@ -276,8 +276,8 @@ contract('DelphiVoting', (accounts) => {
 
     it('should apportion the fee properly when multiple arbiters must claim', async () => {
       // Set constants
-      const CLAIM_AMOUNT = '10000';
-      const FEE_AMOUNT = new BN('1000', 10);
+      const CLAIM_AMOUNT = '50000';
+      const FEE_AMOUNT = new BN('10000', 10);
       const PLURALITY_VOTE = '1';
       const SALT = '420';
 
@@ -320,8 +320,8 @@ contract('DelphiVoting', (accounts) => {
         { from: arbiterAlice });
       const finalBalanceAlice = await token.balanceOf(arbiterAlice);
 
-      // Alice's expected final balance is her starting balance plus (20 + 26)% of the fee
-      const expectedFinalBalanceAlice = '100520';
+      // Alice's expected final balance is her starting balance plus (20 + 32)% of the fee
+      const expectedFinalBalanceAlice = '105200';
       assert.strictEqual(finalBalanceAlice.toString(10), expectedFinalBalanceAlice.toString(10),
         'Alice did not get the proper fee allocation');
 
@@ -330,8 +330,8 @@ contract('DelphiVoting', (accounts) => {
         { from: arbiterBob });
       const finalBalanceBob = await token.balanceOf(arbiterBob);
 
-      // Bob's expected final balance is his starting balance plus (16 + 26)% of the fee
-      const expectedFinalBalanceBob = '100480';
+      // Bob's expected final balance is his starting balance plus (16 + 32)% of the fee
+      const expectedFinalBalanceBob = '104800';
       assert.strictEqual(finalBalanceBob.toString(10), expectedFinalBalanceBob.toString(10),
         'Bob did not get the proper fee allocation');
     });
@@ -339,8 +339,8 @@ contract('DelphiVoting', (accounts) => {
     it('should apportion the fee properly when a large number of arbiters claim in random ' +
       'orders', async () => {
       // Set constants
-      const CLAIM_AMOUNT = '10000';
-      const FEE_AMOUNT = new BN('1000', 10);
+      const CLAIM_AMOUNT = '50000';
+      const FEE_AMOUNT = new BN('10000', 10);
       const PLURALITY_VOTE = '1';
       const SALT = '420';
 
@@ -432,54 +432,54 @@ contract('DelphiVoting', (accounts) => {
       await delphiVoting.claimFee(delphiStake.address, claimNumber, PLURALITY_VOTE, SALT,
         { from: arbiterHenry });
 
-      // Alice's expected final balance is her starting balance plus (20 + 2)% of the fee
+      // Alice's expected final balance is her starting balance plus (20 + 2.37)% of the fee
       const finalBalanceAlice = await token.balanceOf(arbiterAlice);
-      const expectedFinalBalanceAlice = '100220';
+      const expectedFinalBalanceAlice = '102237';
       assert.strictEqual(finalBalanceAlice.toString(10), expectedFinalBalanceAlice.toString(10),
         'Alice did not get the proper fee allocation');
 
-      // Bob's expected final balance is his starting balance plus (16 + 2)% of the fee
+      // Bob's expected final balance is his starting balance plus (16 + 2.37)% of the fee
       const finalBalanceBob = await token.balanceOf(arbiterBob);
-      const expectedFinalBalanceBob = '100180';
+      const expectedFinalBalanceBob = '101837';
       assert.strictEqual(finalBalanceBob.toString(10), expectedFinalBalanceBob.toString(10),
         'Bob did not get the proper fee allocation');
 
-      // Charlie's expected final balance is his starting balance plus (12 + 2)% of the fee
+      // Charlie's expected final balance is his starting balance plus (12 + 2.37)% of the fee
       const finalBalanceCharlie = await token.balanceOf(arbiterCharlie);
-      const expectedFinalBalanceCharlie = '100140';
+      const expectedFinalBalanceCharlie = '101437';
       assert.strictEqual(finalBalanceCharlie.toString(10),
         expectedFinalBalanceCharlie.toString(10),
         'Charlie did not get the proper fee allocation');
 
-      // Danielle's expected final balance is her starting balance plus (10 + 2)% of the fee
+      // Danielle's expected final balance is her starting balance plus (10 + 2.37)% of the fee
       const finalBalanceDanielle = await token.balanceOf(arbiterDanielle);
-      const expectedFinalBalanceDanielle = '100120';
+      const expectedFinalBalanceDanielle = '101237';
       assert.strictEqual(finalBalanceDanielle.toString(10),
         expectedFinalBalanceDanielle.toString(10),
         'Danielle did not get the proper fee allocation');
 
-      // Edwin's expected final balance is his starting balance plus (8 + 2)% of the fee
+      // Edwin's expected final balance is his starting balance plus (8 + 2.37)% of the fee
       const finalBalanceEdwin = await token.balanceOf(arbiterEdwin);
-      const expectedFinalBalanceEdwin = '100100';
+      const expectedFinalBalanceEdwin = '101037';
       assert.strictEqual(finalBalanceEdwin.toString(10), expectedFinalBalanceEdwin.toString(10),
         'Edwin did not get the proper fee allocation');
 
-      // Federika's expected final balance is her starting balance plus (6 + 2)% of the fee
+      // Federika's expected final balance is her starting balance plus (6 + 2.37)% of the fee
       const finalBalanceFederika = await token.balanceOf(arbiterFederika);
-      const expectedFinalBalanceFederika = '100080';
+      const expectedFinalBalanceFederika = '100837';
       assert.strictEqual(finalBalanceFederika.toString(10),
         expectedFinalBalanceFederika.toString(10),
         'Federika did not get the proper fee allocation');
 
-      // Gale's expected final balance is her starting balance plus (5 + 2)% of the fee
+      // Gale's expected final balance is her starting balance plus (5 + 2.37)% of the fee
       const finalBalanceGale = await token.balanceOf(arbiterGale);
-      const expectedFinalBalanceGale = '100070';
+      const expectedFinalBalanceGale = '100737';
       assert.strictEqual(finalBalanceGale.toString(10), expectedFinalBalanceGale.toString(10),
         'Gale did not get the proper fee allocation');
 
-      // Henry's expected final balance is his starting balance plus (4 + 2)% of the fee
+      // Henry's expected final balance is his starting balance plus (4 + 2.37)% of the fee
       const finalBalanceHenry = await token.balanceOf(arbiterHenry);
-      const expectedFinalBalanceHenry = '100060';
+      const expectedFinalBalanceHenry = '100637';
       assert.strictEqual(finalBalanceHenry.toString(10), expectedFinalBalanceHenry.toString(10),
         'Henry did not get the proper fee allocation');
     });
@@ -614,6 +614,92 @@ contract('DelphiVoting', (accounts) => {
       }
 
       assert(false, 'Expetected to not allow an arbiter to claim a fee when they committed but did not reveal');
+    });
+
+    it('should apportion the fee properly when arbiter consensus is under 100%', async () => {
+      // Set constants
+      const CLAIM_AMOUNT = '50000';
+      const FEE_AMOUNT = new BN('10000', 10);
+      const PLURALITY_VOTE = '1';
+      const NON_PLURALITY_VOTE = '0';
+      const SALT = '420';
+
+      // Compute secret hashes for the plurality and non-plurality vote options
+      const pluralitySecretHash = utils.getSecretHash(PLURALITY_VOTE, SALT);
+      const nonPluralitySecretHash = utils.getSecretHash(NON_PLURALITY_VOTE, SALT);
+
+      // Make a new claim and compute its claim ID.
+      const claimNumber =
+        await utils.makeNewClaim(staker, claimant, CLAIM_AMOUNT, FEE_AMOUNT, 'i love cats',
+          delphiStake);
+      const claimId = utils.getClaimId(delphiStake.address, claimNumber.toString(10));
+
+      // Arbiters commit votes.
+      await delphiVoting.commitVote(delphiStake.address, claimNumber, pluralitySecretHash,
+        { from: arbiterAlice });
+      await delphiVoting.commitVote(delphiStake.address, claimNumber, pluralitySecretHash,
+        { from: arbiterBob });
+      await delphiVoting.commitVote(delphiStake.address, claimNumber, pluralitySecretHash,
+        { from: arbiterCharlie });
+      await delphiVoting.commitVote(delphiStake.address, claimNumber, nonPluralitySecretHash,
+        { from: arbiterDanielle });
+
+      // Increase time to get to the reveal phase
+      await rpc.sendAsync({ method: 'evm_increaseTime', params: [101] });
+
+      // Arbiters reveal votes
+      const insertPointAlice =
+        await delphiVoting.getInsertPoint.call(claimId, arbiterAlice, PLURALITY_VOTE);
+      await delphiVoting.revealVote(claimId, PLURALITY_VOTE, SALT, insertPointAlice,
+        { from: arbiterAlice });
+      const insertPointBob =
+        await delphiVoting.getInsertPoint.call(claimId, arbiterBob, PLURALITY_VOTE);
+      await delphiVoting.revealVote(claimId, PLURALITY_VOTE, SALT, insertPointBob,
+        { from: arbiterBob });
+      const insertPointCharlie =
+        await delphiVoting.getInsertPoint.call(claimId, arbiterCharlie, PLURALITY_VOTE);
+      await delphiVoting.revealVote(claimId, PLURALITY_VOTE, SALT, insertPointCharlie,
+        { from: arbiterCharlie });
+      const insertPointDanielle =
+        await delphiVoting.getInsertPoint.call(claimId, arbiterDanielle, NON_PLURALITY_VOTE);
+      await delphiVoting.revealVote(claimId, NON_PLURALITY_VOTE, SALT, insertPointDanielle,
+        { from: arbiterDanielle });
+
+      // Increase time to finish the reveal phase so we can submit the ruling
+      await rpc.sendAsync({ method: 'evm_increaseTime', params: [100] });
+
+      // Submit ruling
+      await delphiVoting.submitRuling(delphiStake.address, claimNumber, { from: arbiterAlice });
+
+      // Claim the fee and get Alice's final balance
+      await delphiVoting.claimFee(delphiStake.address, claimNumber, PLURALITY_VOTE, SALT,
+        { from: arbiterAlice });
+      const finalBalanceAlice = await token.balanceOf(arbiterAlice);
+
+      // Alice's expected final balance is her starting balance plus (20 + 13)% of the fee
+      const expectedFinalBalanceAlice = '103300';
+      assert.strictEqual(finalBalanceAlice.toString(10), expectedFinalBalanceAlice.toString(10),
+        'Alice did not get the proper fee allocation');
+
+      // Claim the fee and get Bob's final balance
+      await delphiVoting.claimFee(delphiStake.address, claimNumber, PLURALITY_VOTE, SALT,
+        { from: arbiterBob });
+      const finalBalanceBob = await token.balanceOf(arbiterBob);
+
+      // Bob's expected final balance is his starting balance plus (16 + 13)% of the fee
+      const expectedFinalBalanceBob = '102900';
+      assert.strictEqual(finalBalanceBob.toString(10), expectedFinalBalanceBob.toString(10),
+        'Bob did not get the proper fee allocation');
+
+      // Claim the fee and get Charlie's final balance
+      await delphiVoting.claimFee(delphiStake.address, claimNumber, PLURALITY_VOTE, SALT,
+        { from: arbiterCharlie });
+      const finalBalanceCharlie = await token.balanceOf(arbiterCharlie);
+
+      // Charlie's expected final balance is his starting balance plus (12 + 13)% of the fee
+      const expectedFinalBalanceCharlie = '102500';
+      assert.strictEqual(finalBalanceCharlie.toString(10), expectedFinalBalanceCharlie.toString(10),
+        'Charlie did not get the proper fee allocation');
     });
   });
 });

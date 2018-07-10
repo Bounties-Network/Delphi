@@ -245,16 +245,42 @@ contract DelphiVoting {
     // Require the vote cast was in the plurality
     require(VoteOptions(_vote) == claim.result);
 
-    // Calculate the arbiter's rank: the order in which they committed a vote for this faction
-    uint arbiterRank = computeArbiterRank(claim, _vote, msg.sender);
+    // FAQ
+    // Q: Could the arbiterFee equation be simpler?
+    // A: It certainly could in theory, but because the Solidity compiler vomits if you have
+    // more than 16 stack items, I had to remove a bunch of named variables. If I had more named
+    // variables available I would write it like this:
+    //
+    //  arbiterGuaranteedPct * totalFee +
+    //  (totalFee * percentageOfFeeNotReservedForGuaranteedPayouts) *
+    //  (winningFactionSize / totalReveals) /
+    //  winningFactionSize
+    // 
+    // Now an explanation of the above mapped the to the actual equation below. I've identified
+    // each line in the actual equation with a letter.
+    // 
+    // On the first line we compute the guaranteed fee. (A + B).
+    // On the second line we compute the number of tokens not reserved in this fee for
+    // guaranteed payouts. (C + D)
+    // On the third line we compute the percentage of all arbiters who revealed, who revealed in
+    // the winning faction. (E + F)
+    // We multiply the results of lines 2 and 3 to get the leftover fee we will actually be
+    // apportioning to the arbiters.
+    // On the last line, we divide the leftover fee we will actually be apportioning to the
+    // arbiters by the number of arbiters in the winning faction. (G)
+    //
+    // Also, I divide and multiply by 100 in a bunch of places because integer arithmetic.
 
-    // Calculate the arbiter's owed fee
-    uint arbiterOwedPercentage = lt.getGuaranteedPercentageForIndex(arbiterRank);
-    // pay_i = arbiterOwedPercentage * (fee / 100) + ((100 - LT[n - 1]) / n) * (fee / 100)
     uint arbiterFee =
-      arbiterOwedPercentage * (ds.getTotalFeeForClaim(_claimNumber) / 100) +
-      ((100 - lt.lt(claim.tallies[_vote] - 1)) / claim.tallies[_vote]) *
-      (ds.getTotalFeeForClaim(_claimNumber) / 100);
+      // Calculate the guaranteed fee
+      lt.getGuaranteedPercentageForIndex(computeArbiterRank(claim, _vote, msg.sender)) * // A
+      (ds.getTotalFeeForClaim(_claimNumber) / 100) +                                     // B
+      // Now compute the owed leftover fee and add it to the guaranteed fee
+      ((ds.getTotalFeeForClaim(_claimNumber) / 100) *                                    // C
+       (100 - lt.lt(claim.tallies[_vote] - 1)) / 100) *                                  // D
+       ((claim.tallies[_vote] * 100) /                                                   // E
+       (claim.tallies[0] + claim.tallies[1] + claim.tallies[2] + claim.tallies[3])) /    // F
+       claim.tallies[_vote];                                                             // G
                                                                   
     // Transfer the arbiter their owed fee
     require(ds.token().transfer(msg.sender, arbiterFee));
