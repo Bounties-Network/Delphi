@@ -5,8 +5,8 @@ import "tokens/eip20/EIP20.sol";
 
 contract DelphiStake {
 
-    event ClaimantWhitelisted(address _claimant);
-    event ClaimOpened(address _claimant, uint _claimId);
+    event ClaimantWhitelisted(address _claimant, uint _whitelistId, uint _deadline);
+    event ClaimOpened(address _claimant, uint _whitelistId, uint _claimId);
     event FeeIncreased(address _increasedBy, uint _claimId, uint _amount);
     event SettlementProposed(address _proposedBy, uint _claimId, uint _settlementId);
     event SettlementAccepted(address _acceptedBy, uint _claimId, uint _settlementId);
@@ -18,6 +18,7 @@ contract DelphiStake {
 
 
     struct Claim {
+      uint whitelistId;
       address claimant;
       uint amount;
       uint fee;
@@ -34,9 +35,14 @@ contract DelphiStake {
       bool claimantAgrees;
     }
 
-    address public masterCopy; // THIS MUST ALWAYS BE IN THE FIRST STORAGE SLOT
+    struct Whitelist {
+      address claimant;
+      address arbiter;
+      uint minimumFee;
+      uint deadline;
+    }
 
-    uint public minimumFee;
+    address public masterCopy; // THIS MUST ALWAYS BE IN THE FIRST STORAGE SLOT
 
     uint public claimableStake;
     EIP20 public token;
@@ -44,7 +50,6 @@ contract DelphiStake {
     string public data;
 
     address public staker;
-    address public arbiter;
 
     uint public stakeReleaseTime;
 
@@ -52,7 +57,7 @@ contract DelphiStake {
     uint public openClaims;
     mapping(uint => Settlement[]) public settlements;
 
-    mapping(address => uint) public whitelistedDeadlines;
+    Whitelist[] public whitelists;
 
     modifier onlyStaker(){
         require(msg.sender == staker);
@@ -69,13 +74,13 @@ contract DelphiStake {
         _;
     }
 
-    modifier notStakerOrArbiter(){
-        require(msg.sender != staker && msg.sender != arbiter);
+    modifier validWhitelistId(uint _whitelistId){
+        require(_whitelistId < whitelists.length);
         _;
     }
 
-    modifier onlyArbiter(){
-        require(msg.sender == arbiter);
+    modifier onlyArbiter(uint _claimId){
+        require(msg.sender == whitelists[claims[_claimId].whitelistId].arbiter);
         _;
     }
 
@@ -84,8 +89,13 @@ contract DelphiStake {
         _;
     }
 
-    modifier largeEnoughFee(uint _newFee){
-        require(_newFee >= minimumFee);
+    modifier isBeforeDeadline(uint _whitelistId){
+        require(now <= whitelists[_whitelistId].deadline);
+        _;
+    }
+
+    modifier largeEnoughFee(uint _whitelistId, uint _newFee){
+        require(_newFee >= whitelists[_whitelistId].minimumFee);
         _;
     }
 
@@ -114,8 +124,8 @@ contract DelphiStake {
         _;
     }
 
-    modifier onlyWhitelistedClaimant(){
-      require(whitelistedDeadlines[msg.sender] >= now);
+    modifier onlyWhitelistedClaimant(uint _whitelistId){
+      require(msg.sender == whitelists[_whitelistId].claimant);
       _;
     }
 
@@ -135,13 +145,11 @@ contract DelphiStake {
     @param _staker the address which is creating the stake through the proxy contract
     @param _value the value of the stake in token units
     @param _token the address of the token being deposited
-    @param _minimumFee the minimum fee which must be deposited by both parties for each claim
     @param _data a content hash of the relevant associated data describing the stake
     @param _claimDeadline the deadline for opening new cliams; the earliest moment that
     a stake can be withdrawn by the staker
-    @param _arbiter the address which is able to rule on open claims
     */
-    function initDelphiStake(address _staker, uint _value, EIP20 _token, uint _minimumFee, string _data, uint _stakeReleaseTime, address _arbiter)
+    function initDelphiStake(address _staker, uint _value, EIP20 _token, string _data, uint _stakeReleaseTime)
     public
     {
         require(_stakeReleaseTime > now);
@@ -150,19 +158,14 @@ contract DelphiStake {
         // set to 0 when it was called previously.
         require(token == address(0));
 
-        // Require reasonable inputs
-        require(_arbiter != address(0));
-
         // Revert if the specified value to stake cannot be transferred in
         require(_token.transferFrom(msg.sender, this, _value));
 
         // Initialize contract storage.
         claimableStake = _value;
         token = _token;
-        minimumFee = _minimumFee;
         data = _data;
         stakeReleaseTime = _stakeReleaseTime;
-        arbiter = _arbiter;
         staker = _staker;
     }
 
@@ -171,26 +174,29 @@ contract DelphiStake {
     "whitelisted for claims" such that a clear path exists for the adjudication of disputes should
     one arise in the course of events.
     @param _claimant an address which, once whitelisted, can make claims against this stake
+    @param _arbiter an address which will rule on any claims this whitelisted claimant will open
+    @param _minimumFee the minum fee the new claimant must deposit when opening a claim
     @param _deadline the timestamp before which the whitelisted individual may open a claim
     */
-    function whitelistClaimant(address _claimant, uint _deadline)
+    function whitelistClaimant(address _claimant, address _arbiter, uint _minimumFee, uint _deadline)
     public
     onlyStaker
     {
-      // the new deadline should be greater than the existing one
-      require(_deadline >= whitelistedDeadlines[_claimant]);
+      // the new claimant cannot be the same address as the staker or arbiter
+      require(_claimant != staker && _claimant != _arbiter);
 
-      // Whitelist the claimant by setting their entry in the whitelistedDeadlines mapping to their deadline
-      whitelistedDeadlines[_claimant] = _deadline;
+      // Whitelist the claimant by adding their entry in the whitelists array
+      whitelists.push(Whitelist(_claimant, _arbiter, _minimumFee, _deadline));
 
       // Emit an event noting that this claimant was whitelisted
-      ClaimantWhitelisted(_claimant);
+      ClaimantWhitelisted(_claimant, whitelists.length - 1, _deadline);
     }
 
     /*
     @dev a whitelisted claimant can use this function to make a claim for remuneration. Once
     opened, an opportunity for pre-arbitration settlement will commence, but claims cannot be
     unilaterally cancelled.
+    @param _whitelistId the index of the whitelisting corresponding to the claim
     @param _amount the size of the claim being made, denominated in the stake's token. Must be less
     than or equal to the current amount of stake not locked up in other disputes, minus the fee deposited.
     @param _fee the size of the fee, denominated in the stake's token, to be offered to the arbiter
@@ -199,12 +205,13 @@ contract DelphiStake {
     @param _data an arbitrary string, perhaps an IPFS hash, containing data substantiating the
     basis for the claim.
     */
-    function openClaim(uint _amount, uint _fee, string _data)
+    function openClaim(uint _whitelistId, uint _amount, uint _fee, string _data)
     public
-    notStakerOrArbiter
+    validWhitelistId(_whitelistId)
     stakerCanPay(_amount, _fee)
-    onlyWhitelistedClaimant
-    largeEnoughFee(_fee)
+    onlyWhitelistedClaimant(_whitelistId)
+    isBeforeDeadline(_whitelistId)
+    largeEnoughFee(_whitelistId, _fee)
     {
         // Transfer the fee into the DelphiStake
         require(token.transferFrom(msg.sender, this, _fee));
@@ -212,7 +219,7 @@ contract DelphiStake {
         // Add a new claim to the claims array and increment the openClaims counter. Because there
         // is necessarily at least one open claim now, pause any active withdrawal (lockup)
         // countdown.
-        claims.push(Claim(msg.sender, _amount, _fee, 0, _data, 0, false, false));
+        claims.push(Claim(_whitelistId, msg.sender, _amount, _fee, 0, _data, 0, false, false));
         openClaims ++;
 
         // The claim amount and claim fee are reserved for this particular claim until the arbiter
@@ -221,12 +228,13 @@ contract DelphiStake {
 
         // Emit an event that a claim was opened by the message sender (not the claimant), and
         // include the claim's ID.
-        ClaimOpened(msg.sender, claims.length - 1);
+        ClaimOpened(msg.sender, _whitelistId, claims.length - 1);
     }
 
     /*
     @dev a whitelisted claimant can use this function to make a claim for remuneration. Opened claims
     will proceed directly to full arbitration, when their claims can be ruled upon.
+    @param _whitelistId the index of the whitelist corresponding to the new claim
     @param _claimant the entity which will act as the claimant in the course of the adjudication.
     @param _amount the size of the claim being made, denominated in the stake's token. Must be less
     than or equal to the current amount of stake not locked up in other disputes, minus the fee deposited.
@@ -236,15 +244,16 @@ contract DelphiStake {
     @param _data an arbitrary string, perhaps an IPFS hash, containing data substantiating the
     basis for the claim.
     */
-    function openClaimWithoutSettlement(uint _amount, uint _fee, string _data)
+    function openClaimWithoutSettlement(uint _whitelistId, uint _amount, uint _fee, string _data)
     public
-    notStakerOrArbiter
+    validWhitelistId(_whitelistId)
     stakerCanPay(_amount, _fee)
-    onlyWhitelistedClaimant
-    largeEnoughFee(_fee)
+    onlyWhitelistedClaimant(_whitelistId)
+    isBeforeDeadline(_whitelistId)
+    largeEnoughFee(_whitelistId, _fee)
     {
         require(token.transferFrom(msg.sender, this, _fee));
-        claims.push(Claim(msg.sender, _amount, _fee, 0, _data, 0, false, true));
+        claims.push(Claim(_whitelistId, msg.sender, _amount, _fee, 0, _data, 0, false, true));
         openClaims ++;
 
         // The claim amount and claim fee are reserved for this particular claim until the arbiter
@@ -252,7 +261,7 @@ contract DelphiStake {
         claimableStake -= (_amount + _fee);
         // the claim amount and claim fee are locked up in this contract until the arbiter rules
 
-        ClaimOpened(msg.sender, claims.length - 1);
+        ClaimOpened(msg.sender, _whitelistId, claims.length - 1);
     }
 
     /*
@@ -387,12 +396,13 @@ contract DelphiStake {
     */
     function ruleOnClaim(uint _claimId, uint _ruling)
     public
-    onlyArbiter
+    onlyArbiter(_claimId)
     validClaimID(_claimId)
     claimNotRuled(_claimId)
     settlementDidFail(_claimId)
     {
         Claim storage claim = claims[_claimId];
+        address arbiter = msg.sender;
 
         // Set the claim's ruled flag to true, and record the ruling.
         claim.ruled = true;
@@ -416,7 +426,7 @@ contract DelphiStake {
         } else if (_ruling == 3){
           // The claim cannot be ruled. Free up the claim amount and fee.
           claimableStake += (claim.amount + claim.fee);
-          require(token.transfer(claim.claimant, (claim.amount + claim.fee)));
+          require(token.transfer(claim.claimant, (claim.fee)));
           // TODO: send fsurplus to arbiters
         } else {
           revert();
@@ -485,6 +495,20 @@ contract DelphiStake {
       // Return the length of the claims array. Claims are never removed from this array, no matter
       // if or how they are resolved.
       return claims.length;
+    }
+
+    /*
+    @dev Getter function to return the total number of whitelists which have ever been made against
+    this stake.
+    */
+    function getNumWhitelists()
+    public
+    view
+    returns (uint)
+    {
+      // Return the length of the claims array. Claims are never removed from this array, no matter
+      // if or how they are resolved.
+      return whitelists.length;
     }
 
     /*
