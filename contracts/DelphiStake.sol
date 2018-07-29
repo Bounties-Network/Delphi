@@ -15,7 +15,7 @@ contract DelphiStake {
     event SettlementFailed(address _failedBy, uint _claimId, string _data);
     event ClaimRuled(uint _claimId, uint _ruling);
     event ReleaseTimeIncreased(uint _stakeReleaseTime);
-    event StakeWithdrawn();
+    event StakeWithdrawn(uint _amount);
     event StakeIncreased(address _increasedBy, uint _value);
 
 
@@ -494,18 +494,17 @@ contract DelphiStake {
 
     /*
     @dev Returns the stake to the staker, if the claim deadline has elapsed and no open claims remain
-    @param _newClaimDeadline the unix time stamp (in seconds) before which claims may be opened
+    @param _amount the number of tokens that the staker wishes to withdraw
     */
-    function withdrawStake()
+    function withdrawStake(uint _amount)
     public
     onlyStaker
     stakeIsReleased
     noOpenClaims
     {
-        uint oldStake = claimableStake;
-        claimableStake = 0;
-        require(token.transfer(staker, oldStake));
-        StakeWithdrawn();
+        claimableStake -= _amount;
+        require(token.transfer(staker, _amount));
+        StakeWithdrawn(_amount);
     }
 
     /*
