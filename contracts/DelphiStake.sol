@@ -235,9 +235,7 @@ contract DelphiStake {
     isBeforeDeadline(_whitelistId)
     largeEnoughFee(_whitelistId, _fee)
     {
-        // Add a new claim to the claims array and increment the openClaims counter. Because there
-        // is necessarily at least one open claim now, pause any active withdrawal (lockup)
-        // countdown.
+        // Add a new claim to the claims array and increment the openClaims counter
         claims.push(Claim(_whitelistId, msg.sender, _amount, _fee, 0, _data, 0, false));
         openClaims ++;
 
