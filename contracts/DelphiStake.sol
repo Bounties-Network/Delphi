@@ -160,15 +160,15 @@ contract DelphiStake {
         // set to 0 when it was called previously.
         require(token == address(0));
 
-        // Revert if the specified value to stake cannot be transferred in
-        require(_token.transferFrom(msg.sender, this, _value));
-
         // Initialize contract storage.
         claimableStake = _value;
         token = _token;
         data = _data;
         stakeReleaseTime = _stakeReleaseTime;
         staker = _staker;
+
+        // Revert if the specified value to stake cannot be transferred in
+        require(_token.transferFrom(msg.sender, this, _value));
     }
 
     /*
@@ -236,9 +236,6 @@ contract DelphiStake {
     isBeforeDeadline(_whitelistId)
     largeEnoughFee(_whitelistId, _fee)
     {
-        // Transfer the fee into the DelphiStake
-        require(token.transferFrom(msg.sender, this, _fee));
-
         // Add a new claim to the claims array and increment the openClaims counter. Because there
         // is necessarily at least one open claim now, pause any active withdrawal (lockup)
         // countdown.
@@ -248,6 +245,9 @@ contract DelphiStake {
         // The claim amount and claim fee are reserved for this particular claim until the arbiter
         // rules
         claimableStake -= (_amount + _fee);
+
+        // Transfer the fee into the DelphiStake
+        require(token.transferFrom(msg.sender, this, _fee));
 
         // Emit an event that a claim was opened by the message sender (not the claimant), and
         // include the claim's ID.
@@ -275,7 +275,6 @@ contract DelphiStake {
     isBeforeDeadline(_whitelistId)
     largeEnoughFee(_whitelistId, _fee)
     {
-        require(token.transferFrom(msg.sender, this, _fee));
         claims.push(Claim(_whitelistId, msg.sender, _amount, _fee, 0, _data, 0, false, true));
         openClaims ++;
 
@@ -283,6 +282,8 @@ contract DelphiStake {
         // rules
         claimableStake -= (_amount + _fee);
         // the claim amount and claim fee are locked up in this contract until the arbiter rules
+
+        require(token.transferFrom(msg.sender, this, _fee));
 
         ClaimOpenedWithoutSettlement(msg.sender, _whitelistId, claims.length - 1);
     }
@@ -300,10 +301,11 @@ contract DelphiStake {
     claimNotRuled(_claimId)
     settlementDidFail(_claimId)
     {
-      // Transfer tokens from the message sender to this contract and increment the surplusFee
       // record for this claim by the amount transferred.
-      require(token.transferFrom(msg.sender, this, _amount));
       claims[_claimId].surplusFee += _amount;
+
+      // Transfer tokens from the message sender to this contract and increment the surplusFee
+      require(token.transferFrom(msg.sender, this, _amount));
 
       // Emit a FeeIncreased event including data on who increased the fee, which claim the fee was
       // increased for, and by what amount.
@@ -471,10 +473,12 @@ contract DelphiStake {
     public
     onlyStaker
     {
-        // Transfer _value tokens from the message sender into this contract, and increment the
         // claimableStake by _value.
-        require(token.transferFrom(msg.sender, this, _value));
         claimableStake += _value;
+
+        // Transfer _value tokens from the message sender into this contract, and increment the
+        require(token.transferFrom(msg.sender, this, _value));
+
         StakeIncreased(msg.sender, _value);
     }
 
