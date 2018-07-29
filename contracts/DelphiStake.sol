@@ -451,7 +451,11 @@ contract DelphiStake {
           // The claim cannot be ruled. Free up the claim amount and fee.
           claimableStake += (claim.amount + claim.fee);
           require(token.transfer(claim.claimant, (claim.fee)));
-          // TODO: send fsurplus to arbiters
+
+          // transfers of 0 tokens will throw automatically
+          if (claim.surplusFee > 0){
+            require(token.transfer(arbiter, (claim.surplusFee)));
+          }
         }
 
         // The claim is ruled. Decrement the total number of open claims.
