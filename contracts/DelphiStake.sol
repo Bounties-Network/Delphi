@@ -5,7 +5,8 @@ import "tokens/eip20/EIP20.sol";
 
 contract DelphiStake {
 
-    event ClaimantWhitelisted(address _claimant, uint _whitelistId, uint _deadline);
+    event ClaimantWhitelisted(address _claimant, uint _whitelistId, uint _deadline, string _data);
+    event WhitelistDeadlineExtended(uint _whitelistId, uint _newDeadline);
     event ClaimOpened(address _claimant, uint _whitelistId, uint _claimId);
     event ClaimOpenedWithoutSettlement(address _claimant, uint _whitelistId, uint _claimId);
     event FeeIncreased(address _increasedBy, uint _claimId, uint _amount);
@@ -178,8 +179,9 @@ contract DelphiStake {
     @param _arbiter an address which will rule on any claims this whitelisted claimant will open
     @param _minimumFee the minum fee the new claimant must deposit when opening a claim
     @param _deadline the timestamp before which the whitelisted individual may open a claim
+    @param _data an IPFS hash representing the scope and terms of the whitelisting
     */
-    function whitelistClaimant(address _claimant, address _arbiter, uint _minimumFee, uint _deadline)
+    function whitelistClaimant(address _claimant, address _arbiter, uint _minimumFee, uint _deadline, string _data)
     public
     onlyStaker
     {
@@ -190,8 +192,28 @@ contract DelphiStake {
       whitelists.push(Whitelist(_claimant, _arbiter, _minimumFee, _deadline));
 
       // Emit an event noting that this claimant was whitelisted
-      ClaimantWhitelisted(_claimant, whitelists.length - 1, _deadline);
+      ClaimantWhitelisted(_claimant, whitelists.length - 1, _deadline, _data);
     }
+
+    /*
+    @dev if a staker desires, they may extend the deadline before which a particular claimant may open a claim
+    @param _whitelistId the index of the whitelisting whose deadline is being extended
+    @param _newDeadline the new deadline for opening claims
+    */
+    function extendClaimDeadline(uint _whitelistId, uint _newDeadline)
+    public
+    onlyStaker
+    {
+      // the new deadline must be greater than the existing deadline
+      require(_newDeadline > whitelists[_whitelistId].deadline);
+
+      whitelists[_whitelistId].deadline = _newDeadline;
+
+      // Emit an event noting that this whitelisting's deadline was extended
+      WhitelistDeadlineExtended(_whitelistId, _newDeadline);
+    }
+
+
 
     /*
     @dev a whitelisted claimant can use this function to make a claim for remuneration. Once
