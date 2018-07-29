@@ -538,6 +538,21 @@ contract DelphiStake {
     }
 
     /*
+    @dev Getter function to return the total number of settlements which have ever been made for
+    this claim.
+    @param _claimId the index of the claim
+    */
+    function getNumSettlements(uint _claimId)
+    public
+    view
+    returns (uint)
+    {
+      // Return the length of the settlements array. Settlements are never removed from this array, no matter
+      // if or how they are resolved.
+      return settlements[_claimId].length;
+    }
+
+    /*
     @dev Getter function to return the total available fee for any historical claim
     */
     function getTotalFeeForClaim(uint _claimId)
