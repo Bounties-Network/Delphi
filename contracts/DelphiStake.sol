@@ -345,7 +345,6 @@ contract DelphiStake {
     public
     validClaimID(_claimId)
     validSettlementId(_claimId, _settlementId)
-    settlementDidNotFail(_claimId)
     {
       Settlement storage settlement = settlements[_claimId][_settlementId];
       Claim storage claim = claims[_claimId];
