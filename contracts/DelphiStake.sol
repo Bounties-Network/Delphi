@@ -13,7 +13,7 @@ contract DelphiStake {
     event SettlementProposed(address _proposedBy, uint _claimId, uint _settlementId);
     event SettlementAccepted(address _acceptedBy, uint _claimId, uint _settlementId);
     event SettlementFailed(address _failedBy, uint _claimId, string _data);
-    event ClaimRuled(uint _claimId);
+    event ClaimRuled(uint _claimId, uint _ruling);
     event ReleaseTimeIncreased(uint _stakeReleaseTime);
     event StakeWithdrawn();
     event StakeIncreased(address _increasedBy, uint _value);
@@ -459,7 +459,7 @@ contract DelphiStake {
         openClaims--;
 
         // Emit an event stating which claim was ruled.
-        ClaimRuled(_claimId);
+        ClaimRuled(_claimId, _ruling);
     }
 
     /*
@@ -480,8 +480,8 @@ contract DelphiStake {
     }
 
     /*
-    @dev Increases the deadline for opening claims
-    @param _newClaimDeadline the unix time stamp (in seconds) before which claims may be opened
+    @dev Increases the stake release time
+    @param _stakeReleaseTime the new stake release time
     */
     function extendStakeReleaseTime(uint _stakeReleaseTime)
     public
