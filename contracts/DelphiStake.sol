@@ -10,7 +10,7 @@ contract DelphiStake {
     event FeeIncreased(address _increasedBy, uint _claimId, uint _amount);
     event SettlementProposed(address _proposedBy, uint _claimId, uint _settlementId);
     event SettlementAccepted(address _acceptedBy, uint _claimId, uint _settlementId);
-    event SettlementFailed(address _failedBy, uint _claimId);
+    event SettlementFailed(address _failedBy, uint _claimId, string _data);
     event ClaimRuled(uint _claimId);
     event ReleaseTimeIncreased(uint _stakeReleaseTime);
     event StakeWithdrawn();
@@ -370,8 +370,9 @@ contract DelphiStake {
     @dev Either party in a claim can call settlementFailed at any time to move the claim from
     settlement to arbitration.
     @param _claimId the ID of the claim to reject settlement for
+    @param _data the IPFS hash of a json object detailing the reason for rejecting settlements
     */
-    function settlementFailed(uint _claimId)
+    function settlementFailed(uint _claimId, string _data)
     public
     validClaimID(_claimId)
     onlyStakerOrClaimant(_claimId)
@@ -383,7 +384,7 @@ contract DelphiStake {
 
       // Emit an event stating who rejected the settlement, and for which claim settlement was
       // rejected.
-      SettlementFailed(msg.sender, _claimId);
+      SettlementFailed(msg.sender, _claimId, _data);
     }
 
     /*
