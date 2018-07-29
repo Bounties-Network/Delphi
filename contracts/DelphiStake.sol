@@ -120,11 +120,6 @@ contract DelphiStake {
         _;
     }
 
-    modifier onlyStakerOrClaimant(uint _claimId){
-        require(msg.sender == staker || msg.sender == claims[_claimId].claimant);
-        _;
-    }
-
     modifier onlyWhitelistedClaimant(uint _whitelistId){
       require(msg.sender == whitelists[_whitelistId].claimant);
       _;
@@ -319,7 +314,6 @@ contract DelphiStake {
     function proposeSettlement(uint _claimId, uint _amount)
     public
     validClaimID(_claimId)
-    onlyStakerOrClaimant(_claimId)
     settlementDidNotFail(_claimId)
     {
       // Only allow settlements for up to the amount that has been reserved (locked) for this claim
@@ -329,8 +323,10 @@ contract DelphiStake {
       // settlement, set their "agrees" flag to true upon proposal.
       if (msg.sender == staker){
         settlements[_claimId].push(Settlement(_amount, true, false));
-      } else {
+      } else if (msg.sender == claims[_claimId].claimant){
         settlements[_claimId].push(Settlement(_amount, false, true));
+      } else {
+        revert();
       }
 
       // Emit an event including the settlement proposed, the claimID the settlement is proposed
@@ -349,7 +345,6 @@ contract DelphiStake {
     public
     validClaimID(_claimId)
     validSettlementId(_claimId, _settlementId)
-    onlyStakerOrClaimant(_claimId)
     settlementDidNotFail(_claimId)
     {
       Settlement storage settlement = settlements[_claimId][_settlementId];
@@ -358,8 +353,10 @@ contract DelphiStake {
       // Depending on who sent this message, set their agreement flag in the settlement to true
       if (msg.sender == staker){
         settlement.stakerAgrees = true;
-      } else {
+      } else if (msg.sender == claims[_claimId].claimant){
         settlement.claimantAgrees = true;
+      } else {
+        revert();
       }
 
       // Check if all conditions are met for the settlement to be agreed, and revert otherwise.
@@ -397,9 +394,10 @@ contract DelphiStake {
     function settlementFailed(uint _claimId, string _data)
     public
     validClaimID(_claimId)
-    onlyStakerOrClaimant(_claimId)
     settlementDidNotFail(_claimId)
     {
+      require(msg.sender == staker || msg.sender == claims[_claimId].claimant);
+
       // Set the claim's settlementFailed flag to true, preventing further settlement proposals
       // and settlement agreements.
       claims[_claimId].settlementFailed = true;
