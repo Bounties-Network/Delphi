@@ -27,7 +27,6 @@ contract DelphiStake {
       uint surplusFee;
       string data;
       uint ruling;
-      bool ruled;
       bool settlementFailed;
     }
 
@@ -102,7 +101,7 @@ contract DelphiStake {
     }
 
     modifier claimNotRuled(uint _claimId){
-        require(!claims[_claimId].ruled);
+        require(claims[_claimId].ruling == 0);
         _;
     }
 
@@ -239,7 +238,7 @@ contract DelphiStake {
         // Add a new claim to the claims array and increment the openClaims counter. Because there
         // is necessarily at least one open claim now, pause any active withdrawal (lockup)
         // countdown.
-        claims.push(Claim(_whitelistId, msg.sender, _amount, _fee, 0, _data, 0, false, false));
+        claims.push(Claim(_whitelistId, msg.sender, _amount, _fee, 0, _data, 0, false));
         openClaims ++;
 
         // The claim amount and claim fee are reserved for this particular claim until the arbiter
@@ -275,7 +274,7 @@ contract DelphiStake {
     isBeforeDeadline(_whitelistId)
     largeEnoughFee(_whitelistId, _fee)
     {
-        claims.push(Claim(_whitelistId, msg.sender, _amount, _fee, 0, _data, 0, false, true));
+        claims.push(Claim(_whitelistId, msg.sender, _amount, _fee, 0, _data, 0, true));
         openClaims ++;
 
         // The claim amount and claim fee are reserved for this particular claim until the arbiter
@@ -373,11 +372,11 @@ contract DelphiStake {
       require (settlement.claimantAgrees &&
               settlement.stakerAgrees &&
               !claim.settlementFailed &&
-              !claim.ruled);
+              claim.ruling == 0);
 
-      // Set this claim's ruled flag to true to prevent further actions (settlements or
+      // Set this claim's ruling to 5 to prevent further actions (settlements or
       // arbitration) being taken against this claim.
-      claim.ruled = true;
+      claim.ruling = 5;
 
       // Increase the stake's claimable stake by the claim amount and fee, minus the agreed
       // settlement amount. Then decrement the openClaims counter, since this claim is resolved.
@@ -430,32 +429,31 @@ contract DelphiStake {
         Claim storage claim = claims[_claimId];
         address arbiter = msg.sender;
 
-        // Set the claim's ruled flag to true, and record the ruling.
-        claim.ruled = true;
-        claim.ruling = _ruling;
-
-        if (_ruling == 0){
+        if (_ruling == 1){
+          claim.ruling = 1;
           // The claim is justified. Transfer to the arbiter their fee.
           require(token.transfer(arbiter, (claim.fee + claim.surplusFee)));
           require(token.transfer(claim.claimant, (claim.amount + claim.fee)));
-        } else if (_ruling == 1){
+        } else if (_ruling == 2){
+          claim.ruling = 2;
+
           // The claim is not justified. Free up the claim amount and fee for future claims, and
           // transfer to the arbiter their fee.
           claimableStake += (claim.amount + claim.fee);
           require(token.transfer(arbiter, (claim.fee + claim.surplusFee)));
-        } else if (_ruling == 2){
+        } else if (_ruling == 3){
+          claim.ruling = 3;
+
           // The claim is collusive. Transfer to the arbiter both the staker and claimant fees, and
           // burn the claim amount.
           require(token.transfer(arbiter, (claim.fee + claim.fee + claim.surplusFee)));
           require(token.transfer(address(0), claim.amount));
           // burns the claim amount in the event of collusion
-        } else if (_ruling == 3){
+        } else {
           // The claim cannot be ruled. Free up the claim amount and fee.
           claimableStake += (claim.amount + claim.fee);
           require(token.transfer(claim.claimant, (claim.fee)));
           // TODO: send fsurplus to arbiters
-        } else {
-          revert();
         }
 
         // The claim is ruled. Decrement the total number of open claims.

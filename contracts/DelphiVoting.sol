@@ -255,10 +255,10 @@ contract DelphiVoting {
     //  (totalFee * percentageOfFeeNotReservedForGuaranteedPayouts) *
     //  (winningFactionSize / totalReveals) /
     //  winningFactionSize
-    // 
+    //
     // Now an explanation of the above mapped the to the actual equation below. I've identified
     // each line in the actual equation with a letter.
-    // 
+    //
     // On the first line we compute the guaranteed fee. (A + B).
     // On the second line we compute the number of tokens not reserved in this fee for
     // guaranteed payouts. (C + D)
@@ -281,7 +281,7 @@ contract DelphiVoting {
        ((claim.tallies[_vote] * 100) /                                                   // E
        (claim.tallies[0] + claim.tallies[1] + claim.tallies[2] + claim.tallies[3])) /    // F
        claim.tallies[_vote];                                                             // G
-                                                                  
+
     // Transfer the arbiter their owed fee
     require(ds.token().transfer(msg.sender, arbiterFee));
 
@@ -351,7 +351,7 @@ contract DelphiVoting {
   }
 
   /*
-  @dev utility function for determining whether a claim has been ruled. Used by claimFee to 
+  @dev utility function for determining whether a claim has been ruled. Used by claimFee to
   determine whether fees should be disbured.
   @param _stake the DelphiStake whose storage is to be inspected.
   @param _claimNumber the unique claim number we are determining if a ruling has been submitted
@@ -360,13 +360,13 @@ contract DelphiVoting {
   */
   function claimIsRuled(address _stake, uint _claimNumber) public view returns (bool) {
     DelphiStake ds = DelphiStake(_stake);
-    bool ruled;
+    uint ruling;
     bool settlementFailed;
 
     // Tuple destructuring. settlementFailed is a throwaway value, but is needed by the compiler.
-    (, ruled, settlementFailed) = ds.claims(_claimNumber);
+    (, ruling, settlementFailed) = ds.claims(_claimNumber);
 
-    return ruled;
+    return (ruling > 0 && ruling < 5);
   }
 
   /*
@@ -392,7 +392,7 @@ contract DelphiVoting {
     // previousArbiter is the null node. The _arbiter was the first to commit. Its rank is 0.
     if(previousArbiter == address(0)) {
       return 0;
-    } 
+    }
 
     // The previous arbiter's previous arbiter is the null node, meaning the previous arbiter
     // was the first to commit
