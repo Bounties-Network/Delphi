@@ -7,6 +7,7 @@ contract DelphiStake {
 
     event ClaimantWhitelisted(address _claimant, uint _whitelistId, uint _deadline);
     event ClaimOpened(address _claimant, uint _whitelistId, uint _claimId);
+    event ClaimOpenedWithoutSettlement(address _claimant, uint _whitelistId, uint _claimId);
     event FeeIncreased(address _increasedBy, uint _claimId, uint _amount);
     event SettlementProposed(address _proposedBy, uint _claimId, uint _settlementId);
     event SettlementAccepted(address _acceptedBy, uint _claimId, uint _settlementId);
@@ -261,7 +262,7 @@ contract DelphiStake {
         claimableStake -= (_amount + _fee);
         // the claim amount and claim fee are locked up in this contract until the arbiter rules
 
-        ClaimOpened(msg.sender, _whitelistId, claims.length - 1);
+        ClaimOpenedWithoutSettlement(msg.sender, _whitelistId, claims.length - 1);
     }
 
     /*
