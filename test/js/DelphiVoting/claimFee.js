@@ -80,7 +80,7 @@ contract('DelphiVoting', (accounts) => {
       await registry.updateStatus(solkeccak(arbiterGale));
       await registry.updateStatus(solkeccak(arbiterHenry));
 
-      // Create a DelphiVoting with 100 second voting periods, fee decay value of five, 
+      // Create a DelphiVoting with 100 second voting periods, fee decay value of five,
       // and which uses the registry we just created as its arbiter set
       const delphiVotingReceipt = await delphiVotingFactory.makeDelphiVoting(registry.address,
         5, [solkeccak('parameterizerVotingPeriod'), solkeccak('commitStageLen'),
