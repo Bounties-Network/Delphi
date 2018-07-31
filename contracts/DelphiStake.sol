@@ -1,4 +1,5 @@
 pragma solidity ^0.4.18;
+pragma experimental ABIEncoderV2;
 
 import "tokens/eip20/EIP20.sol";
 
@@ -10,6 +11,7 @@ contract DelphiStake {
     event ClaimOpened(address _claimant, uint _whitelistId, uint _claimId);
     event ClaimOpenedWithoutSettlement(address _claimant, uint _whitelistId, uint _claimId);
     event FeeIncreased(address _increasedBy, uint _claimId, uint _amount);
+    event ClaimAccepted(uint _claimId);
     event SettlementProposed(address _proposedBy, uint _claimId, uint _settlementId);
     event SettlementAccepted(address _acceptedBy, uint _claimId, uint _settlementId);
     event SettlementFailed(address _failedBy, uint _claimId, string _data);
@@ -190,6 +192,29 @@ contract DelphiStake {
     }
 
     /*
+    @dev A staker may also whitelist a series of claimants all at once using this batch function call
+    @param _claimants an address which, once whitelisted, can make claims against this stake
+    @param _arbiters an address which will rule on any claims this whitelisted claimant will open
+    @param _minimumFees the minum fee the new claimant must deposit when opening a claim
+    @param _deadlines the timestamp before which the whitelisted individual may open a claim
+    @param _datas an IPFS hash representing the scope and terms of the whitelisting
+    */
+    function whitelistClaimants(address[] _claimants, address[] _arbiters, uint[] _minimumFees, uint[] _deadlines, string[] _datas)
+    public
+    {
+      //make sure all of the arrays are the same length
+      require(_claimants.length == _arbiters.length);
+      require(_arbiters.length == _minimumFees.length);
+      require(_minimumFees.length == _deadlines.length);
+      require(_deadlines.length == _datas.length);
+
+      for(uint i = 0; i < _claimants.length; i++){
+        whitelistClaimant(_claimants[i], _arbiters[i], _minimumFees[i], _deadlines[i], _datas[i]);
+      }
+    }
+
+
+    /*
     @dev if a staker desires, they may extend the deadline before which a particular claimant may open a claim
     @param _whitelistId the index of the whitelisting whose deadline is being extended
     @param _newDeadline the new deadline for opening claims
@@ -302,6 +327,30 @@ contract DelphiStake {
       // Emit a FeeIncreased event including data on who increased the fee, which claim the fee was
       // increased for, and by what amount.
       FeeIncreased(msg.sender, _claimId, _amount);
+    }
+
+    /*
+    @dev once a claim has been opened, the staker may simply accept their claim at face value
+    (to avoid doing so through a settlement)
+    @param _claimId the claim to be accepted
+    */
+    function acceptClaim(uint _claimId)
+    public
+    onlyStaker
+    validClaimID(_claimId)
+    settlementDidNotFail(_claimId)
+    {
+      Claim storage claim = claims[_claimId];
+
+      // first set the ruling status to "settled"
+      claim.ruling = 5;
+
+      claimableStake += claim.fee;
+
+      //transfer the claim amount and return the fee to the claimant
+      require(token.transfer(claim.claimant, (claim.amount + claim.fee)));
+
+      ClaimAccepted(_claimId);
     }
 
     /*
