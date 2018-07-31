@@ -416,8 +416,8 @@ contract DelphiStake {
     */
     function ruleOnClaim(uint _claimId, uint _ruling)
     public
-    onlyArbiter(_claimId)
     validClaimID(_claimId)
+    onlyArbiter(_claimId)
     claimNotRuled(_claimId)
     settlementDidFail(_claimId)
     {

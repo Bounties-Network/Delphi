@@ -28,8 +28,8 @@ contract('DelphiStake', (accounts) => {
 
       await token.approve(ds.address, conf.initialStake, { from: staker });
 
-      await ds.initDelphiStake(staker, conf.initialStake, token.address, conf.minFee, conf.data,
-        conf.deadline, arbiter, { from: staker });
+      await ds.initDelphiStake(staker, conf.initialStake, token.address, conf.data,
+        conf.deadline, { from: staker });
 
       // approve the staker and dave to spec incAmount to increase the stake
       await token.approve(ds.address, incAmount, { from: staker });
