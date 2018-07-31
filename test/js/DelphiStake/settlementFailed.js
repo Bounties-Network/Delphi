@@ -28,22 +28,22 @@ contract('DelphiStake', (accounts) => {
       await token.approve(ds.address, conf.initialStake, { from: staker });
       await token.transfer(arbiter, 1000, { from: staker });
 
-      await ds.initDelphiStake(staker, conf.initialStake, token.address, conf.minFee, conf.data,
-        conf.deadline, arbiter, { from: staker });
+      await ds.initDelphiStake(staker, conf.initialStake, token.address, conf.data,
+        conf.deadline, { from: staker });
 
       const claimAmount = new BN('1', 10);
       const feeAmount = new BN('10', 10);
 
       await token.approve(ds.address, feeAmount, { from: claimant });
 
-      await ds.whitelistClaimant(claimant, conf.deadline, { from: staker });
+      await ds.whitelistClaimant(claimant, arbiter, feeAmount, conf.deadline, "", { from: staker });
 
-      await ds.openClaim(claimAmount, feeAmount, '', { from: claimant });
+      await ds.openClaim(0, claimAmount, feeAmount, '', { from: claimant });
     });
 
     it('should revert if called with an out-of-bounds claimId', async () => {
       try {
-        await ds.settlementFailed(1, { from: staker });
+        await ds.settlementFailed(1, "", { from: staker });
       } catch (err) {
         return;
       }
@@ -52,7 +52,7 @@ contract('DelphiStake', (accounts) => {
 
     it('should revert if called by anyone but the staker or the claimant corresponding to the claimId', async () => {
       try {
-        await ds.settlementFailed(0, { from: other });
+        await ds.settlementFailed(0, "", { from: other });
       } catch (err) {
         return;
       }
@@ -60,16 +60,16 @@ contract('DelphiStake', (accounts) => {
     });
 
     it('should revert if settlement has already failed', async () => {
-      await ds.settlementFailed(0, { from: claimant });
+      await ds.settlementFailed(0, "", { from: claimant });
       try {
-        await ds.settlementFailed(0, { from: claimant });
+        await ds.settlementFailed(0, "", { from: claimant });
       } catch (err) {
         return;
       }
       assert(false, 'expected revert if settlement has already failed ');
     });
     it('should emit the SettlementFailed event', async () => {
-      await ds.settlementFailed(0, { from: claimant }).then((status) => {
+      await ds.settlementFailed(0, "", { from: claimant }).then((status) => {
         assert.strictEqual('SettlementFailed', status.logs[0].event, 'did not emit the SettlementFailed event');
       });
     });

@@ -28,15 +28,15 @@ contract('DelphiStake', (accounts) => {
       await token.approve(ds.address, conf.initialStake, { from: staker });
       await token.transfer(arbiter, 1000, { from: staker });
 
-      await ds.initDelphiStake(staker, conf.initialStake, token.address, conf.minFee, conf.data,
-        conf.deadline, arbiter, { from: staker });
+      await ds.initDelphiStake(staker, conf.initialStake, token.address, conf.data,
+        conf.deadline, { from: staker });
 
       const claimAmount = new BN('1', 10);
       const feeAmount = new BN('10', 10);
 
       await token.approve(ds.address, feeAmount, { from: claimant });
-      await ds.whitelistClaimant(claimant, conf.deadline, { from: staker });
-      await ds.openClaim(claimAmount, feeAmount, '', { from: claimant });
+      await ds.whitelistClaimant(claimant, arbiter, conf.minFee, conf.deadline, "", { from: staker });
+      await ds.openClaim(0, claimAmount, feeAmount, '', { from: claimant });
     });
 
     it('Should revert if called with an out-of-bounds claimId', async () => {
@@ -72,7 +72,7 @@ contract('DelphiStake', (accounts) => {
     it('Should revert if settlement has failed', async () => {
       await ds.proposeSettlement(0, 0, { from: staker });
 
-      await ds.settlementFailed(0, { from: claimant });
+      await ds.settlementFailed(0, "", { from: claimant });
       try {
         await ds.acceptSettlement(0, 0, { from: claimant });
       } catch (err) {
@@ -138,7 +138,7 @@ contract('DelphiStake', (accounts) => {
 
       await ds.proposeSettlement(0, 0, { from: claimant });
 
-      await ds.settlementFailed(0, { from: staker }); // As other party
+      await ds.settlementFailed(0, "", { from: staker }); // As other party
 
       try {
         // This function do not entry in {file:DelphiStake.sol,line 342}
@@ -159,7 +159,7 @@ contract('DelphiStake', (accounts) => {
 
       await ds.acceptSettlement(0, 0, { from: staker });
       const claim1 = await ds.claims.call('0');
-      assert.strictEqual(claim1[6], true, 'Ruled bool is not correct');
+      assert.strictEqual(parseInt(claim1[6], 10), 5, 'Ruling is not correct');
 
       try {
         await ds.acceptSettlement(0, 0, { from: claimant });
@@ -173,7 +173,7 @@ contract('DelphiStake', (accounts) => {
       await ds.proposeSettlement(0, 0, { from: claimant });
       await ds.acceptSettlement(0, 0, { from: staker });
       const claim = await ds.claims.call('0');
-      assert.strictEqual(claim[6], true, 'wrong ruled false, Expected true');
+      assert.strictEqual(parseInt(claim[6], 10), 5, 'wrong ruled false, Expected true');
     });
 
     it('Should return the unused claim funds from the staker back to their stake', async () => {

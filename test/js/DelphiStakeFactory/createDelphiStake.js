@@ -31,7 +31,7 @@ contract('DelphiStakeFactory', (accounts) => {
     it('should allow the creatation of a single stake', async () => {
       await token.approve(df.address, conf.initialStake, { from: staker });
       await utils.as(staker, df.createDelphiStake, conf.initialStake, token.address,
-        conf.minFee, conf.data, conf.deadline, arbiter);
+        conf.data, conf.deadline);
 
       const numStakes = await df.getNumStakes.call();
 
@@ -57,7 +57,7 @@ contract('DelphiStakeFactory', (accounts) => {
       for (let i = 0; i < N; i += 1) {
         await token.approve(df.address, conf.initialStake, { from: staker });
         await utils.as(staker, df.createDelphiStake, conf.initialStake, token.address,
-          conf.minFee, i.toString(10), conf.deadline, arbiter);
+          i.toString(10), conf.deadline);
       }
 
       const numStakes = await df.getNumStakes.call();
@@ -84,7 +84,7 @@ contract('DelphiStakeFactory', (accounts) => {
 
       try {
         await utils.as(staker, df.createDelphiStake, conf.initialStake, token.address,
-          conf.minFee, conf.data, conf.deadline, arbiter);
+          conf.data, conf.deadline);
       } catch (err) {
         assert(utils.isEVMRevert(err), err.toString());
 
@@ -102,7 +102,7 @@ contract('DelphiStakeFactory', (accounts) => {
 
       try {
         await utils.as(staker, df.createDelphiStake, conf.initialStake, token.address,
-          conf.minFee, conf.data, '1', arbiter);
+          conf.data, '1');
       } catch (err) {
         assert(utils.isEVMRevert(err), err.toString());
 
@@ -111,25 +111,11 @@ contract('DelphiStakeFactory', (accounts) => {
       assert(false, 'did not revert after trying to call the initialize function with a deadline that is before now');
     });
 
-    it('should revert when trying to initialize with an arbiter of address(0)', async () => {
-      await token.approve(df.address, conf.initialStake, { from: staker });
-
-      try {
-        await utils.as(staker, df.createDelphiStake, conf.initialStake, token.address,
-          conf.minFee, conf.data, conf.deadline, '0x0');
-      } catch (err) {
-        assert(utils.isEVMRevert(err), err.toString());
-
-        return;
-      }
-      assert(false, 'did not revert after trying to initialize with an arbiter of address(0)');
-    });
-
     it('should emit a StakeCreated event', async () => {
       await token.approve(df.address, conf.initialStake, { from: staker });
 
-      await df.createDelphiStake(conf.initialStake, token.address, conf.minFee, conf.data,
-        conf.deadline, arbiter, { from: staker }).then((status) => {
+      await df.createDelphiStake(conf.initialStake, token.address, conf.data,
+        conf.deadline, { from: staker }).then((status) => {
         assert.strictEqual('StakeCreated', status.logs[0].event, 'did not emit the StakeCreated event');
       });
     });
