@@ -89,6 +89,21 @@ contract('DelphiStake', (accounts) => {
       assert.strictEqual(settlement[2], true, 'claimant did not agree');
     });
 
+    it('Should increment the number of settlements', async () => {
+      await ds.proposeSettlement(0, claimAmount, { from: claimant });
+
+      let total = await ds.getNumSettlements(0);
+
+      assert.strictEqual(total.toString(10), '1', 'initialized settlements array length wrong');
+
+      await ds.proposeSettlement(0, claimAmount, { from: claimant });
+
+      total = await ds.getNumSettlements(0);
+
+      assert.strictEqual(total.toString(10), '2', 'initialized settlements array length wrong');
+
+    });
+
     it('Should create a new settlement by the staker, and have the settlement properly initialize the fields', async () => {
       await ds.proposeSettlement(0, claimAmount, { from: staker });
 
