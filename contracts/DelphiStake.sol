@@ -1,5 +1,4 @@
 pragma solidity ^0.4.18;
-pragma experimental ABIEncoderV2;
 
 import "tokens/eip20/EIP20.sol";
 
@@ -84,11 +83,6 @@ contract DelphiStake {
 
     modifier onlyArbiter(uint _claimId){
         require(msg.sender == whitelists[claims[_claimId].whitelistId].arbiter);
-        _;
-    }
-
-    modifier onlyClaimant(uint _claimId){
-        require(msg.sender == claims[_claimId].claimant);
         _;
     }
 
@@ -190,29 +184,6 @@ contract DelphiStake {
       // Emit an event noting that this claimant was whitelisted
       ClaimantWhitelisted(_claimant, whitelists.length - 1, _deadline, _data);
     }
-
-    /*
-    @dev A staker may also whitelist a series of claimants all at once using this batch function call
-    @param _claimants an address which, once whitelisted, can make claims against this stake
-    @param _arbiters an address which will rule on any claims this whitelisted claimant will open
-    @param _minimumFees the minum fee the new claimant must deposit when opening a claim
-    @param _deadlines the timestamp before which the whitelisted individual may open a claim
-    @param _datas an IPFS hash representing the scope and terms of the whitelisting
-    */
-    function whitelistClaimants(address[] _claimants, address[] _arbiters, uint[] _minimumFees, uint[] _deadlines, string[] _datas)
-    public
-    {
-      //make sure all of the arrays are the same length
-      require(_claimants.length == _arbiters.length);
-      require(_arbiters.length == _minimumFees.length);
-      require(_minimumFees.length == _deadlines.length);
-      require(_deadlines.length == _datas.length);
-
-      for(uint i = 0; i < _claimants.length; i++){
-        whitelistClaimant(_claimants[i], _arbiters[i], _minimumFees[i], _deadlines[i], _datas[i]);
-      }
-    }
-
 
     /*
     @dev if a staker desires, they may extend the deadline before which a particular claimant may open a claim
