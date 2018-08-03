@@ -93,6 +93,9 @@ contract('DelphiStake', (accounts) => {
 
       const claim1 = await ds.claims.call('0');
       assert.strictEqual(claim1[4].toString(10), '1', 'claim surplus fee incorrectly');
+
+      await ds.ruleOnClaim(0, 4, { from: arbiter });
+
     });
 
     it('should emit a FeeIncreased event', async () => {
