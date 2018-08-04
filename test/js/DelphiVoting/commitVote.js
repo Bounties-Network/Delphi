@@ -83,7 +83,7 @@ contract('DelphiVoting', (accounts) => {
       // from now
       await token.approve(delphiStakeFactory.address, 90000, { from: staker });
       const expirationTime = (await web3.eth.getBlock('latest')).timestamp + 1000;
-      const delphiStakeReceipt = await delphiStakeFactory.createDelphiStake(90000, token.address,
+      const delphiStakeReceipt = await delphiStakeFactory.createDelphiStake(staker, 90000, token.address,
         '', expirationTime, { from: staker });
       // eslint-disable-next-line
       delphiStake = DelphiStake.at(delphiStakeReceipt.logs[0].args._contractAddress);

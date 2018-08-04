@@ -30,7 +30,7 @@ contract('DelphiStakeFactory', (accounts) => {
 
     it('should allow the creatation of a single stake', async () => {
       await token.approve(df.address, conf.initialStake, { from: staker });
-      await utils.as(staker, df.createDelphiStake, conf.initialStake, token.address,
+      await utils.as(staker, df.createDelphiStake, staker, conf.initialStake, token.address,
         conf.data, conf.deadline);
 
       const numStakes = await df.getNumStakes.call();
@@ -56,7 +56,7 @@ contract('DelphiStakeFactory', (accounts) => {
       /* eslint-disable no-await-in-loop */
       for (let i = 0; i < N; i += 1) {
         await token.approve(df.address, conf.initialStake, { from: staker });
-        await utils.as(staker, df.createDelphiStake, conf.initialStake, token.address,
+        await utils.as(staker, df.createDelphiStake, staker, conf.initialStake, token.address,
           i.toString(10), conf.deadline);
       }
 
@@ -83,7 +83,7 @@ contract('DelphiStakeFactory', (accounts) => {
       await token.approve(df.address, conf.initialStake - 1, { from: staker });
 
       try {
-        await utils.as(staker, df.createDelphiStake, conf.initialStake, token.address,
+        await utils.as(staker, df.createDelphiStake, staker, conf.initialStake, token.address,
           conf.data, conf.deadline);
       } catch (err) {
         assert(utils.isEVMRevert(err), err.toString());
@@ -101,7 +101,7 @@ contract('DelphiStakeFactory', (accounts) => {
       await token.approve(df.address, conf.initialStake, { from: staker });
 
       try {
-        await utils.as(staker, df.createDelphiStake, conf.initialStake, token.address,
+        await utils.as(staker, df.createDelphiStake, staker, conf.initialStake, token.address,
           conf.data, '1');
       } catch (err) {
         assert(utils.isEVMRevert(err), err.toString());
@@ -114,7 +114,7 @@ contract('DelphiStakeFactory', (accounts) => {
     it('should emit a StakeCreated event', async () => {
       await token.approve(df.address, conf.initialStake, { from: staker });
 
-      await df.createDelphiStake(conf.initialStake, token.address, conf.data,
+      await df.createDelphiStake(staker, conf.initialStake, token.address, conf.data,
         conf.deadline, { from: staker }).then((status) => {
         assert.strictEqual('StakeCreated', status.logs[0].event, 'did not emit the StakeCreated event');
       });
