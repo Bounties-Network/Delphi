@@ -35,12 +35,12 @@ contract('DelphiStake', (accounts) => {
       const tims = timeBlock.timestamp + 6;
 
       await utils.as(staker, ds.initDelphiStake, staker, conf.initialStake, token.address,
-        conf.minFee, conf.data, tims, arbiter);
+      conf.data, tims);
     });
 
     it('should revert if called by any entity other than the staker', async () => {
       try {
-        await utils.as(claimant, ds.withdrawStake);
+        await utils.as(claimant, ds.withdrawStake, conf.initialStake);
       } catch (err) {
         assert(utils.isEVMRevert(err), err.toString());
         return;
@@ -50,7 +50,7 @@ contract('DelphiStake', (accounts) => {
     });
     it('should revert if called before the release time', async () => {
       try {
-        await utils.as(staker, ds.withdrawStake);
+        await utils.as(staker, ds.withdrawStake, conf.initialStake);
       } catch (err) {
         assert(utils.isEVMRevert(err), err.toString());
         return;
@@ -66,13 +66,13 @@ contract('DelphiStake', (accounts) => {
 
       await utils.as(claimant, token.approve, ds.address, feeAmount);
 
-      await utils.as(staker, ds.whitelistClaimant, claimant, timeBlock.timestamp + 30);
+      await utils.as(staker, ds.whitelistClaimant, claimant, arbiter, conf.minFee, timeBlock.timestamp + 30, "");
 
-      await utils.as(claimant, ds.openClaim, claimAmount, feeAmount, '');
+      await utils.as(claimant, ds.openClaim, 0, claimAmount, feeAmount, '');
 
       await utils.increaseTime(8000);
       try {
-        await utils.as(staker, ds.withdrawStake);
+        await utils.as(staker, ds.withdrawStake, conf.initialStake);
       } catch (err) {
         assert(utils.isEVMRevert(err), err.toString());
         return;
@@ -83,14 +83,21 @@ contract('DelphiStake', (accounts) => {
 
     it('should set claimableStake to zero', async () => {
       await utils.increaseTime(5000);
-      await utils.as(staker, ds.withdrawStake);
+      await utils.as(staker, ds.withdrawStake, conf.initialStake);
       const claimableStake = await ds.claimableStake();
       assert.strictEqual(claimableStake.toString(10), '0', 'claimableStake is not zero');
     });
 
-    it('should transfer the old stake amount to the staker', async () => {
+    it('should set claimableStake to remainder if amount is not full', async () => {
+      await utils.increaseTime(5000);
+      await utils.as(staker, ds.withdrawStake, (parseInt(conf.initialStake, 10) - 1));
+      const claimableStake = await ds.claimableStake();
+      assert.strictEqual(claimableStake.toString(10), '1', 'claimableStake is not 1');
+    });
+
+    it('should transfer the desired amount to the staker', async () => {
       await utils.increaseTime(10000);
-      await utils.as(staker, ds.withdrawStake);
+      await utils.as(staker, ds.withdrawStake, conf.initialStake);
       const stakerCurrentBalance = await token.balanceOf(staker);
       assert.strictEqual(stakerCurrentBalance.toString(10), '899000',
         'claimableStake doesnt withdraw correctly');
@@ -99,7 +106,7 @@ contract('DelphiStake', (accounts) => {
     it('should emit a StakeWithdrawn event', async () => {
       await utils.increaseTime(10000);
 
-      await ds.withdrawStake({ from: staker }).then((status) => {
+      await ds.withdrawStake(conf.initialStake, { from: staker }).then((status) => {
         assert.strictEqual('StakeWithdrawn', status.logs[0].event,
           'did not emit the StakeWithdrawn event');
       });

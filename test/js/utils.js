@@ -23,21 +23,22 @@ const utils = {
     await token.approve(ds.address, delphiConfig.initialStake, { from: staker });
 
     await ds.initDelphiStake(delphiConfig.initialStake, token.address,
-      delphiConfig.minFee, delphiConfig.data, delphiConfig.deadline,
-      arbiter, { from: staker });
+      delphiConfig.data, delphiConfig.deadline, { from: staker });
   },
 
-  makeNewClaim: async (staker, claimant, amount, fee, data, ds) => {
+  makeNewClaim: async (staker, claimant, arbiter, amount, fee, data, ds) => {
     const token = EIP20.at(await ds.token.call());
 
-    await utils.as(staker, ds.whitelistClaimant, claimant, delphiConfig.deadline);
+    await utils.as(staker, ds.whitelistClaimant, claimant, arbiter, fee, delphiConfig.deadline, '');
 
     await utils.as(claimant, token.approve, ds.address, new BN(fee, 10));
-    await utils.as(claimant, ds.openClaim, amount, fee, data);
+    const whitelistId = await ds.getNumWhitelists();
+
+    await utils.as(claimant, ds.openClaim, whitelistId.sub(1), amount, fee, data);
 
     const claimId = (await ds.getNumClaims()).sub(1);
 
-    await utils.as(claimant, ds.settlementFailed, claimId);
+    await utils.as(claimant, ds.settlementFailed, claimId, '');
 
     return claimId;
   },

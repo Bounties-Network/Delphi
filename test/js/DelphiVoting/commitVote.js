@@ -67,7 +67,7 @@ contract('DelphiVoting', (accounts) => {
       await registry.updateStatus(solkeccak(arbiterBob));
       await registry.updateStatus(solkeccak(arbiterCharlie));
 
-      // Create a DelphiVoting with 100 second voting periods, fee decay value of five, 
+      // Create a DelphiVoting with 100 second voting periods, fee decay value of five,
       // and which uses the registry we just created as its arbiter set
       const delphiVotingReceipt = await delphiVotingFactory.makeDelphiVoting(registry.address,
         5, [solkeccak('parameterizerVotingPeriod'), solkeccak('commitStageLen'),
@@ -83,8 +83,8 @@ contract('DelphiVoting', (accounts) => {
       // from now
       await token.approve(delphiStakeFactory.address, 90000, { from: staker });
       const expirationTime = (await web3.eth.getBlock('latest')).timestamp + 1000;
-      const delphiStakeReceipt = await delphiStakeFactory.createDelphiStake(90000, token.address,
-        1000, '', expirationTime, delphiVoting.address, { from: staker });
+      const delphiStakeReceipt = await delphiStakeFactory.createDelphiStake(staker, 90000, token.address,
+        '', expirationTime, { from: staker });
       // eslint-disable-next-line
       delphiStake = DelphiStake.at(delphiStakeReceipt.logs[0].args._contractAddress);
     });
@@ -98,7 +98,7 @@ contract('DelphiVoting', (accounts) => {
 
       // Make a new claim in the DelphiStake and generate a claim ID
       const claimNumber =
-        await utils.makeNewClaim(staker, claimant, CLAIM_AMOUNT, FEE_AMOUNT, 'i love cats',
+        await utils.makeNewClaim(staker, claimant, delphiVoting.address, CLAIM_AMOUNT, FEE_AMOUNT, 'i love cats',
           delphiStake);
       const claimId = utils.getClaimId(delphiStake.address, claimNumber.toString(10));
 
@@ -132,7 +132,7 @@ contract('DelphiVoting', (accounts) => {
 
       // Make a new claim in the DelphiStake and generate a claim ID
       const claimNumber =
-        await utils.makeNewClaim(staker, claimant, CLAIM_AMOUNT, FEE_AMOUNT, 'i love cats',
+        await utils.makeNewClaim(staker, claimant, delphiVoting.address, CLAIM_AMOUNT, FEE_AMOUNT, 'i love cats',
           delphiStake);
       const claimId = utils.getClaimId(delphiStake.address, claimNumber.toString(10));
 
@@ -163,7 +163,7 @@ contract('DelphiVoting', (accounts) => {
 
       // Make a new claim in the DelphiStake and generate a claim ID
       const claimNumber =
-        await utils.makeNewClaim(staker, claimant, CLAIM_AMOUNT, FEE_AMOUNT, 'i love cats',
+        await utils.makeNewClaim(staker, claimant, delphiVoting.address, CLAIM_AMOUNT, FEE_AMOUNT, 'i love cats',
           delphiStake);
 
       // Generate a secret hash and, as a non-arbiter, try to commit it for the claim which
@@ -190,7 +190,7 @@ contract('DelphiVoting', (accounts) => {
 
       // Make a new claim in the DelphiStake and generate a claim ID
       const claimNumber =
-        await utils.makeNewClaim(staker, claimant, CLAIM_AMOUNT, FEE_AMOUNT, 'i love cats',
+        await utils.makeNewClaim(staker, claimant, delphiVoting.address, CLAIM_AMOUNT, FEE_AMOUNT, 'i love cats',
           delphiStake);
 
       // Generate a secret hash and, as the arbiter, commit it for the claim which was just
@@ -252,7 +252,7 @@ contract('DelphiVoting', (accounts) => {
 
         // Make a new claim in the DelphiStake and generate a claim ID
         const claimNumber =
-          await utils.makeNewClaim(staker, claimant, CLAIM_AMOUNT, FEE_AMOUNT, 'i love cats',
+          await utils.makeNewClaim(staker, claimant, delphiVoting.address, CLAIM_AMOUNT, FEE_AMOUNT, 'i love cats',
             delphiStake);
 
         try {

@@ -80,7 +80,7 @@ contract('DelphiVoting', (accounts) => {
       await registry.updateStatus(solkeccak(arbiterGale));
       await registry.updateStatus(solkeccak(arbiterHenry));
 
-      // Create a DelphiVoting with 100 second voting periods, fee decay value of five, 
+      // Create a DelphiVoting with 100 second voting periods, fee decay value of five,
       // and which uses the registry we just created as its arbiter set
       const delphiVotingReceipt = await delphiVotingFactory.makeDelphiVoting(registry.address,
         5, [solkeccak('parameterizerVotingPeriod'), solkeccak('commitStageLen'),
@@ -100,8 +100,8 @@ contract('DelphiVoting', (accounts) => {
       // from now
       await token.approve(delphiStakeFactory.address, 90000, { from: staker });
       const expirationTime = (await web3.eth.getBlock('latest')).timestamp + 1000;
-      const delphiStakeReceipt = await delphiStakeFactory.createDelphiStake(90000, token.address,
-        1000, '', expirationTime, delphiVoting.address, { from: staker });
+      const delphiStakeReceipt = await delphiStakeFactory.createDelphiStake(staker, 90000, token.address,
+        '', expirationTime, { from: staker });
       // eslint-disable-next-line
       delphiStake = DelphiStake.at(delphiStakeReceipt.logs[0].args._contractAddress);
     });
@@ -115,7 +115,7 @@ contract('DelphiVoting', (accounts) => {
 
       // Make a new claim and get its claimId
       const claimNumber =
-        await utils.makeNewClaim(staker, claimant, CLAIM_AMOUNT, FEE_AMOUNT, 'i love cats',
+        await utils.makeNewClaim(staker, claimant, delphiVoting.address, CLAIM_AMOUNT, FEE_AMOUNT, 'i love cats',
           delphiStake);
       const claimId = utils.getClaimId(delphiStake.address, claimNumber.toString(10));
 
@@ -160,7 +160,7 @@ contract('DelphiVoting', (accounts) => {
 
       // Make a new claim and get its claimId
       const claimNumber =
-        await utils.makeNewClaim(staker, claimant, CLAIM_AMOUNT, FEE_AMOUNT, 'i love cats',
+        await utils.makeNewClaim(staker, claimant, delphiVoting.address, CLAIM_AMOUNT, FEE_AMOUNT, 'i love cats',
           delphiStake);
       const claimId = utils.getClaimId(delphiStake.address, claimNumber.toString(10));
 
@@ -209,8 +209,8 @@ contract('DelphiVoting', (accounts) => {
         // Set constants
         const CLAIM_AMOUNT = '10000';
         const FEE_AMOUNT = '1000';
-        const PLURALITY_VOTE = '1';
-        const NON_PLURALITY_VOTE = '0';
+        const PLURALITY_VOTE = '2';
+        const NON_PLURALITY_VOTE = '1';
         const SALT = '420';
 
         // Compute secret hashes for the plurality and non-plurality vote options
@@ -219,7 +219,7 @@ contract('DelphiVoting', (accounts) => {
 
         // Make a new claim and compute its claim ID.
         const claimNumber =
-          await utils.makeNewClaim(staker, claimant, CLAIM_AMOUNT, FEE_AMOUNT, 'i love cats',
+          await utils.makeNewClaim(staker, claimant, delphiVoting.address, CLAIM_AMOUNT, FEE_AMOUNT, 'i love cats',
             delphiStake);
         const claimId = utils.getClaimId(delphiStake.address, claimNumber.toString(10));
 
@@ -286,7 +286,7 @@ contract('DelphiVoting', (accounts) => {
 
       // Make a new claim and compute its claim ID.
       const claimNumber =
-        await utils.makeNewClaim(staker, claimant, CLAIM_AMOUNT, FEE_AMOUNT, 'i love cats',
+        await utils.makeNewClaim(staker, claimant, delphiVoting.address, CLAIM_AMOUNT, FEE_AMOUNT, 'i love cats',
           delphiStake);
       const claimId = utils.getClaimId(delphiStake.address, claimNumber.toString(10));
 
@@ -349,7 +349,7 @@ contract('DelphiVoting', (accounts) => {
 
       // Make a new claim and compute its claim ID.
       const claimNumber =
-        await utils.makeNewClaim(staker, claimant, CLAIM_AMOUNT, FEE_AMOUNT, 'i love cats',
+        await utils.makeNewClaim(staker, claimant, delphiVoting.address, CLAIM_AMOUNT, FEE_AMOUNT, 'i love cats',
           delphiStake);
       const claimId = utils.getClaimId(delphiStake.address, claimNumber.toString(10));
 
@@ -493,7 +493,7 @@ contract('DelphiVoting', (accounts) => {
 
       // Make a new claim and get its claimId
       const claimNumber =
-        await utils.makeNewClaim(staker, claimant, CLAIM_AMOUNT, FEE_AMOUNT, 'i love cats',
+        await utils.makeNewClaim(staker, claimant, delphiVoting.address, CLAIM_AMOUNT, FEE_AMOUNT, 'i love cats',
           delphiStake);
       const claimId = utils.getClaimId(delphiStake.address, claimNumber.toString(10));
 
@@ -538,7 +538,7 @@ contract('DelphiVoting', (accounts) => {
 
       // Make a new claim and get its claimId
       const claimNumber =
-        await utils.makeNewClaim(staker, claimant, CLAIM_AMOUNT, FEE_AMOUNT, 'i love cats',
+        await utils.makeNewClaim(staker, claimant, delphiVoting.address, CLAIM_AMOUNT, FEE_AMOUNT, 'i love cats',
           delphiStake);
       const claimId = utils.getClaimId(delphiStake.address, claimNumber.toString(10));
 
@@ -583,7 +583,7 @@ contract('DelphiVoting', (accounts) => {
 
       // Make a new claim and get its claimId
       const claimNumber =
-        await utils.makeNewClaim(staker, claimant, CLAIM_AMOUNT, FEE_AMOUNT, 'i love cats',
+        await utils.makeNewClaim(staker, claimant, delphiVoting.address, CLAIM_AMOUNT, FEE_AMOUNT, 'i love cats',
           delphiStake);
 
       // Get the secret hash for the salted vote
@@ -620,8 +620,8 @@ contract('DelphiVoting', (accounts) => {
       // Set constants
       const CLAIM_AMOUNT = '50000';
       const FEE_AMOUNT = new BN('10000', 10);
-      const PLURALITY_VOTE = '1';
-      const NON_PLURALITY_VOTE = '0';
+      const PLURALITY_VOTE = '2';
+      const NON_PLURALITY_VOTE = '1';
       const SALT = '420';
 
       // Compute secret hashes for the plurality and non-plurality vote options
@@ -630,7 +630,7 @@ contract('DelphiVoting', (accounts) => {
 
       // Make a new claim and compute its claim ID.
       const claimNumber =
-        await utils.makeNewClaim(staker, claimant, CLAIM_AMOUNT, FEE_AMOUNT, 'i love cats',
+        await utils.makeNewClaim(staker, claimant, delphiVoting.address, CLAIM_AMOUNT, FEE_AMOUNT, 'i love cats',
           delphiStake);
       const claimId = utils.getClaimId(delphiStake.address, claimNumber.toString(10));
 

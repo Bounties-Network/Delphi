@@ -27,8 +27,8 @@ contract('DelphiStake', (accounts) => {// eslint-disable-line
       await token.approve(ds.address, conf.initialStake, { from: staker });
       await token.transfer(arbiter, 1000, { from: staker });
 
-      await ds.initDelphiStake(staker, conf.initialStake, token.address, conf.minFee, conf.data,
-        conf.deadline, arbiter, { from: staker });
+      await ds.initDelphiStake(staker, conf.initialStake, token.address, conf.data,
+        conf.deadline, { from: staker });
     });
 
     it('should revert if called by anyone but the staker', async () => {

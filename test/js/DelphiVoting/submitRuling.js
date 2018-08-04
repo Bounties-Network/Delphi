@@ -67,7 +67,7 @@ contract('DelphiVoting', (accounts) => { //eslint-disable-line
       await registry.updateStatus(solkeccak(arbiterBob));
       await registry.updateStatus(solkeccak(arbiterCharlie));
 
-      // Create a DelphiVoting with 100 second voting periods, fee decay value of five, 
+      // Create a DelphiVoting with 100 second voting periods, fee decay value of five,
       // and which uses the registry we just created as its arbiter set
       const delphiVotingReceipt = await delphiVotingFactory.makeDelphiVoting(registry.address,
         5, [solkeccak('parameterizerVotingPeriod'), solkeccak('commitStageLen'),
@@ -83,8 +83,8 @@ contract('DelphiVoting', (accounts) => { //eslint-disable-line
       // from now
       await token.approve(delphiStakeFactory.address, 90000, { from: staker });
       const expirationTime = (await web3.eth.getBlock('latest')).timestamp + 1000;
-      const delphiStakeReceipt = await delphiStakeFactory.createDelphiStake(90000, token.address,
-        1000, '', expirationTime, delphiVoting.address, { from: staker });
+      const delphiStakeReceipt = await delphiStakeFactory.createDelphiStake(staker, 90000, token.address,
+        '', expirationTime, { from: staker });
       // eslint-disable-next-line
       delphiStake = DelphiStake.at(delphiStakeReceipt.logs[0].args._contractAddress);
     });
@@ -99,7 +99,7 @@ contract('DelphiVoting', (accounts) => { //eslint-disable-line
 
       // Open a new claim on the DS and generate a claim ID for it
       const claimNumber =
-        await utils.makeNewClaim(staker, claimant, CLAIM_AMOUNT, FEE_AMOUNT, DATA, delphiStake);
+        await utils.makeNewClaim(staker, claimant, delphiVoting.address, CLAIM_AMOUNT, FEE_AMOUNT, DATA, delphiStake);
 
       // Generate a secret hash and commit it as a vote
       const secretHash = utils.getSecretHash(VOTE, SALT);
@@ -122,7 +122,7 @@ contract('DelphiVoting', (accounts) => { //eslint-disable-line
 
       // Open a new claim on the DS and generate a claim ID for it
       const claimNumber =
-        await utils.makeNewClaim(staker, claimant, CLAIM_AMOUNT, FEE_AMOUNT, DATA, delphiStake);
+        await utils.makeNewClaim(staker, claimant, delphiVoting.address, CLAIM_AMOUNT, FEE_AMOUNT, DATA, delphiStake);
 
       // Generate a secret hash and commit it as a vote
       const secretHash = utils.getSecretHash(VOTE, SALT);
@@ -152,7 +152,7 @@ contract('DelphiVoting', (accounts) => { //eslint-disable-line
 
       // Open a new claim on the DS and generate a claim ID for it
       const claimNumber =
-        await utils.makeNewClaim(staker, claimant, CLAIM_AMOUNT, FEE_AMOUNT, DATA, delphiStake);
+        await utils.makeNewClaim(staker, claimant, delphiVoting.address, CLAIM_AMOUNT, FEE_AMOUNT, DATA, delphiStake);
 
       // Generate a secret hash and commit it as a vote
       const secretHash = utils.getSecretHash(VOTE, SALT);
@@ -181,7 +181,7 @@ contract('DelphiVoting', (accounts) => { //eslint-disable-line
 
       // Open a new claim on the DS and generate a claim ID for it
       const claimNumber =
-        await utils.makeNewClaim(staker, claimant, CLAIM_AMOUNT, FEE_AMOUNT, DATA, delphiStake);
+        await utils.makeNewClaim(staker, claimant, delphiVoting.address, CLAIM_AMOUNT, FEE_AMOUNT, DATA, delphiStake);
 
       // Generate a secret hash and commit it as a vote
       const secretHash = utils.getSecretHash(VOTE, SALT);
@@ -212,7 +212,7 @@ contract('DelphiVoting', (accounts) => { //eslint-disable-line
 
       // Open a new claim on the DS and generate a claim ID for it
       const claimNumber =
-        await utils.makeNewClaim(staker, claimant, CLAIM_AMOUNT, FEE_AMOUNT, DATA, delphiStake);
+        await utils.makeNewClaim(staker, claimant, delphiVoting.address, CLAIM_AMOUNT, FEE_AMOUNT, DATA, delphiStake);
       const claimId = utils.getClaimId(delphiStake.address, claimNumber.toString(10));
 
       // Generate a secret hash and commit it as a vote
@@ -230,7 +230,7 @@ contract('DelphiVoting', (accounts) => { //eslint-disable-line
       // Increase time past reveal period
       await rpc.sendAsync({ method: 'evm_increaseTime', params: [100] });
 
-      // Submit rulling 
+      // Submit rulling
       await delphiVoting.submitRuling(delphiStake.address, claimNumber);
 
       // Check if the result of the ruling was equal to VOTE
@@ -242,13 +242,13 @@ contract('DelphiVoting', (accounts) => { //eslint-disable-line
       // Set constants
         const CLAIM_AMOUNT = '10000';
         const FEE_AMOUNT = '1000';
-        const VOTE = '1'; // not justified
+        const VOTE = '2'; // not justified
         const SALT = '420';
         const DATA = 'i love cats';
 
         // Open a new claim on the DS and generate a claim ID for it
         const claimNumber =
-        await utils.makeNewClaim(staker, claimant, CLAIM_AMOUNT, FEE_AMOUNT, DATA, delphiStake);
+        await utils.makeNewClaim(staker, claimant, delphiVoting.address, CLAIM_AMOUNT, FEE_AMOUNT, DATA, delphiStake);
         const claimId = utils.getClaimId(delphiStake.address, claimNumber.toString(10));
 
         // Generate a secret hash and commit it as a vote

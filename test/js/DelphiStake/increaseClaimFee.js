@@ -26,17 +26,17 @@ contract('DelphiStake', (accounts) => {
       await token.approve(ds.address, conf.initialStake, { from: staker });
       await token.transfer(arbiter, 1000, { from: staker });
 
-      await ds.initDelphiStake(staker, conf.initialStake, token.address, conf.minFee, conf.data,
-        conf.deadline, arbiter, { from: staker });
+      await ds.initDelphiStake(staker, conf.initialStake, token.address, conf.data,
+        conf.deadline, { from: staker });
 
       const claimAmount = new BN('1', 10);
       const feeAmount = new BN('10', 10);
 
       await token.approve(ds.address, feeAmount, { from: claimant });
 
-      await ds.whitelistClaimant(claimant, conf.deadline, { from: staker });
+      await ds.whitelistClaimant(claimant, arbiter, conf.minFee, conf.deadline, "", { from: staker });
 
-      await ds.openClaim(claimAmount, feeAmount, '', { from: claimant });
+      await ds.openClaim(0, claimAmount, feeAmount, '', { from: claimant });
     });
 
     it('should revert if called with an out-of-bounds claimId', async () => {
@@ -51,8 +51,8 @@ contract('DelphiStake', (accounts) => {
     });
 
     it('should revert if called on a claim which has already been ruled upon', async () => {
-      await ds.settlementFailed(0, { from: claimant });
-      await ds.ruleOnClaim(0, '0', { from: arbiter });
+      await ds.settlementFailed(0, "", { from: claimant });
+      await ds.ruleOnClaim(0, '1', { from: arbiter });
 
       try {
         await utils.as(arbiter, ds.increaseClaimFee, 0, 2);
@@ -77,7 +77,7 @@ contract('DelphiStake', (accounts) => {
     it('should transfer the increase _amount from the sender to the contract', async () => {
       assert.strictEqual((await token.balanceOf(ds.address)).toString(10), '110', 'claim surplus fee incorrectly');
 
-      await ds.settlementFailed(0, { from: staker });
+      await ds.settlementFailed(0, "", { from: staker });
 
       await token.approve(ds.address, 1, { from: staker });
       await ds.increaseClaimFee(0, 1, { from: staker });
@@ -86,17 +86,20 @@ contract('DelphiStake', (accounts) => {
     });
 
     it('should increase the surplus fee by the _amount', async () => {
-      await ds.settlementFailed(0, { from: staker });
+      await ds.settlementFailed(0, "", { from: staker });
 
       await token.approve(ds.address, 1, { from: staker });
       await ds.increaseClaimFee(0, 1, { from: staker });
 
       const claim1 = await ds.claims.call('0');
-      assert.strictEqual(claim1[3].toString(10), '1', 'claim surplus fee incorrectly');
+      assert.strictEqual(claim1[4].toString(10), '1', 'claim surplus fee incorrectly');
+
+      await ds.ruleOnClaim(0, 4, { from: arbiter });
+
     });
 
     it('should emit a FeeIncreased event', async () => {
-      await ds.settlementFailed(0, { from: staker });
+      await ds.settlementFailed(0, "", { from: staker });
 
       await token.approve(ds.address, 1, { from: staker });
       await ds.increaseClaimFee(0, 1, { from: staker }).then((status) => {

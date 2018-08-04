@@ -28,14 +28,14 @@ contract('DelphiStake', (accounts) => {
       await token.approve(ds.address, conf.initialStake, { from: staker });
       await token.transfer(arbiter, 1000, { from: staker });
 
-      await ds.initDelphiStake(staker, conf.initialStake, token.address, conf.minFee, conf.data,
-        conf.deadline, arbiter, { from: staker });
+      await ds.initDelphiStake(staker, conf.initialStake, token.address, conf.data,
+        conf.deadline, { from: staker });
 
       await token.approve(ds.address, conf.minFee, { from: claimant });
 
-      await ds.whitelistClaimant(claimant, conf.deadline, { from: staker });
+      await ds.whitelistClaimant(claimant, arbiter, conf.minFee, conf.deadline, "", { from: staker });
 
-      await ds.openClaim(claimAmount, conf.minFee, '', { from: claimant });
+      await ds.openClaim(0, claimAmount, conf.minFee, '', { from: claimant });
     });
 
     it('Should revert if called with an out-of-bounds claimId', async () => {
@@ -58,7 +58,7 @@ contract('DelphiStake', (accounts) => {
     });
 
     it('Should revert if settlement has failed', async () => {
-      await ds.settlementFailed(0, { from: staker });
+      await ds.settlementFailed(0, "", { from: staker });
       try {
         await ds.proposeSettlement(0, claimAmount, { from: staker });
       } catch (err) {
@@ -87,6 +87,21 @@ contract('DelphiStake', (accounts) => {
       assert.strictEqual(settlement[0].toString(10), claimAmount, 'initialized amount incorrectly');
       assert.strictEqual(settlement[1], false, 'staker agree');
       assert.strictEqual(settlement[2], true, 'claimant did not agree');
+    });
+
+    it('Should increment the number of settlements', async () => {
+      await ds.proposeSettlement(0, claimAmount, { from: claimant });
+
+      let total = await ds.getNumSettlements(0);
+
+      assert.strictEqual(total.toString(10), '1', 'initialized settlements array length wrong');
+
+      await ds.proposeSettlement(0, claimAmount, { from: claimant });
+
+      total = await ds.getNumSettlements(0);
+
+      assert.strictEqual(total.toString(10), '2', 'initialized settlements array length wrong');
+
     });
 
     it('Should create a new settlement by the staker, and have the settlement properly initialize the fields', async () => {
