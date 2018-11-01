@@ -1,6 +1,6 @@
 pragma solidity ^0.4.18;
 
-import "tokens/eip20/EIP20.sol";
+import "openzeppelin-solidity/contracts/token/ERC20/ERC20.sol";
 
 
 contract DelphiStake {
@@ -47,7 +47,7 @@ contract DelphiStake {
     address public masterCopy; // THIS MUST ALWAYS BE IN THE FIRST STORAGE SLOT
 
     uint public claimableStake;
-    EIP20 public token;
+    ERC20 public token;
 
     string public data;
 
@@ -141,7 +141,7 @@ contract DelphiStake {
     @param _claimDeadline the deadline for opening new cliams; the earliest moment that
     a stake can be withdrawn by the staker
     */
-    function initDelphiStake(address _staker, uint _value, EIP20 _token, string _data, uint _stakeReleaseTime)
+    function initDelphiStake(address _staker, uint _value, ERC20 _token, string _data, uint _stakeReleaseTime)
     public
     {
         require(_stakeReleaseTime > now);
@@ -182,7 +182,7 @@ contract DelphiStake {
       whitelists.push(Whitelist(_claimant, _arbiter, _minimumFee, _deadline));
 
       // Emit an event noting that this claimant was whitelisted
-      ClaimantWhitelisted(_claimant, whitelists.length - 1, _deadline, _data);
+      emit ClaimantWhitelisted(_claimant, whitelists.length - 1, _deadline, _data);
     }
 
     /*
@@ -200,7 +200,7 @@ contract DelphiStake {
       whitelists[_whitelistId].deadline = _newDeadline;
 
       // Emit an event noting that this whitelisting's deadline was extended
-      WhitelistDeadlineExtended(_whitelistId, _newDeadline);
+      emit WhitelistDeadlineExtended(_whitelistId, _newDeadline);
     }
 
 
@@ -239,7 +239,7 @@ contract DelphiStake {
 
         // Emit an event that a claim was opened by the message sender (not the claimant), and
         // include the claim's ID.
-        ClaimOpened(msg.sender, _whitelistId, claims.length - 1);
+        emit ClaimOpened(msg.sender, _whitelistId, claims.length - 1);
     }
 
     /*
@@ -273,7 +273,7 @@ contract DelphiStake {
 
         require(token.transferFrom(msg.sender, this, _fee));
 
-        ClaimOpenedWithoutSettlement(msg.sender, _whitelistId, claims.length - 1);
+        emit ClaimOpenedWithoutSettlement(msg.sender, _whitelistId, claims.length - 1);
     }
 
     /*
@@ -297,7 +297,7 @@ contract DelphiStake {
 
       // Emit a FeeIncreased event including data on who increased the fee, which claim the fee was
       // increased for, and by what amount.
-      FeeIncreased(msg.sender, _claimId, _amount);
+      emit FeeIncreased(msg.sender, _claimId, _amount);
     }
 
     /*
@@ -321,7 +321,7 @@ contract DelphiStake {
       //transfer the claim amount and return the fee to the claimant
       require(token.transfer(claim.claimant, (claim.amount + claim.fee)));
 
-      ClaimAccepted(_claimId);
+      emit ClaimAccepted(_claimId);
     }
 
     /*
@@ -351,7 +351,7 @@ contract DelphiStake {
 
       // Emit an event including the settlement proposed, the claimID the settlement is proposed
       // for, and the settlement ID.
-      SettlementProposed(msg.sender, _claimId, settlements[_claimId].length - 1);
+      emit SettlementProposed(msg.sender, _claimId, settlements[_claimId].length - 1);
     }
 
     /*
@@ -401,7 +401,7 @@ contract DelphiStake {
       require(token.transfer(claim.claimant, (settlement.amount + claim.fee)));
 
       // Emit an event including who accepted the settlement, the claimId and the settlementId
-      SettlementAccepted(msg.sender, _claimId, _settlementId);
+      emit SettlementAccepted(msg.sender, _claimId, _settlementId);
     }
 
     /*
@@ -423,7 +423,7 @@ contract DelphiStake {
 
       // Emit an event stating who rejected the settlement, and for which claim settlement was
       // rejected.
-      SettlementFailed(msg.sender, _claimId, _data);
+      emit SettlementFailed(msg.sender, _claimId, _data);
     }
 
     /*
@@ -479,7 +479,7 @@ contract DelphiStake {
         openClaims--;
 
         // Emit an event stating which claim was ruled.
-        ClaimRuled(_claimId, _ruling);
+        emit ClaimRuled(_claimId, _ruling);
     }
 
     /*
@@ -496,7 +496,7 @@ contract DelphiStake {
         // Transfer _value tokens from the message sender into this contract, and increment the
         require(token.transferFrom(msg.sender, this, _value));
 
-        StakeIncreased(msg.sender, _value);
+        emit StakeIncreased(msg.sender, _value);
     }
 
     /*
@@ -509,7 +509,7 @@ contract DelphiStake {
     {
         require(_stakeReleaseTime > stakeReleaseTime);
         stakeReleaseTime = _stakeReleaseTime;
-        ReleaseTimeIncreased(_stakeReleaseTime);
+        emit ReleaseTimeIncreased(_stakeReleaseTime);
     }
 
     /*
@@ -524,7 +524,7 @@ contract DelphiStake {
     {
         claimableStake -= _amount;
         require(token.transfer(staker, _amount));
-        StakeWithdrawn(_amount);
+        emit StakeWithdrawn(_amount);
     }
 
     /*

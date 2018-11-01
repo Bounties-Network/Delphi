@@ -14,7 +14,9 @@ contract DelphiStakeFactory {
   @dev constructor function which sets the master copy of the stake contract
   @param _masterCopy the address where the template DelphiStake contract resides
   */
-  function DelphiStakeFactory(address _masterCopy){
+  constructor(address _masterCopy)
+  public
+  {
     masterCopy = _masterCopy;
   }
 
@@ -28,12 +30,12 @@ contract DelphiStakeFactory {
   @param _claimDeadline the deadline for opening new cliams; the earliest moment that
   a stake can be withdrawn by the staker
   */
-  function createDelphiStake(address _issuer, uint _value, EIP20 _token, string _data, uint _stakeReleaseTime)
+  function createDelphiStake(address _issuer, uint _value, ERC20 _token, string _data, uint _stakeReleaseTime)
   public
   {
     // Revert if the issuer is the 0 _contractAddress
     require(_issuer != address(0));
-    
+
     // Revert if the specified value to stake cannot be transferred in
     require(_token.transferFrom(msg.sender, this, _value));
 
@@ -46,7 +48,7 @@ contract DelphiStakeFactory {
     // Initialize the stake and set the staker address as the msg.sender
     stakes[stakes.length - 1].initDelphiStake(_issuer, _value, _token, _data, _stakeReleaseTime);
 
-    StakeCreated(stakes.length - 1, stakes[stakes.length - 1]);
+    emit StakeCreated(stakes.length - 1, stakes[stakes.length - 1]);
   }
 
   /*
