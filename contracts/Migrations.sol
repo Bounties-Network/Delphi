@@ -1,10 +1,5 @@
 pragma solidity ^0.4.11;
 
-// Useless imports to force compiles for the test pipeline
-import "plcr-revival/PLCRFactory.sol";
-import "tcr/ParameterizerFactory.sol";
-import "tcr/RegistryFactory.sol";
-
 contract Migrations {
   address public owner;
   uint public last_completed_migration;
@@ -13,7 +8,7 @@ contract Migrations {
     if (msg.sender == owner) _;
   }
 
-  function Migrations() public {
+  constructor() public {
     owner = msg.sender;
   }
 

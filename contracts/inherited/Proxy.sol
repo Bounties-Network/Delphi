@@ -9,7 +9,7 @@ contract Proxy {
 
     /// @dev Constructor function sets address of master copy contract.
     /// @param _masterCopy Master copy address.
-    function Proxy(address _masterCopy)
+    constructor(address _masterCopy)
         public
     {
         require(_masterCopy != 0);
