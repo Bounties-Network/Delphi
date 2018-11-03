@@ -46,7 +46,7 @@ contract DelphiStakeFactory {
     _token.approve(newStake, _value);
 
     // Initialize the stake and set the staker address as the msg.sender
-    stakes[stakes.length - 1].initDelphiStake(_issuer, _value, _token, _data, _stakeReleaseTime);
+    stakes[stakes.length - 1].initializeStake(_issuer, _value, _token, _data, _stakeReleaseTime);
 
     emit StakeCreated(stakes.length - 1, stakes[stakes.length - 1]);
   }

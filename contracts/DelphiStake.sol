@@ -139,7 +139,7 @@ contract DelphiStake {
     @param _data a content hash of the relevant associated data describing the stake
     @param _releaseTime the earliest moment that a stake can be withdrawn by the staker
     */
-    function initDelphiStake(address _staker, uint _value, ERC20 _token, string _data, uint _releaseTime)
+    function initializeStake(address _staker, uint _value, ERC20 _token, string _data, uint _releaseTime)
     public
     {
         require(_releaseTime > now);
