@@ -1,14 +1,12 @@
 const config = require('./config');
 
-const initializeStakeBuilder = (stake, token, stakerAddress) => (
-    {
-      staker=stakerAddress,
-      value=config.initialStake,
-      tokenAddress=token.address,
-      data=config.data,
-      releaseTime=config.releaseTime
-    } = {}
-  ) => stake.initDelphiStake(
+const initializeStakeBuilder = (stake, token, stakerAddress) => ({
+    staker=stakerAddress,
+    value=config.initialStake,
+    tokenAddress=token.address,
+    data=config.data,
+    releaseTime=config.releaseTime
+  } = {}) => stake.initDelphiStake(
     staker,
     value,
     tokenAddress,
