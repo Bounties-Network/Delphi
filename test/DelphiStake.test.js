@@ -44,6 +44,12 @@ contract('DelphiStake', accounts => {
     { from: sender }
   )
 
+  const extendDeadline = ({
+    sender=staker,
+    whitelistId=0,
+    newDeadline=(config.claimDeadline * 2)
+  } = {}) => stake.extendDeadline(whitelistId, newDeadline, { from: sender })
+
   const openClaim = ({
     sender=claimant,
     whitelistId=0,
@@ -173,6 +179,29 @@ contract('DelphiStake', accounts => {
         await shouldFail.reverting(
           whitelistClaimant({ claimantAddress: staker })
         )
+      })
+    })
+
+
+    /* -- EXTEND DEADLINE -- */
+    describe('extendDeadline', async () => {
+      beforeEach(async () => {
+        await whitelistClaimant()
+      })
+
+      it('should extendDeadline', async () => {
+        await extendDeadline()
+        const deadline = (await stake.whitelist(0))[3]
+        deadline.should.be.bignumber.equal(config.claimDeadline * 2)
+      })
+
+      it('should revert if called by user other than staker', async () => {
+        await shouldFail.reverting(extendDeadline({ sender: claimant }))
+        await shouldFail.reverting(extendDeadline({ sender: other }))
+      })
+
+      it('should revert if new deadline is less than or equal to old', async () => {
+        await shouldFail.reverting(extendDeadline({ newDeadline: config.claimDeadline }))
       })
     })
 
@@ -350,6 +379,7 @@ contract('DelphiStake', accounts => {
     })
 
 
+    /* -- SETTLEMENT FAILED -- */
     describe('settlementFailed', async () => {
       beforeEach(async () => {
         await whitelistClaimant()
