@@ -44,21 +44,6 @@ contract('DelphiStake', accounts => {
     { from: sender }
   )
 
-  const proposeSettlement = ({
-    sender=staker,
-    claimId=0,
-    amount=config.settlementAmount
-  }={}) => stake.proposeSettlement(claimId, amount, { from: sender })
-
-  const acceptSettlement = ({
-    sender=staker,
-    claimId=0,
-    settlementId=0
-  }={}) => stake.acceptSettlement(claimId, settlementId, { from: sender })
-
-  const acceptClaim = ({ sender=staker, claimId=0 }={}) => stake.acceptClaim(claimId, { from: sender })
-
-
   const openClaim = ({
     sender=claimant,
     whitelistId=0,
@@ -73,11 +58,32 @@ contract('DelphiStake', accounts => {
     { from: sender }
   )
 
+  const proposeSettlement = ({
+    sender=staker,
+    claimId=0,
+    amount=config.settlementAmount
+  }={}) => stake.proposeSettlement(claimId, amount, { from: sender })
+
+  const acceptSettlement = ({
+    sender=staker,
+    claimId=0,
+    settlementId=0
+  }={}) => stake.acceptSettlement(claimId, settlementId, { from: sender })
+
+  const settlementFailed = ({
+    sender=staker,
+    claimId=0,
+    data=config.data
+  }={}) => stake.settlementFailed(claimId, data, { from: sender })
+
+  const acceptClaim = ({ sender=staker, claimId=0 }={}) => stake.acceptClaim(claimId, { from: sender })
+
   beforeEach(async () => {
       stake = await DelphiStake.new()
       token = await ERC20Mock.new(staker, config.initialStake*100)
       await token.approve(stake.address, config.initialStake, { from: staker })
-      await token.transfer(claimant, config.claimantBalance, { from: staker });
+      await token.transfer(claimant, config.claimantBalance, { from: staker })
+      await token.approve(stake.address, config.minFee, { from: claimant });
   })
 
   /* -- CONSTRUCTOR -- */
@@ -118,7 +124,7 @@ contract('DelphiStake', accounts => {
 
 
   describe('functions', async () => {
-    beforeEach(async () => initializeStake())
+    beforeEach(async () => await initializeStake())
 
 
     /* -- WHITELIST CLAIMANT -- */
@@ -174,8 +180,7 @@ contract('DelphiStake', accounts => {
     /* -- OPEN CLAIM -- */
     describe('openClaim', async () => {
       beforeEach(async () => {
-        whitelistClaimant()
-        await token.approve(stake.address, config.minFee, { from: claimant });
+        await whitelistClaimant()
       })
 
       it('should open new claim', async () => {
@@ -236,8 +241,7 @@ contract('DelphiStake', accounts => {
     /* -- PROPOSE SETTLEMENT -- */
     describe('proposeSettlement', async () => {
       beforeEach(async () => {
-        whitelistClaimant()
-        await token.approve(stake.address, config.minFee, { from: claimant });
+        await whitelistClaimant()
         await openClaim()
       })
 
@@ -275,8 +279,9 @@ contract('DelphiStake', accounts => {
         await shouldFail.reverting(proposeSettlement({ claimId: 1 }))
       })
 
-      it.skip('should revert if settlement has already failed', async () => {
-        // TODO
+      it('should revert if settlement has already failed', async () => {
+        await settlementFailed()
+        await shouldFail.reverting(proposeSettlement())
       })
     })
 
@@ -284,8 +289,7 @@ contract('DelphiStake', accounts => {
     /* -- ACCEPT SETTLEMENT -- */
     describe('acceptSettlement', async () => {
       beforeEach(async () => {
-        whitelistClaimant()
-        await token.approve(stake.address, config.minFee, { from: claimant });
+        await whitelistClaimant()
         await openClaim()
         await proposeSettlement()
       })
@@ -321,16 +325,17 @@ contract('DelphiStake', accounts => {
         await shouldFail.reverting(acceptSettlement({ sender: other }))
       })
 
-      it('should revert if called with invalid claimId', async () => {
+      it('should revert on invalid claimId', async () => {
         await shouldFail.reverting(acceptSettlement({ claimId: 1 }))
       })
 
-      it('should revert if called with invalid settlementId', async () => {
+      it('should revert on invalid settlementId', async () => {
         await shouldFail.reverting(acceptSettlement({ settlementId: 1 }))
       })
 
-      it.skip('should revert if settlement has already failed', async () => {
-        // TODO
+      it('should revert if settlement has already failed', async () => {
+        await settlementFailed()
+        await shouldFail.reverting(acceptSettlement())
       });
 
       it('should revert if staker attempts to accept their own settlement', async () => {
@@ -345,11 +350,45 @@ contract('DelphiStake', accounts => {
     })
 
 
+    describe('settlementFailed', async () => {
+      beforeEach(async () => {
+        await whitelistClaimant()
+        await openClaim()
+        await proposeSettlement()
+      })
+
+      it('should reject settlement as staker', async () => {
+        await settlementFailed()
+        const didSettlementFail = (await stake.claims(0))[7]
+        didSettlementFail.should.be.equal(true)
+      })
+
+      it('should reject settlement as claimant', async () => {
+        await settlementFailed({ sender: claimant })
+        const didSettlementFail = (await stake.claims(0))[7]
+        didSettlementFail.should.be.equal(true)
+      })
+
+      it('should revert if user other than staker/claimant attempts to reject settlement', async () => {
+        await shouldFail.reverting(settlementFailed({ sender: other }))
+      })
+
+      it('should revert on invalid claimId', async () => {
+        await shouldFail.reverting(settlementFailed({ claimId: 1 }))
+      })
+
+      it('should revert if settlment already failed', async () => {
+        await settlementFailed()
+        await shouldFail.reverting(settlementFailed())
+      })
+    })
+
+
     /* -- ACCEPT CLAIM -- */
     describe('acceptClaim', async () => {
       beforeEach(async () => {
-        whitelistClaimant()
-        await token.approve(stake.address, config.minFee, { from: claimant });
+        await whitelistClaimant()
+
         await openClaim()
       })
 
@@ -369,8 +408,9 @@ contract('DelphiStake', accounts => {
         await shouldFail.reverting(acceptClaim({ claimId: 1 }))
       })
 
-      it.skip('should revert if settlement has already failed', async () => {
-        // TODO
+      it('should revert if settlement has already failed', async () => {
+        await settlementFailed()
+        await shouldFail.reverting(acceptClaim())
       })
     })
 
