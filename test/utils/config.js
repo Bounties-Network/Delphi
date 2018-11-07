@@ -1,6 +1,7 @@
 const stake = {
+  "tokenSupply": 100*10,
   "initialStake": 100,
-  "data": "i love cats",
+  "data": "bounty dat shit",
   "releaseTime": 9999999999999999999999999999999999,
   "arbiter": "0x0000000000000000000000000000000000000000",
   "minFee": 10,
