@@ -22,4 +22,46 @@ const getAccounts = accounts => ({
   other: accounts[3]
 });
 
-module.exports = { initializeStakeBuilder, getAccounts };
+advanceTimeAndBlock = async (time) => {
+    await advanceTime(time);
+    await advanceBlock();
+}
+
+advanceTime = (time) => {
+  return web3.currentProvider.send({
+    jsonrpc: "2.0",
+    method: "evm_increaseTime",
+    params: [time],
+    id: new Date().getTime()
+  })
+}
+
+advanceBlock = () => {
+  return web3.currentProvider.send({
+    jsonrpc: "2.0",
+    method: "evm_mine",
+    id: new Date().getTime()
+  })
+}
+
+const getBlockNumber = () => new Promise((resolve, reject) => {
+  web3.eth.getBlockNumber((error, result) => {
+    if (error) reject(error)
+    resolve(result)
+  })
+})
+
+const getBlock = block => new Promise((resolve, reject) => {
+  web3.eth.getBlock(block, (error, result) => {
+    if (error) reject(error)
+    resolve(result)
+  })
+})
+
+module.exports = {
+  initializeStakeBuilder,
+  getAccounts,
+  advanceTimeAndBlock,
+  getBlockNumber,
+  getBlock
+};

@@ -4,13 +4,19 @@ const ERC20Mock = artifacts.require('ERC20Mock')
 const config = require('./utils/config')
 const shouldFail = require('./utils/shouldFail')
 const { should } = require('./utils/should')
-const { initializeStakeBuilder, getAccounts } = require('./utils/helpers')
+const {
+  initializeStakeBuilder,
+  getAccounts,
+  advanceTimeAndBlock,
+  getBlockNumber,
+  getBlock
+} = require('./utils/helpers')
 
 const TIMESTAMP_IN_PAST = 1541171924
 
 contract('DelphiStake', accounts => {
   const { staker, claimant, arbiter, other } = getAccounts(accounts)
-  let stake, token
+  let stake, token, stakeReleaseTime
 
   const initializeStake = ({
     sender=staker,
@@ -18,7 +24,7 @@ contract('DelphiStake', accounts => {
     value=config.initialStake,
     tokenAddress=token.address,
     data=config.data,
-    releaseTime=config.releaseTime
+    releaseTime=stakeReleaseTime
   } = {}) => stake.initializeStake(
     stakerAddress,
     value,
@@ -82,20 +88,42 @@ contract('DelphiStake', accounts => {
     data=config.data
   }={}) => stake.settlementFailed(claimId, data, { from: sender })
 
-  const acceptClaim = ({ sender=staker, claimId=0 }={}) => stake.acceptClaim(claimId, { from: sender })
+  const acceptClaim = ({ sender=staker, claimId=0 } = {}) => stake.acceptClaim(claimId, { from: sender })
+
+  const addSurplusFee = ({
+    sender=staker,
+    claimId=0,
+    amount=config.minFee
+  } = {}) => stake.addSurplusFee(claimId, amount, { from: sender })
+
+  const increaseStake = ({
+    sender=staker,
+    value=config.initialStake
+  } = {}) => stake.increaseStake(value, { from: sender })
+
+  const extendReleaseTime = ({
+    sender=staker,
+    releaseTime=(stakeReleaseTime * 2)
+  } = {}) => stake.extendReleaseTime(releaseTime, { from: sender })
+
+  const withdrawStake = ({
+    sender=staker,
+    amount=config.initialStake
+  } = {}) => stake.withdrawStake(amount, { from: sender })
 
   beforeEach(async () => {
-      stake = await DelphiStake.new()
-      token = await ERC20Mock.new(staker, config.initialStake*100)
-      await token.approve(stake.address, config.initialStake, { from: staker })
-      await token.transfer(claimant, config.claimantBalance, { from: staker })
-      await token.approve(stake.address, config.minFee, { from: claimant });
+    stake = await DelphiStake.new()
+    token = await ERC20Mock.new(staker, config.initialStake*100)
+    await token.approve(stake.address, config.initialStake, { from: staker })
+    await token.transfer(claimant, config.claimantBalance, { from: staker })
+    await token.approve(stake.address, config.minFee, { from: claimant })
+    stakeReleaseTime = (await getBlock(await getBlockNumber())).timestamp + 100
   })
 
   /* -- CONSTRUCTOR -- */
   describe('constructor', () => {
     it('should instantiate the contract with correct values', async () => {
-      await initializeStake()
+      await initializeStake({ releaseTime: stakeReleaseTime })
 
       const claimableStake = await stake.claimableStake.call()
       const tokenAddress = await stake.token.call()
@@ -106,14 +134,12 @@ contract('DelphiStake', accounts => {
       claimableStake.should.be.bignumber.equal(config.initialStake)
       tokenAddress.should.be.equal(token.address)
       data.should.be.equal(config.data)
-      releaseTime.should.be.bignumber.equal(config.releaseTime)
+      releaseTime.should.be.bignumber.equal(stakeReleaseTime)
       balance.should.be.bignumber.equal(config.initialStake)
     })
 
     it('should revert when _value does not equal amount of tokens sent', async () => {
-      await shouldFail.reverting(
-        initializeStake({ value: config.initialStake + 1 })
-      )
+      await shouldFail.reverting(initializeStake({ value: config.initialStake + 1 }))
     })
 
     it('should revert when trying to call the initialize function more than once', async () => {
@@ -122,16 +148,13 @@ contract('DelphiStake', accounts => {
     })
 
     it('should revert when trying to call the initialize function with a releaseTime that is before now', async () => {
-      await shouldFail.reverting(
-        initializeStake({ releaseTime: TIMESTAMP_IN_PAST })
-      )
+      await shouldFail.reverting(initializeStake({ releaseTime: TIMESTAMP_IN_PAST }))
     })
   })
 
 
   describe('functions', async () => {
-    beforeEach(async () => await initializeStake())
-
+    beforeEach(async () => await initializeStake({ releaseTime: stakeReleaseTime }))
 
     /* -- WHITELIST CLAIMANT -- */
     describe('whitelistClaimant', () => {
@@ -418,7 +441,6 @@ contract('DelphiStake', accounts => {
     describe('acceptClaim', async () => {
       beforeEach(async () => {
         await whitelistClaimant()
-
         await openClaim()
       })
 
@@ -445,8 +467,111 @@ contract('DelphiStake', accounts => {
     })
 
 
+    /* -- ADD SURPLUS FEE -- */
+    describe('addSurplusFee', async () => {
+      beforeEach(async () => {
+        await whitelistClaimant()
+        await openClaim()
+        await settlementFailed()
+        await token.approve(stake.address, config.minFee, { from: staker })
+        await token.approve(stake.address, config.minFee, { from: claimant })
+      })
+
+      it('should add surplus fee to claim as staker', async () => {
+        await addSurplusFee()
+        const surplusFee = (await stake.claims(0))[4]
+        surplusFee.should.be.bignumber.equal(config.minFee)
+      })
+
+      it('should add surplus fee to claim as claimant', async () => {
+        await addSurplusFee({ sender: claimant })
+        const surplusFee = (await stake.claims(0))[4]
+        surplusFee.should.be.bignumber.equal(config.minFee)
+      })
+
+      it('should revert if settlement has not failed', async () => {
+        await openClaim()
+        await shouldFail.reverting(addSurplusFee({ claimId: 1 }))
+      })
+
+      it.skip('should revert if claim is already ruled on', async () => {
+
+      })
+    })
 
 
+    /* -- INCREASE STAKE -- */
+    describe('increaseStake', async () => {
+      beforeEach(async () => {
+        await token.approve(stake.address, config.initialStake, { from: staker })
+      })
 
+      it('should increase stake', async () => {
+        await increaseStake()
+
+        const claimableStake = await stake.claimableStake.call()
+        const balance = await token.balanceOf(stake.address)
+
+        claimableStake.should.be.bignumber.equal(2 * config.initialStake)
+        balance.should.be.bignumber.equal(2 * config.initialStake)
+      })
+
+      it('should revert if staker didn\'t approve enough tokens', async () => {
+        await shouldFail.reverting(increaseStake({ value: config.initialStake + 1}))
+      })
+
+      it('should revert if a user other than the staker attempts to increase stake', async () => {
+        await shouldFail.reverting(increaseStake({ sender: other }))
+      })
+    })
+
+
+    /* -- EXTEND RELEASE TIME -- */
+    describe('extendReleaseTime', async () => {
+      it('should extend releaseTime', async () => {
+        await extendReleaseTime()
+        const releaseTime = await stake.releaseTime.call()
+        releaseTime.should.be.bignumber.equal(2 * stakeReleaseTime)
+      })
+
+      it('should revert if called by user other than staker', async () => {
+        await shouldFail.reverting(extendReleaseTime({ sender: other }))
+      })
+
+      it('should revert if new release time is the same or less than old', async () => {
+        await shouldFail.reverting(extendReleaseTime({ releaseTime: stakeReleaseTime }))
+      })
+    })
+
+    /* -- WITHDRAW STAKE -- */
+    describe('withdrawStake', async () => {
+      let balanceBefore
+
+      beforeEach(async () => balanceBefore = await token.balanceOf(staker))
+
+      it('should withdraw stake', async () => {
+        await web3.currentProvider.send({jsonrpc: "2.0", method: "evm_increaseTime", params: [1000], id: 0})
+        await withdrawStake()
+        const balance = await token.balanceOf(staker)
+        const claimableStake = await stake.claimableStake.call()
+
+        balance.should.be.bignumber.equal(balanceBefore.add(config.initialStake))
+        claimableStake.should.be.bignumber.equal(0)
+      })
+
+      it('should revert if anyone else tries to withdraw stake', async () => {
+        await web3.currentProvider.send({jsonrpc: "2.0", method: "evm_increaseTime", params: [1000], id: 0})
+        await shouldFail.reverting(withdrawStake({ sender: other }))
+      })
+
+      it('should revert if requested withdrawal amount is greater than the claimable stake', async () => {
+        await web3.currentProvider.send({jsonrpc: "2.0", method: "evm_increaseTime", params: [1000], id: 0})
+        await shouldFail.reverting(withdrawStake({ amount: config.initialStake + 1 }))
+      })
+
+      it('should revert if release time has not elapsed yet', async () => {
+        await shouldFail.reverting(withdrawStake())
+      })
+    })
   })
 })

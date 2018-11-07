@@ -195,8 +195,6 @@ contract DelphiStake {
       emit WhitelistDeadlineExtended(_whitelistId, _newDeadline);
     }
 
-
-
     /*
     @dev a whitelisted claimant can use this function to make a claim for remuneration. Once
     opened, an opportunity for pre-arbitration settlement will commence, but claims cannot be
