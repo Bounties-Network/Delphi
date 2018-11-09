@@ -3,8 +3,10 @@ import "./inherited/Proxy.sol";
 import "./DelphiStake.sol";
 
 contract DelphiStakeFactory {
-
-  event StakeCreated(uint _stakeId, address _contractAddress);
+  event StakeCreated(
+    uint _stakeId,
+    address _contractAddress
+  );
 
   DelphiStake[] public stakes;
 
@@ -30,7 +32,7 @@ contract DelphiStakeFactory {
   @param _claimDeadline the deadline for opening new cliams; the earliest moment that
   a stake can be withdrawn by the staker
   */
-  function createDelphiStake(address _issuer, uint _value, ERC20 _token, string _data, uint _stakeReleaseTime)
+  function createStake(address _issuer, uint _value, ERC20 _token, uint _releaseTime, string _data)
   public
   {
     // Revert if the issuer is the 0 _contractAddress
@@ -46,7 +48,7 @@ contract DelphiStakeFactory {
     _token.approve(newStake, _value);
 
     // Initialize the stake and set the staker address as the msg.sender
-    stakes[stakes.length - 1].initializeStake(_issuer, _value, _token, _data, _stakeReleaseTime);
+    stakes[stakes.length - 1].initializeStake(_issuer, _value, _token, _releaseTime, _data);
 
     emit StakeCreated(stakes.length - 1, stakes[stakes.length - 1]);
   }

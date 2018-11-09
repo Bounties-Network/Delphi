@@ -23,14 +23,14 @@ contract('DelphiStake', accounts => {
     stakerAddress=staker,
     value=config.initialStake,
     tokenAddress=token.address,
+    releaseTime=stakeReleaseTime,
     data=config.data,
-    releaseTime=stakeReleaseTime
   } = {}) => stake.initializeStake(
     stakerAddress,
     value,
     tokenAddress,
-    data,
     releaseTime,
+    data,
     { from: sender }
   )
 
