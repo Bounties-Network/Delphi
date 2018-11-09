@@ -4,20 +4,81 @@ import "openzeppelin-solidity/contracts/token/ERC20/ERC20.sol";
 
 
 contract DelphiStake {
+    event ClaimantWhitelisted(
+      uint _whitelistId,
+      address _claimant,
+      address _arbiter,
+      uint _deadline,
+      string _data
+    );
 
-    event ClaimantWhitelisted(address _claimant, uint _whitelistId, uint _deadline, string _data);
-    event WhitelistDeadlineExtended(uint _whitelistId, uint _newDeadline);
-    event ClaimOpened(address _claimant, uint _whitelistId, uint _claimId);
-    event ClaimOpenedWithoutSettlement(address _claimant, uint _whitelistId, uint _claimId);
-    event FeeIncreased(address _increasedBy, uint _claimId, uint _amount);
-    event ClaimAccepted(uint _claimId);
-    event SettlementProposed(address _proposedBy, uint _claimId, uint _settlementId);
-    event SettlementAccepted(address _acceptedBy, uint _claimId, uint _settlementId);
-    event SettlementFailed(address _failedBy, uint _claimId, string _data);
-    event ClaimRuled(uint _claimId, uint _ruling);
-    event ReleaseTimeIncreased(uint _releaseTime);
-    event StakeWithdrawn(uint _amount);
-    event StakeIncreased(address _increasedBy, uint _value);
+    event WhitelistDeadlineExtended(
+      uint _whitelistId,
+      uint _newDeadline
+    );
+
+    event ClaimOpened(
+      uint _claimId,
+      uint _whitelistId,
+      address _claimant,
+      uint _amount,
+      uint _fee,
+      string _data
+    );
+
+    // event ClaimOpenedWithoutSettlement(
+    //   address _claimant,
+    //   uint _whitelistId,
+    //   uint _claimId
+    // );
+
+    event SurplusFeeAdded(
+      uint _claimId,
+      address _increasedBy,
+      uint _amount,
+      uint _newTotalFee
+    );
+
+    event ClaimAccepted(
+      uint _claimId
+    );
+
+    event SettlementProposed(
+      uint _settlementId,
+      uint _claimId,
+      address _proposedBy,
+      uint _proposedAmount
+    );
+
+    event SettlementAccepted(
+      uint _settlementId,
+      uint _claimId,
+      address _acceptedBy
+    );
+
+    event SettlementFailed(
+      uint _claimId,
+      address _failedBy,
+      string _data
+    );
+
+    event ClaimRuled(
+      uint _claimId,
+      uint _ruling
+    );
+
+    event StakeIncreased(
+      address _increasedBy,
+      uint _newTotalStake
+    );
+
+    event ReleaseTimeIncreased(
+      uint _releaseTime
+    );
+
+    event StakeWithdrawn(
+      uint _amount
+    );
 
 
     struct Claim {
@@ -59,6 +120,7 @@ contract DelphiStake {
     Whitelist[] public whitelist;
 
     mapping(uint => Settlement[]) public settlements;
+
 
     modifier onlyStaker(){
         require(msg.sender == staker);
@@ -177,7 +239,7 @@ contract DelphiStake {
       );
 
       whitelist.push(Whitelist(_claimant, _arbiter, _minimumFee, _deadline, _data));
-      emit ClaimantWhitelisted(_claimant, whitelist.length - 1, _deadline, _data);
+      emit ClaimantWhitelisted(whitelist.length - 1, _claimant, _arbiter, _deadline, _data);
     }
 
     /*
@@ -224,7 +286,7 @@ contract DelphiStake {
 
         require(token.transferFrom(msg.sender, this, _fee));
 
-        emit ClaimOpened(msg.sender, _whitelistId, claims.length - 1);
+        emit ClaimOpened(claims.length - 1, _whitelistId, msg.sender, _amount, _fee, _data);
     }
 
     /*
@@ -243,7 +305,7 @@ contract DelphiStake {
       require(token.transferFrom(msg.sender, this, _amount));
 
       claims[_claimId].surplusFee += _amount;
-      emit FeeIncreased(msg.sender, _claimId, _amount);
+      emit SurplusFeeAdded(_claimId, msg.sender, _amount, claims[_claimId].fee + _amount);
     }
 
     /*
@@ -289,7 +351,7 @@ contract DelphiStake {
         revert();
       }
 
-      emit SettlementProposed(msg.sender, _claimId, settlements[_claimId].length - 1);
+      emit SettlementProposed(settlements[_claimId].length - 1, _claimId, msg.sender, _amount);
     }
 
     /*
@@ -336,7 +398,7 @@ contract DelphiStake {
 
       require(token.transfer(claim.claimant, (settlement.amount + claim.fee)));
 
-      emit SettlementAccepted(msg.sender, _claimId, _settlementId);
+      emit SettlementAccepted(_settlementId, _claimId, msg.sender);
     }
 
     /*
@@ -353,7 +415,7 @@ contract DelphiStake {
       require(msg.sender == staker || msg.sender == claims[_claimId].claimant);
 
       claims[_claimId].settlementFailed = true;
-      emit SettlementFailed(msg.sender, _claimId, _data);
+      emit SettlementFailed(_claimId, msg.sender, _data);
     }
 
     /*
@@ -390,7 +452,9 @@ contract DelphiStake {
 
           // Claim is collusive. Arbiter gets all fees, claim is burned.
           require(token.transfer(arbiter, (claim.fee + claim.fee + claim.surplusFee)));
-          require(token.transfer(address(0), claim.amount));
+
+          // TODO: replace with zero address
+          require(token.transfer(address(1), claim.amount));
         } else {
           // Claim cannot be ruled. Free up the claim amount and fee.
           claimableStake += (claim.amount + claim.fee);
