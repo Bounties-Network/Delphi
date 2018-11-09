@@ -142,7 +142,7 @@ contract DelphiStake {
   }
 
   modifier isBeforeDeadline(uint _whitelistId){
-      require(now <= whitelist[_whitelistId].deadline);
+      require(now < whitelist[_whitelistId].deadline);
       _;
   }
 
@@ -227,10 +227,7 @@ contract DelphiStake {
   public
   onlyStaker
   {
-    require(
-      _claimant != staker &&
-      _claimant != _arbiter
-    );
+    require(_claimant != staker && _claimant != _arbiter);
 
     whitelist.push(Whitelist(_claimant, _arbiter, _minimumFee, _deadline, _data));
     emit ClaimantWhitelisted(whitelist.length - 1, _claimant, _arbiter, _deadline, _data);
@@ -430,6 +427,8 @@ contract DelphiStake {
       Claim storage claim = claims[_claimId];
       address arbiter = msg.sender;
 
+      openClaims --;
+
       if (_ruling == 1){
         claim.ruling = 1;
         // Claim is justified. Transfer to the arbiter the staker's fee.
@@ -460,7 +459,6 @@ contract DelphiStake {
         }
       }
 
-      openClaims--;
       emit ClaimRuled(_claimId, _ruling);
   }
 
