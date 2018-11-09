@@ -111,9 +111,16 @@ contract('DelphiStake', accounts => {
     amount=config.initialStake
   } = {}) => stake.withdrawStake(amount, { from: sender })
 
+  const ruleOnClaim = ({
+    sender=arbiter,
+    claimId=0,
+    ruling=1
+  } = {}) => stake.ruleOnClaim(claimId, ruling, { from: sender })
+
+
   beforeEach(async () => {
     stake = await DelphiStake.new()
-    token = await ERC20Mock.new(staker, config.initialStake*100)
+    token = await ERC20Mock.new(staker, config.tokenSupply)
     await token.approve(stake.address, config.initialStake, { from: staker })
     await token.transfer(claimant, config.claimantBalance, { from: staker })
     await token.approve(stake.address, config.minFee, { from: claimant })
@@ -494,8 +501,9 @@ contract('DelphiStake', accounts => {
         await shouldFail.reverting(addSurplusFee({ claimId: 1 }))
       })
 
-      it.skip('should revert if claim is already ruled on', async () => {
-
+      it('should revert if claim is already ruled on', async () => {
+        await ruleOnClaim()
+        await shouldFail.reverting(addSurplusFee())
       })
     })
 
@@ -572,6 +580,73 @@ contract('DelphiStake', accounts => {
       it('should revert if release time has not elapsed yet', async () => {
         await shouldFail.reverting(withdrawStake())
       })
+    })
+
+
+    /* -- RULE ON CLAIM -- */
+    describe('ruleOnClaim', async () => {
+      beforeEach(async () => {
+        await whitelistClaimant()
+        await openClaim()
+        await settlementFailed()
+      })
+
+      const JUSTIFIED = 1
+      const NOT_JUSTIFIED = 2
+      const COLLUSIVE = 3
+
+      it('should set claim as justified', async () => {
+        await ruleOnClaim()
+        ruling = (await stake.claims(0))[6]
+        claimableStake = await stake.claimableStake.call()
+        claimantBalance = await token.balanceOf(claimant)
+        stakerBalance = await token.balanceOf(staker)
+        arbiterBalance = await token.balanceOf(arbiter)
+        openClaims = await stake.openClaims.call()
+
+        ruling.should.be.bignumber.equal(1)
+        claimableStake.should.be.bignumber.equal(config.initialStake - config.claimAmount - config.minFee)
+        claimantBalance.should.be.bignumber.equal(config.claimantBalance + config.claimAmount)
+        stakerBalance.should.be.bignumber.equal(config.tokenSupply - config.claimantBalance - config.initialStake)
+        arbiterBalance.should.be.bignumber.equal(config.minFee)
+        openClaims.should.be.bignumber.equal(0)
+      })
+
+      it('should set claim as not justified', async () => {
+        await ruleOnClaim({ ruling: 2 })
+        ruling = (await stake.claims(0))[6]
+        claimableStake = await stake.claimableStake.call()
+        claimantBalance = await token.balanceOf(claimant)
+        stakerBalance = await token.balanceOf(staker)
+        arbiterBalance = await token.balanceOf(arbiter)
+        openClaims = await stake.openClaims.call()
+
+        ruling.should.be.bignumber.equal(2)
+        claimableStake.should.be.bignumber.equal(config.initialStake)
+        claimantBalance.should.be.bignumber.equal(config.claimantBalance - config.minFee)
+        stakerBalance.should.be.bignumber.equal(config.tokenSupply - config.claimantBalance - config.initialStake)
+        arbiterBalance.should.be.bignumber.equal(config.minFee)
+        openClaims.should.be.bignumber.equal(0)
+      })
+
+      it('should set claim as collusive', async () => {
+        await ruleOnClaim({ ruling: 3 })
+        ruling = (await stake.claims(0))[6]
+        claimableStake = await stake.claimableStake.call()
+        claimantBalance = await token.balanceOf(claimant)
+        stakerBalance = await token.balanceOf(staker)
+        arbiterBalance = await token.balanceOf(arbiter)
+        openClaims = await stake.openClaims.call()
+
+        ruling.should.be.bignumber.equal(3)
+        claimableStake.should.be.bignumber.equal(config.initialStake - config.minFee - config.claimAmount)
+        claimantBalance.should.be.bignumber.equal(config.claimantBalance - config.minFee)
+        stakerBalance.should.be.bignumber.equal(config.tokenSupply - config.claimantBalance - config.initialStake)
+        arbiterBalance.should.be.bignumber.equal(2*config.minFee)
+        openClaims.should.be.bignumber.equal(0)
+      })
+
+
     })
   })
 })
