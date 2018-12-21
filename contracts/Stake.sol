@@ -3,7 +3,7 @@ pragma solidity ^0.4.18;
 import "openzeppelin-solidity/contracts/token/ERC20/ERC20.sol";
 
 
-contract DelphiStake {
+contract Stake {
   event ClaimantWhitelisted(
     uint _whitelistId,
     address _claimant,
