@@ -1,7 +1,7 @@
 /* global artifacts */
 
-const DelphiStake = artifacts.require('DelphiStake.sol');
-const DelphiStakeFactory = artifacts.require('DelphiStakeFactory.sol');
+const Stake = artifacts.require('Stake.sol');
+const StakeFactory = artifacts.require('StakeFactory.sol');
 
-module.exports = deployer => deployer.deploy(DelphiStake)
-  .then(() => deployer.deploy(DelphiStakeFactory, DelphiStake.address));
+module.exports = deployer => deployer.deploy(Stake)
+  .then(() => deployer.deploy(StakeFactory, Stake.address));

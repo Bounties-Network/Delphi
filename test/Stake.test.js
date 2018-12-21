@@ -1,4 +1,4 @@
-const DelphiStake = artifacts.require('DelphiStake')
+const DelphiStake = artifacts.require('Stake')
 const ERC20Mock = artifacts.require('ERC20Mock')
 
 const config = require('./utils/config')
@@ -14,7 +14,7 @@ const {
 
 const TIMESTAMP_IN_PAST = 1541171924
 
-contract('DelphiStake', accounts => {
+contract('Stake', accounts => {
   const { staker, claimant, arbiter, other } = getAccounts(accounts)
   let stake, token, stakeReleaseTime
 

@@ -1,20 +1,20 @@
 pragma solidity ^0.4.18;
 import "./inherited/Proxy.sol";
-import "./DelphiStake.sol";
+import "./Stake.sol";
 
-contract DelphiStakeFactory {
+contract StakeFactory {
   event StakeCreated(
     uint _stakeId,
     address _contractAddress
   );
 
-  DelphiStake[] public stakes;
+  Stake[] public stakes;
 
   address public masterCopy;
 
   /*
   @dev constructor function which sets the master copy of the stake contract
-  @param _masterCopy the address where the template DelphiStake contract resides
+  @param _masterCopy the address where the template Stake contract resides
   */
   constructor(address _masterCopy)
   public
@@ -23,7 +23,7 @@ contract DelphiStakeFactory {
   }
 
   /*
-  @dev when creating a new Delphi Stake using a proxy contract architecture, a user must
+  @dev when creating a new Stake using a proxy contract architecture, a user must
   initialialize their stake, depositing their tokens
   @param _staker the address of the individual creating the stake
   @param _value the value of the stake in token units
@@ -42,7 +42,7 @@ contract DelphiStakeFactory {
     require(_token.transferFrom(msg.sender, this, _value));
 
     address newStake = new Proxy(masterCopy);
-    stakes.push(DelphiStake(newStake));
+    stakes.push(Stake(newStake));
 
     // Approve for the stake's tokens to be transfered into the stake upon initialization
     _token.approve(newStake, _value);
